@@ -1,0 +1,12 @@
+services:
+  main-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: air-manager
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
