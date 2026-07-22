@@ -7,9 +7,7 @@ import { course_data } from '@/data/actions/get';
 import Title from '@/components/(features)/(popup)/title';
 import { Svg_Out } from '@/components/(icon)/svg';
 
-// Import thêm Noti và Loading
 import Noti from '@/components/(features)/(noti)/noti';
-import Loading from '@/components/(ui)/(loading)/loading';
 import { getEportfolioUrl } from '@/utils/env'
 
 
@@ -20,8 +18,6 @@ export default function Export() {
         data: null,
         error: null,
     });
-    // State mới cho việc xuất file
-    const [isExporting, setIsExporting] = useState(false);
     const [toast, setToast] = useState({ open: false, status: false, mes: '', link: '' });
 
     const [columnVisibility, setColumnVisibility] = useState({
@@ -58,46 +54,7 @@ export default function Export() {
 
     // Hàm xử lý xuất Excel mới
     const handleExportExcel = async () => {
-        if (!apiState.data || !apiState.data.Student) {
-            setToast({ open: true, status: false, mes: 'Không có dữ liệu để xuất.', link: '' });
-            return;
-        }
-
-        setIsExporting(true);
-
-        const payload = {
-            courseId: apiState.data.ID,
-            courseName: apiState.data.Book.Name,
-            students: apiState.data.Student.map((student, index) => ({
-                stt: index + 1,
-                id: student.ID,
-                name: student.Name,
-                feeStatus: student.StatusCourse ? 'Đã thanh toán' : 'Chưa thanh toán',
-                eport: `${getEportfolioUrl()}/e-portfolio/${student.userId}`
-            }))
-        };
-
-        try {
-            const response = await fetch('/api/exportx', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                setToast({ open: true, status: true, mes: 'Xuất Excel thành công!', link: url });
-            } else {
-                const msg = await response.text();
-                setToast({ open: true, status: false, mes: msg || 'Xuất thất bại', link: '' });
-            }
-        } catch (error) {
-            console.error("Lỗi khi xuất Excel:", error);
-            setToast({ open: true, status: false, mes: 'Có lỗi khi gọi API', link: '' });
-        } finally {
-            setIsExporting(false);
-        }
+        setToast({ open: true, status: false, mes: 'Tính năng đang bảo trì', link: '' });
     };
 
     return (
@@ -132,13 +89,9 @@ export default function Export() {
                                         </button>
                                     ))}
                                 </div>
-                                <button onClick={handleExportExcel} disabled={isExporting} className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ transform: 'none', margin: 0, background: 'var(--main_d)' }}>
-                                    {isExporting ? 'Đang xuất...' : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none"><path d="M24 0v24H0V0z" /><path fill="#FFF" d="M15 5.5a3.5 3.5 0 1 1 .994 2.443L11.67 10.21c.213.555.33 1.16.33 1.79a4.99 4.99 0 0 1-.33 1.79l4.324 2.267a3.5 3.5 0 1 1-.93 1.771l-4.475-2.346a5 5 0 1 1 0-6.963l4.475-2.347A3.524 3.524 0 0 1 15 5.5" /></g></svg>
-                                            Xuất Excel
-                                        </>
-                                    )}
+                                <button onClick={handleExportExcel} className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ transform: 'none', margin: 0, background: 'var(--main_d)' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none"><path d="M24 0v24H0V0z" /><path fill="#FFF" d="M15 5.5a3.5 3.5 0 1 1 .994 2.443L11.67 10.21c.213.555.33 1.16.33 1.79a4.99 4.99 0 0 1-.33 1.79l4.324 2.267a3.5 3.5 0 1 1-.93 1.771l-4.475-2.346a5 5 0 1 1 0-6.963l4.475-2.347A3.524 3.524 0 0 1 15 5.5" /></g></svg>
+                                    Xuất Excel
                                 </button>
                             </div>
 
@@ -171,12 +124,6 @@ export default function Export() {
                 </CenterPopup>
             </div>
 
-            {/* Component Loading và Noti */}
-            {isExporting && (
-                <div className='loadingOverlay'>
-                    <Loading content={<p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Đang xuất Excel...</p>} />
-                </div>
-            )}
             <Noti
                 open={toast.open}
                 status={toast.status}

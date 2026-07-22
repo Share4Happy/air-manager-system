@@ -4,6 +4,7 @@ module.exports = {
     },
     allowedDevOrigins: ['192.168.20.135'],
     images: {
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: 'https',

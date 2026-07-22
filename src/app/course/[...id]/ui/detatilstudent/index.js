@@ -141,46 +141,7 @@ export default function DetailStudent({ data: student, course, c, users, student
 
     /* ───────── EXPORT EXCEL ───────── */
     const handleExport = async () => {
-        try {
-            setLoading(true);
-            const lessonsPayload = rows.map((r, i) => ({
-                Index: i + 1,
-                Topic: r.LessonDetails,
-                Teacher: r.Teacher,
-                Status: r.Status,
-                Day: r.Day,
-                Time: r.Time,
-                Attendance: r.attendance,
-                Comments: Array.isArray(r.comments) ? r.comments.join(' | ') : '',
-            }));
-
-            const res = await fetch('/api/exportx', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    teacherHR: c.TeacherHR.name,
-                    lessons: lessonsPayload,
-                    course: c,
-                    student,
-                    summaryStats,
-                    date: dateRange
-                }),
-            });
-
-            if (res.ok) {
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                setToast({ open: true, status: true, mes: 'Xuất Excel thành công!', link: url });
-            } else {
-                const msg = await res.text();
-                setToast({ open: true, status: false, mes: msg || 'Xuất thất bại', link: '' });
-            }
-        } catch (err) {
-            console.error(err);
-            setToast({ open: true, status: false, mes: 'Có lỗi khi gọi API', link: '' });
-        } finally {
-            setLoading(false);
-        }
+        setToast({ open: true, status: false, mes: 'Tính năng đang bảo trì', link: '' });
     };
 
     /* ───────── CELL UI ───────── */
