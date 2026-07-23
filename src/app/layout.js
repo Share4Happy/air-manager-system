@@ -7,6 +7,8 @@ import '@/styles/all.css'
 import '@/styles/font.css';
 import { getAppUrl, getCookieName } from '@/utils/env';
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({
   subsets: ['vietnamese', 'latin'],
   display: 'swap',

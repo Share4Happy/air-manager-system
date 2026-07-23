@@ -212,7 +212,7 @@ export default function Nav() {
     <div className="list-none m-0 w-[180px] rounded-xl bg-[var(--bg-secondary)] shadow-[var(--boxshaw2)] mb-2">
       <div className="p-2 gap-0.5 flex flex-col">
         <Link href={'/setting'} className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]">
-          <Svg_Setting w={16} h={16} c={'var(--text-secondary)'} />Cài đặt
+          <Svg_Setting w={16} h={16} c={'var(--text-secondary)'} />Cấu hình
         </Link>
         <p className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]" onClick={() => setActiveMenu(2)}>
           <Svg_Mode w={16} h={16} c={'var(--text-secondary)'} />Giao diện
@@ -401,6 +401,32 @@ export default function Nav() {
           <div className="border-t border-[var(--border-color)] my-1 w-full" />
 
           <div className="relative group w-full">
+            <Menu
+              isOpen={isMenuOpen}
+              menuItems={activeMenu === 1 ? menuItems : menuMode}
+              menuPosition={collapsed ? 'right' : 'top'}
+              customButton={
+                <div className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)] w-full
+                  ${collapsed ? 'h-11 justify-center' : 'h-10 gap-3 px-3'}`}
+                >
+                  <Svg_Setting w={24} h={24} c={'var(--text-primary)'} />
+                  {!collapsed && <span className="text-sm font-medium text-[var(--text-primary)]">Cài đặt</span>}
+                </div>
+              }
+              style="display: flex"
+              onOpenChange={(isOpen) => {
+                setIsMenuOpen(isOpen);
+                if (!isOpen) setActiveMenu(1);
+              }}
+            />
+            {collapsed && (
+              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-none pointer-events-none">
+                Cài đặt
+              </div>
+            )}
+          </div>
+
+          <div className="relative group w-full">
             <div
               className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)]
                 ${collapsed ? 'h-11 justify-center' : 'h-10 gap-3 px-3'}`}
@@ -414,32 +440,6 @@ export default function Nav() {
             {collapsed && (
               <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-none">
                 Mở rộng
-              </div>
-            )}
-          </div>
-
-          <div className="relative group w-full">
-            <Menu
-              isOpen={isMenuOpen}
-              menuItems={activeMenu === 1 ? menuItems : menuMode}
-              menuPosition={collapsed ? 'right' : 'top'}
-              customButton={
-                <div className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)] w-full
-                  ${collapsed ? 'h-11 justify-center' : 'h-10 gap-3 px-3'}`}
-                >
-                  <Svg_Menu w={20} h={20} c={'var(--text-primary)'} />
-                  {!collapsed && <span className="text-sm font-medium text-[var(--text-primary)]">Menu</span>}
-                </div>
-              }
-              style="display: flex"
-              onOpenChange={(isOpen) => {
-                setIsMenuOpen(isOpen);
-                if (!isOpen) setActiveMenu(1);
-              }}
-            />
-            {collapsed && (
-              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-none pointer-events-none">
-                Menu
               </div>
             )}
           </div>
