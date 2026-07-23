@@ -78,6 +78,8 @@ function EditUserForm({ userData, onSubmit, onClose, isLoading }) {
     phone: '',
     address: '',
     role: 'Teacher',
+    email: '',
+    password: '',
   });
   useEffect(() => {
     if (userData) {
@@ -86,6 +88,8 @@ function EditUserForm({ userData, onSubmit, onClose, isLoading }) {
         phone: userData.phone || '',
         address: userData.address || '',
         role: userData.role?.[0] || 'Teacher',
+        email: userData.email || '',
+        password: '',
       });
     }
   }, [userData]);
@@ -95,7 +99,9 @@ function EditUserForm({ userData, onSubmit, onClose, isLoading }) {
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(userData._id, formData);
+    const data = { ...formData };
+    if (!data.password) delete data.password;
+    onSubmit(userData._id, data);
   };
   const ROLES = ["Admin", "Academic", "Sale", "Teacher"];
   return (
@@ -103,6 +109,10 @@ function EditUserForm({ userData, onSubmit, onClose, isLoading }) {
       <div className="flex flex-col gap-2">
         <label>Họ và Tên</label>
         <input type="text" name="name" onChange={handleChange} value={formData.name} className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label>Email</label>
+        <input type="email" name="email" onChange={handleChange} value={formData.email} className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" />
       </div>
       <div className="flex flex-col gap-2">
         <label>Số điện thoại</label>
@@ -119,6 +129,10 @@ function EditUserForm({ userData, onSubmit, onClose, isLoading }) {
             <option key={role} value={role}>{role}</option>
           ))}
         </select>
+      </div>
+      <div className="flex flex-col gap-2">
+        <label>Mật khẩu mới <span className="text-gray-400 text-xs">(để trống nếu không đổi)</span></label>
+        <input type="password" name="password" onChange={handleChange} value={formData.password} placeholder="••••••••" className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" />
       </div>
       <div className="flex flex-row gap-2">
         <button type="button" className="px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100" onClick={onClose}>Hủy</button>

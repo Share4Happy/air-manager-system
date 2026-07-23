@@ -5,6 +5,7 @@ import Course from '@/models/course'
 import Invoice from '@/models/invoices'
 import Area from '@/models/area'
 import mongoose from 'mongoose'
+import { getStudentRank } from '@/data/database/student'
 
 function getLastStatus(student) {
     if (!student.Status || student.Status.length === 0) return null
@@ -102,10 +103,24 @@ export async function GET(request) {
             }
         }
 
-        const totalStudents = students.length
+        const totalStudents = allStudents.length
 
-        const ages = students.map(s => computeAge(s.BD)).filter(a => a != null && !isNaN(a))
+        const ages = allStudents.map(s => computeAge(s.BD)).filter(a => a != null && !isNaN(a))
         const avgAge = ages.length > 0 ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10 : null
+
+        // Compute rank for every student
+        const studentRanks = allStudents.map(s => {
+            const createdAt = s._id ? new mongoose.Types.ObjectId(s._id).getTimestamp() : null
+            const courseCount = s.Course?.length ?? 0
+            return getStudentRank(createdAt, courseCount)
+        })
+        const byRank = {}
+        studentRanks.forEach(r => {
+            const key = r.level
+            if (!byRank[key]) byRank[key] = { level: key, name: r.name, color: r.color, bg: r.bg, count: 0 }
+            byRank[key].count++
+        })
+        const studentsByRank = Object.values(byRank).sort((a, b) => a.level - b.level)
 
         const totalTuition = allInvoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0)
         const totalTuitionInitial = allInvoices.reduce((sum, inv) => sum + (inv.amountInitial || 0), 0)
@@ -320,6 +335,7 @@ export async function GET(request) {
                 },
                 studentsByClass,
                 studentsByStatus,
+                studentsByRank,
                 monthlyTuition,
                 monthlyEnrollments,
                 monthlyCompletions,

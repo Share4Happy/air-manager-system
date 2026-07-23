@@ -91,7 +91,7 @@ export default function NotificationBell({ collapsed }) {
       {isOpen && (
         <div className={`absolute top-full mt-2 bg-[var(--bg-primary)] rounded-xl shadow-lg
           border border-[var(--border-color)] z-[9999] overflow-hidden
-          ${collapsed ? 'left-0' : 'right-0'}
+          left-0
           w-[400px] max-md:w-[calc(100vw-32px)] max-md:fixed max-md:left-4 max-md:right-4`}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)]">

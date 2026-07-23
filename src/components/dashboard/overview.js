@@ -213,7 +213,7 @@ export default function Overview() {
     return (
         <div className="flex flex-col gap-4 p-4 w-full max-w-full min-w-0">
             <div className="flex items-center justify-between gap-3 flex-nowrap">
-                <h1 className="text-xs font-bold text-[var(--text-primary)] shrink-0">TỔNG QUAN</h1>
+                <h1 className="text-[10px] font-bold text-[var(--text-primary)] shrink-0">TỔNG QUAN</h1>
             </div>
 
             <div className="flex items-center gap-1.5 flex-nowrap">
@@ -303,15 +303,23 @@ export default function Overview() {
                         <div className="flex items-center justify-center py-16"><EmptyState /></div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                                <StatCard label="Tổng học sinh" value={formatNumber(summary?.totalStudents)} 
-                                    icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
-                            <StatCard label="Tuổi trung bình" value={formatAge(summary?.avgAge)}
-                                icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
-                            <StatCard label="Học phí đã nhận" value={formatCurrency(summary?.totalTuition)}
-                                icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
-                            <StatCard label="Số lớp học" value={formatNumber(summary?.totalClasses)}
-                                icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
+                            <div className="flex flex-wrap justify-center gap-3">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Tổng học sinh" value={formatNumber(summary?.totalStudents)} 
+                                        icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Tuổi trung bình" value={formatAge(summary?.avgAge)}
+                                        icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Học phí đã nhận" value={formatCurrency(summary?.totalTuition)}
+                                        icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Số lớp học" value={formatNumber(summary?.totalClasses)}
+                                        icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 mt-4 mb-1">
@@ -320,15 +328,23 @@ export default function Overview() {
                                 <div className="h-px flex-1 bg-[var(--border-color)]"></div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                                <StatCard label="Học sinh" value={formatNumber(summary?.filteredStudents)}
-                                    icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
-                                <StatCard label="Tuổi trung bình" value={formatAge(summary?.filteredAvgAge)}
-                                    icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
-                                <StatCard label="Học phí" value={formatCurrency(summary?.filteredTuition)}
-                                    icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
-                                <StatCard label="Số lớp" value={formatNumber(summary?.filteredClasses)}
-                                    icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
+                            <div className="flex flex-wrap justify-center gap-3">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Học sinh" value={formatNumber(summary?.filteredStudents)}
+                                        icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Tuổi trung bình" value={formatAge(summary?.filteredAvgAge)}
+                                        icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Học phí" value={formatCurrency(summary?.filteredTuition)}
+                                        icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
+                                </div>
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                    <StatCard label="Số lớp" value={formatNumber(summary?.filteredClasses)}
+                                        icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
+                                </div>
                             </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
@@ -385,6 +401,31 @@ export default function Overview() {
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-6 mb-3">
+                            <div className="h-px flex-1 bg-[var(--border-color)]"></div>
+                            <span className="text-xs font-medium text-[var(--text-secondary)] shrink-0">Học sinh theo xếp hạng</span>
+                            <div className="h-px flex-1 bg-[var(--border-color)]"></div>
+                        </div>
+
+                        <div className="flex justify-center mt-3">
+                            <div className="w-full max-w-2xl">
+                                <ChartCard title="Học sinh theo xếp hạng">
+                                    {data?.studentsByRank?.length ? (
+                                        <div className="h-72">
+                                            <Bar data={{
+                                                labels: data.studentsByRank.map(r => r.name),
+                                                datasets: [{
+                                                    data: data.studentsByRank.map(r => r.count),
+                                                    backgroundColor: data.studentsByRank.map(r => r.color),
+                                                    borderRadius: 4
+                                                }]
+                                            }} options={chartHOpts()} />
+                                        </div>
+                                    ) : <EmptyState />}
+                                </ChartCard>
+                            </div>
                         </div>
                     </>
                 )}

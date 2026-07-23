@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, startTransition, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Svg_Dark, Svg_Left, Svg_Logout, Svg_Menu, Svg_Mode, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell } from '../../(icon)/svg';
+import { Svg_Dark, Svg_Left, Svg_Logout, Svg_Menu, Svg_Mode, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile } from '../../(icon)/svg';
 import Menu from '../../(ui)/(button)/menu';
 import Switch from "@/components/(ui)/(button)/swith";
 import WrapIcon from '../../(ui)/(button)/hoveIcon';
@@ -37,14 +37,11 @@ const academicChildren = [
 ]
 
 const initialNavItems = [
+  { href: '/dashboard', icon: <Svg_Chart h={22} w={22} c={'var(--text-secondary)'} />, content: 'Thống kê' },
+  { href: '/calendar', icon: <Svg_Canlendar w={22} h={22} c={'var(--text-secondary)'} />, content: 'Lịch dạy' },
+  { href: '/course', icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />, content: 'Khóa học' },
   { href: '/student/list', icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />, content: 'Học sinh' },
-  {
-    href: '/teacher', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M160 64c0-35.3 28.7-64 64-64L576 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64l-239.2 0c-11.8-25.5-29.9-47.5-52.4-64l99.6 0 0-32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 32 64 0 0-288L224 64l0 49.1C205.2 102.2 183.3 96 160 96l0-32zm0 64a96 96 0 1 1 0 192 96 96 0 1 1 0-192zM133.3 352l53.3 0C260.3 352 320 411.7 320 485.3c0 14.7-11.9 26.7-26.7 26.7L26.7 512C11.9 512 0 500.1 0 485.3C0 411.7 59.7 352 133.3 352z" />
-      </svg>
-    </div>, content: 'Người dùng'
-  },
+  { href: '/search', icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />, content: 'Eportfolio' },
   {
     href: '/academic', icon: <div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
@@ -52,8 +49,6 @@ const initialNavItems = [
       </svg>
     </div>, content: 'Học vụ', children: academicChildren
   },
-  { href: '/course', icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />, content: 'Khóa học' },
-  { href: '/calendar', icon: <Svg_Canlendar w={22} h={22} c={'var(--text-secondary)'} />, content: 'Lịch dạy' },
   {
     href: '/client', icon: <div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
@@ -61,15 +56,13 @@ const initialNavItems = [
       </svg>
     </div>, content: 'Chăm sóc'
   },
-  { href: '/search', icon: <Svg_Search height={22} width={22} fill={'var(--text-secondary)'} />, content: 'Tìm kiếm' },
   {
-    href: '/guide', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M96 0C43 0 0 43 0 96L0 416c0 53 43 96 96 96l288 0 32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-64c17.7 0 32-14.3 32-32l0-320c0-17.7-14.3-32-32-32L384 0 96 0zm0 384l256 0 0 64L96 448c-17.7 0-32-14.3-32-32s14.3-32 32-32zm32-240c0-8.8 7.2-16 16-16l192 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-192 0c-8.8 0-16-7.2-16-16zm16 48l192 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-192 0c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/>
+    href: '/teacher', icon: <div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
+        <path d="M160 64c0-35.3 28.7-64 64-64L576 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64l-239.2 0c-11.8-25.5-29.9-47.5-52.4-64l99.6 0 0-32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 32 64 0 0-288L224 64l0 49.1C205.2 102.2 183.3 96 160 96l0-32zm0 64a96 96 0 1 1 0 192 96 96 0 1 1 0-192zM133.3 352l53.3 0C260.3 352 320 411.7 320 485.3c0 14.7-11.9 26.7-26.7 26.7L26.7 512C11.9 512 0 500.1 0 485.3C0 411.7 59.7 352 133.3 352z" />
       </svg>
-    </div>, content: 'Hướng dẫn'
+    </div>, content: 'Người dùng'
   },
-  { href: '/', icon: <Svg_Chart h={22} w={22} c={'var(--text-secondary)'} />, content: 'Thống kê' }
 ];
 
 export default function Nav() {
@@ -370,6 +363,33 @@ export default function Nav() {
         </div>
 
         <div className={`flex flex-col w-full ${collapsed ? 'items-center gap-1 px-1.5 pb-3' : 'gap-0.5 px-2 pb-3'}`}>
+          <div className={`flex flex-col w-full ${collapsed ? 'items-center gap-1' : 'gap-0.5'}`}>
+            {[
+              { href: '/guide', icon: <Svg_Guide w={22} h={22} c={'var(--text-secondary)'} />, content: 'Hướng dẫn' },
+              { href: '/info', icon: <Svg_Detail w={22} h={22} c={'var(--text-secondary)'} />, content: 'Thông tin' },
+              { href: '/feedback', icon: <Svg_Feedback w={22} h={22} c={'var(--text-secondary)'} />, content: 'Feedback' },
+            ].map(({ href, icon, content }) => (
+              <div key={href} className="relative group w-full">
+                <div
+                  className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)]
+                    ${collapsed ? 'h-11 justify-center' : 'h-10 gap-3 px-3'}
+                    ${pathname === href ? 'bg-[var(--border-color)]' : ''}`}
+                  onClick={() => handleNavItemClick(href)}
+                >
+                  <div className="shrink-0">{icon}</div>
+                  {!collapsed && <span className="text-sm font-medium text-[var(--text-primary)] truncate flex-1">{content}</span>}
+                </div>
+                {collapsed && (
+                  <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-none">
+                    {content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-[var(--border-color)] my-1 w-full" />
+
           <div className="relative group w-full">
             <div
               className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)]

@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import connectDB from '@/config/connectDB';
 import { reloadUser } from '@/data/actions/reload';
 import PostUser from '@/models/users';
@@ -13,7 +14,7 @@ export async function PATCH(request, { params }) {
         await connectDB();
 
         const body = await request.json();
-        const { name, address, phone, role } = body;
+        const { name, address, phone, role, email, password } = body;
 
         const updateData = {};
         if (name) updateData.name = name;
@@ -21,6 +22,16 @@ export async function PATCH(request, { params }) {
         if (phone) updateData.phone = phone;
         if (role && typeof role === 'string') {
             updateData.role = [role];
+        }
+        if (email) {
+            const dup = await PostUser.findOne({ email, _id: { $ne: id } });
+            if (dup) {
+                return jsonRes(409, { error: 'Email đã tồn tại.' });
+            }
+            updateData.email = email;
+        }
+        if (password) {
+            updateData.uid = await bcrypt.hash(password, 10);
         }
 
         const updatedUser = await PostUser.findByIdAndUpdate(id, { $set: updateData }, { new: true });

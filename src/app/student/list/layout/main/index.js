@@ -14,12 +14,14 @@ export default function Main({ data_student, data_area }) {
   const [load, setLoad] = useState(false);
   const [filterArea, setFilterArea] = useState("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("Đang học");
+  const [filterStatus, setFilterStatus] = useState("Tất cả");
+  const [filterRank, setFilterRank] = useState("Tất cả");
   const route = useRouter();
 
   const ReLoadData = async () => { setLoad(true); await reloadStudent(); route.refresh(); setLoad(false); };
 
   const uniqueAreas = [...new Set(data_student.map(s => s.Area?.name).filter(Boolean))];
+  const RANK_LEVELS = [["Tất cả xếp hạng", "Tất cả"], ["Mới", 0], ["Member", 1], ["Bạc", 2], ["Vàng", 3], ["Bạch Kim", 4], ["Kim Cương", 5]];
 
   const filteredStudents = data_student.filter(student => {
     const search = searchTerm.trim().toLowerCase();
@@ -31,15 +33,18 @@ export default function Main({ data_student, data_area }) {
 
     const matchArea = filterArea === "Tất cả" || student.Area?.name === filterArea;
     const matchStatus = filterStatus === "Tất cả" || latestStatus === STATUS_MAP[filterStatus];
+    const matchRank = filterRank === "Tất cả" || student.rank?.level === filterRank;
 
-    return matchArea && matchSearch && matchStatus;
+    return matchArea && matchSearch && matchStatus && matchRank;
   });
 
   return (
     <div className="flex gap-4 h-[calc(100%-16px)] w-full p-2 pr-0 pt-2">
       <div className="flex-1 rounded-lg border border-[var(--border-color)] flex flex-col overflow-hidden">
         <div className="border-b-2 border-[var(--border-color)] px-3 py-2 flex items-center justify-between gap-2">
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-3 items-center">
+            <span className="text-sm font-semibold text-[var(--text-primary)] whitespace-nowrap">Tổng: {data_student.length} học sinh</span>
+            <div className="w-px h-5 bg-[var(--border-color)]" />
             <input
               className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[300px]"
               placeholder="Nhập tên hoặc ID học sinh..."
@@ -65,6 +70,15 @@ export default function Main({ data_student, data_area }) {
               <option value="Đang học">Đang học</option>
               <option value="Chờ lên khóa">Chờ lên khóa</option>
               <option value="Đã nghỉ">Đã nghỉ</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[180px]"
+              value={filterRank}
+              onChange={(e) => setFilterRank(e.target.value === "Tất cả" ? "Tất cả" : Number(e.target.value))}
+            >
+              {RANK_LEVELS.map(([label, val]) => (
+                <option key={label} value={val}>{label}</option>
+              ))}
             </select>
           </div>
 
