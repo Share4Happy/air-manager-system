@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, startTransition, useRef } from 'react';
+import React, { useState, useEffect, useMemo, startTransition, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Svg_Dark, Svg_Left, Svg_Logout, Svg_Menu, Svg_Mode, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile } from '../../(icon)/svg';
 import Menu from '../../(ui)/(button)/menu';
@@ -30,16 +30,24 @@ const COLLAPSED_W = '60px';
 const EXPANDED_W = '240px';
 
 const academicChildren = [
-  { href: '/academic/makeup', content: 'Học bù' },
-  { href: '/academic/rooms', content: 'Phòng học' },
-  { href: '/academic/debt', content: 'Quản lý học phí' },
   { href: '/academic/report', content: 'Báo cáo chuyên cần' },
+  { href: '/academic/program', content: 'Quản lý chương trình học' },
+  { href: '/academic/rooms', content: 'Quản lý phòng học' },
+  { href: '/academic/debt', content: 'Quản lý học phí' },
+  { href: '/academic/makeup', content: 'Quản lý học bù' },
 ]
 
 const initialNavItems = [
   { href: '/dashboard', icon: <Svg_Chart h={22} w={22} c={'var(--text-secondary)'} />, content: 'Thống kê' },
   { href: '/calendar', icon: <Svg_Canlendar w={22} h={22} c={'var(--text-secondary)'} />, content: 'Lịch dạy' },
   { href: '/course', icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />, content: 'Khóa học' },
+  {
+    href: '/tools', icon: <div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}>
+        <path d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-67.7-67.7L19.9 396.1z" />
+      </svg>
+    </div>, content: 'Công cụ'
+  },
   { href: '/student/list', icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />, content: 'Học sinh' },
   { href: '/search', icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />, content: 'Eportfolio' },
   {
@@ -346,12 +354,14 @@ export default function Nav() {
                   )}
                   {collapsed && hasChildren && (
                     <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-auto">
-                      <p className="text-xs font-medium text-gray-300 mb-1 px-1">{content}</p>
                       <div className="flex flex-col">
-                        {children.map(c => (
-                          <Link key={c.href} href={c.href} className="px-2.5 py-1.5 rounded text-xs text-white hover:bg-white/10 whitespace-nowrap">
-                            {c.content}
-                          </Link>
+                        {children.map((c, idx) => (
+                          <React.Fragment key={c.href}>
+                            {idx > 0 && <div className="border-t border-white/20 my-1" />}
+                            <Link href={c.href} className="px-2.5 py-1.5 rounded text-xs text-white hover:bg-white/10 whitespace-nowrap">
+                              {c.content}
+                            </Link>
+                          </React.Fragment>
                         ))}
                       </div>
                     </div>
@@ -365,7 +375,7 @@ export default function Nav() {
         <div className={`flex flex-col w-full ${collapsed ? 'items-center gap-1 px-1.5 pb-3' : 'gap-0.5 px-2 pb-3'}`}>
           <div className={`flex flex-col w-full ${collapsed ? 'items-center gap-1' : 'gap-0.5'}`}>
             {[
-              { href: '/guide', icon: <Svg_Guide w={22} h={22} c={'var(--text-secondary)'} />, content: 'Hướng dẫn' },
+              // { href: '/guide', icon: <Svg_Guide w={22} h={22} c={'var(--text-secondary)'} />, content: 'Hướng dẫn' },
               { href: '/info', icon: <Svg_Detail w={22} h={22} c={'var(--text-secondary)'} />, content: 'Thông tin' },
               { href: '/feedback', icon: <Svg_Feedback w={22} h={22} c={'var(--text-secondary)'} />, content: 'Feedback' },
             ].map(({ href, icon, content }) => (

@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { Inter, Oswald } from 'next/font/google';
 import { cookies } from 'next/headers';
 import Layout_Login from '@/app/(auth)/login';
@@ -63,7 +61,7 @@ export default async function RootLayout({ children }) {
               <Nav data={data} />
             </div>
             <NavMobile data={data} />
-            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px)-32px)] h-[calc(100%-32px)] bg-[var(--bg-secondary)] p-4 overflow-hidden overflow-y-auto max-md:ml-0 max-md:w-full max-md:h-[calc(100%-76px)] max-md:p-2 max-md:pb-[68px] transition-all duration-300">
+            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px))] h-full bg-[var(--bg-secondary)] overflow-hidden overflow-y-auto p-2 max-md:ml-0 max-md:w-full max-md:h-[calc(100%-76px)] max-md:p-2 max-md:pb-[68px] transition-all duration-300">
               {children}
             </div>
           </div> :

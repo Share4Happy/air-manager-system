@@ -5,7 +5,7 @@ import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 
-export const dynamic = 'force-dynamic';
+
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({

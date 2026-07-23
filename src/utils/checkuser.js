@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import jwt from 'jsonwebtoken';
 import { getCookieName, getJwtSecret } from '@/utils/env';
 

@@ -380,6 +380,55 @@ export function Svg_Feedback({ w, h, c }) {
   )
 }
 
+export function Svg_Envelope({ w, h, c }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style={{ width: `${w}`, height: `${h}` }} fill={c ? c : 'var(--main)'}>
+      <path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48L48 64zM0 176L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-208L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"/>
+    </svg>
+  )
+}
+
+export function Svg_Lock({ w, h, c }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style={{ width: `${w}`, height: `${h}` }} fill={c ? c : 'var(--main)'}>
+      <path d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z"/>
+    </svg>
+  )
+}
+
+export function Svg_CitySkyline({ w, h, c }) {
+  return (
+    <svg viewBox="0 0 400 80" style={{ width: `${w}`, height: `${h}` }} fill={c ? c : '#08A9DF'} opacity="0.15" aria-hidden="true">
+      <rect x="0" y="40" width="30" height="40" rx="2"/>
+      <rect x="8" y="30" width="14" height="10" rx="1"/>
+      <rect x="30" y="25" width="20" height="55" rx="2"/>
+      <rect x="34" y="15" width="12" height="10" rx="1"/>
+      <rect x="50" y="45" width="15" height="35" rx="1"/>
+      <rect x="65" y="20" width="18" height="60" rx="2"/>
+      <rect x="85" y="50" width="12" height="30" rx="1"/>
+      <rect x="100" y="35" width="25" height="45" rx="2"/>
+      <circle cx="112" cy="28" r="8" fill="none" stroke="#08A9DF" strokeWidth="2" opacity="0.3"/>
+      <rect x="130" y="15" width="22" height="65" rx="2"/>
+      <polygon points="141,5 130,20 152,20" />
+      <rect x="155" y="40" width="14" height="40" rx="1"/>
+      <rect x="170" y="28" width="20" height="52" rx="2"/>
+      <rect x="190" y="48" width="10" height="32" rx="1"/>
+      <rect x="200" y="10" width="16" height="70" rx="2"/>
+      <circle cx="208" cy="5" r="4" fill="none" stroke="#08A9DF" strokeWidth="1.5" opacity="0.3"/>
+      <rect x="218" y="38" width="24" height="42" rx="2"/>
+      <rect x="244" y="22" width="18" height="58" rx="2"/>
+      <rect x="264" y="42" width="12" height="38" rx="1"/>
+      <rect x="278" y="30" width="15" height="50" rx="1"/>
+      <rect x="295" y="5" width="20" height="75" rx="2"/>
+      <polygon points="305,-5 290,10 320,10"/>
+      <rect x="318" y="35" width="28" height="45" rx="2"/>
+      <rect x="350" y="18" width="16" height="62" rx="2"/>
+      <rect x="368" y="45" width="14" height="35" rx="1"/>
+      <rect x="384" y="30" width="16" height="50" rx="2"/>
+    </svg>
+  )
+}
+
 export const Svg_Setting = ({ w, h, c }) => {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style={{ width: `${w}`, height: `${h}` }} fill={c ? c : 'var(--main_d)'}>

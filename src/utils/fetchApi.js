@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { getAppUrl, getCookieName } from '@/utils/env';
 
 export default async function fetchApi(endpoint, options = {}) {

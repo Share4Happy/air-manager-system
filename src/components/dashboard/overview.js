@@ -296,8 +296,12 @@ export default function Overview() {
                 )}
 
                 {!hasLoadedOnce.current && loading ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                        <KPISkeleton />
+                    <div className="flex flex-wrap justify-center gap-3">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                <KPISkeleton />
+                            </div>
+                        ))}
                     </div>
                     ) : !data ? (
                         <div className="flex items-center justify-center py-16"><EmptyState /></div>
