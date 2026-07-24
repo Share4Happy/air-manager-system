@@ -84,7 +84,7 @@ export default function CommentForm({
 
     // Hàm chung để render danh sách các mục trong menu
     const renderMenuItems = (options, selectedValues, setter, setMenuOpen) => useMemo(() => (
-        <div className="p-1.5 bg-white border border-[var(--border-color)] rounded-lg shadow-[0_6px_24px_rgba(0,0,0,0.10)] max-h-[220px] overflow-y-auto">
+        <div className="p-1.5 bg-white border border-[var(--border-color)] rounded-lg shadow-[0_6px_24px_rgba(0,0,0,0.10)] max-h-[220px] overflow-y-auto max-w-[85vw] whitespace-normal">
             <div className="flex flex-col" style={{ gap: 3 }}>
                 {options
                     .filter(o => !selectedValues.includes(o))
@@ -111,8 +111,8 @@ export default function CommentForm({
             <div className="flex flex-col w-full overflow-hidden rounded-lg h-[calc(100%-2px)] bg-[var(--bg-primary)] border border-[var(--border-color)]">
                 <div style={{ padding: 16 }}>
                     {/* --- Student Info & Reset Button --- */}
-                    <div className="flex items-center mb-4 justify-between gap-3">
-                        <div className="p-2.5 gap-4 bg-[var(--bg-secondary)] flex items-center flex-1 rounded">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4 justify-between gap-3">
+                        <div className="p-2.5 gap-2 sm:gap-4 bg-[var(--bg-secondary)] flex flex-col sm:flex-row sm:items-center w-full sm:w-auto rounded">
                             <p className='text-sm font-semibold text-[var(--text-primary)]'>Tên học sinh: <span> {student?.Name}</span></p>
                             <p className='text-sm font-semibold text-[var(--text-primary)]'>ID học sinh: <span> {student?.ID}</span></p>
                         </div>
@@ -131,7 +131,7 @@ export default function CommentForm({
                             menuItems={renderMenuItems(TDHT_OPTIONS, tdht, setTdht, setTdhtMenuOpen)}
                             customButton={
                                 <div
-                                    className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] ${isTdhtMenuOpen ? 'border-[var(--main_d)]' : ''}`}
+                                    className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] whitespace-normal ${isTdhtMenuOpen ? 'border-[var(--main_d)]' : ''}`}
                                     onClick={() => setTdhtMenuOpen(true)}
                                 >
                                     {tdht.length === 0 ? <span className="text-[var(--text-secondary)] p-1.5 text-xs font-normal text-[var(--text-primary)]">Chọn nhận xét</span> : tdht.map(v => (
@@ -155,7 +155,7 @@ export default function CommentForm({
                             menuItems={renderMenuItems(KQHT_OPTIONS, kqht, setKqht, setKqhtMenuOpen)}
                             menuPosition='top'
                             customButton={
-                                <div className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] ${isKqhtMenuOpen ? 'border-[var(--main_d)]' : ''}`} onClick={() => setKqhtMenuOpen(true)}   >
+                                <div className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] whitespace-normal ${isKqhtMenuOpen ? 'border-[var(--main_d)]' : ''}`} onClick={() => setKqhtMenuOpen(true)}   >
                                     {kqht.length === 0 ? <span className="text-[var(--text-secondary)] p-1.5 text-xs font-normal text-[var(--text-primary)]">Chọn nhận xét</span> : kqht.map(v => (
                                         <span key={v} className="bg-[var(--border-color)] text-[var(--text-primary)] px-3 py-1.5 rounded inline-flex items-center gap-2 text-xs font-normal text-[var(--text-primary)]" onClick={e => e.stopPropagation()}>
                                             {v} <span className="cursor-pointer text-[var(--text-primary)] font-bold text-base leading-none hover:text-[var(--red)]" onClick={() => handleRemove(setKqht, v)}>×</span>
@@ -177,7 +177,7 @@ export default function CommentForm({
                             menuPosition='top'
                             customButton={
                                 <div
-                                    className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] ${isDcctMenuOpen ? 'border-[var(--main_d)]' : ''}`}
+                                    className={`relative flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[var(--border-color)] cursor-pointer transition-colors duration-200 hover:border-[var(--main_d)] whitespace-normal ${isDcctMenuOpen ? 'border-[var(--main_d)]' : ''}`}
                                     onClick={() => setDcctMenuOpen(true)}
                                 >
                                     {dcct.length === 0 ? <span className="text-[var(--text-secondary)] p-1.5 text-xs font-normal text-[var(--text-primary)]">Chọn nhận xét</span> : dcct.map(v => (
@@ -195,19 +195,19 @@ export default function CommentForm({
                     {/* --- SỬA: Gán value và onChange cho textarea --- */}
                     <textarea
                         placeholder="Nhập nội dung nhận xét tại đây..."
-                        className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
-                        style={{ resize: 'none', height: 100, width: 'calc(100% - 26px)' }}
+                        className='w-full px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
+                        style={{ resize: 'none', height: 100 }}
                         value={otherComment}
                         onChange={(e) => setOtherComment(e.target.value)}
                     />
                 </div>
 
                 {/* --- Nút bấm xác nhận và thoát --- */}
-                <div className="mt-4 flex gap-3 justify-end px-4 py-3 border-t border-[var(--border-color)]">
-                    <button className="px-5 py-2.5 border-none rounded-md cursor-pointer bg-[var(--bg-secondary)] text-sm font-medium text-[var(--text-secondary)]" onClick={onCancel}>
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end px-4 py-3 border-t border-[var(--border-color)]">
+                    <button className="w-full sm:w-auto px-5 py-2.5 border-none rounded-md cursor-pointer bg-[var(--bg-secondary)] text-sm font-medium text-[var(--text-secondary)]" onClick={onCancel}>
                         Thoát
                     </button>
-                    <button className="px-5 py-2.5 border-none rounded-md cursor-pointer bg-[var(--green)] text-sm font-medium text-white" onClick={() => {
+                    <button className="w-full sm:w-auto px-5 py-2.5 border-none rounded-md cursor-pointer bg-[var(--green)] text-sm font-medium text-white" onClick={() => {
                         const finalComments = [...tdht, ...kqht, ...dcct, otherComment.trim()].filter(Boolean);
                         onSave(finalComments);
                     }}>

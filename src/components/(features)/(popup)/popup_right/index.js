@@ -19,6 +19,7 @@ export default function FlexiblePopup({
     dataSecondary: providedDataSecondary = null,
     renderSecondaryList = () => null,
     secondaryTitle = 'Chi tiết',
+    footer = null,
     centered = false,
     titleCentered = false,
     secondaryCentered = false,
@@ -212,6 +213,7 @@ export default function FlexiblePopup({
                         {error && <p className='text-red'>{error}</p>}
                         {!loading && !error && showContent && renderItemList(data)}
                     </div>
+                    {footer}
                 </div>
             </div>
 

@@ -192,21 +192,43 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
     );
 }
 
-function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick }) {
+function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMode, selectedIds, onToggleSelect, onStartSelect, onCancelSelect, onDeleteSelected, deleting }) {
     const getDriveImageUrl = (id) => `https://lh3.googleusercontent.com/d/${id}=w400`;
 
     return (
         <div className="flex flex-col gap-4 h-full">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                 <h4>Thư viện hình ảnh & video</h4>
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <Link href={`https://drive.google.com/drive/folders/${session.Image}`} className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' target="_blank" rel="noopener noreferrer">
-                        <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}> Đi tới Drive</p>
-                    </Link>
-                    <button className={'px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'} onClick={onAdd}>
-                        <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}> + Thêm file</p>
-                    </button>
+                <div className="flex flex-wrap gap-2">
+                    {!selectMode ? (
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <button onClick={onStartSelect}
+                                className="w-full sm:w-auto px-3 py-2 bg-red-500 flex items-center justify-center gap-2 rounded text-white text-sm font-medium cursor-pointer border-none hover:bg-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                Chọn nhiều
+                            </button>
+                            <div className="flex gap-2 w-full sm:flex-1">
+                                <Link href={`https://drive.google.com/drive/folders/${session.Image}`} className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-sm font-medium cursor-pointer border-none no-underline whitespace-nowrap hover:bg-[var(--main_d)]' target="_blank" rel="noopener noreferrer" style={{ color: 'white' }}>
+                                    Đi tới Drive
+                                </Link>
+                                <button className={'flex-1 px-3 py-2 bg-[var(--main_b)] rounded text-sm font-medium whitespace-nowrap cursor-pointer border-none hover:bg-[var(--main_d)]'} onClick={onAdd} style={{ color: 'white' }}>
+                                    + Thêm file
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <span className="text-sm text-[var(--text-primary)]">{selectedIds.size} đã chọn</span>
+                            <button onClick={onCancelSelect}
+                                className="flex-1 sm:flex-none px-3 py-2 bg-gray-300 rounded text-sm font-medium cursor-pointer border-none hover:bg-gray-400">
+                                Hủy chọn
+                            </button>
+                            <button onClick={onDeleteSelected} disabled={selectedIds.size === 0 || deleting}
+                                className="flex-1 sm:flex-none px-3 py-2 bg-red-600 rounded text-white text-sm font-medium cursor-pointer border-none hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {deleting ? 'Đang xóa...' : `Xóa (${selectedIds.size})`}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -221,11 +243,16 @@ function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick }) {
                             {mediaItems.map(item => (
                                 <button
                                     key={item.id}
-                                    onClick={() => onMediaClick(item)}
-                                    className="relative w-full aspect-square rounded-lg overflow-hidden bg-[#e2e8f0] transition-transform duration-200 ease-in-out border-none p-0 cursor-pointer group"
+                                    onClick={() => selectMode ? onToggleSelect(item.id) : onMediaClick(item)}
+                                    className={`relative w-full aspect-square rounded-lg overflow-hidden bg-[#e2e8f0] transition-transform duration-200 ease-in-out border-none p-0 cursor-pointer group ${selectedIds.has(item.id) ? 'ring-2 ring-red-500' : ''}`}
                                 >
                                     <img src={getDriveImageUrl(item.id)} alt={`File từ Google Drive`} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                                    {item.type === 'video' && (
+                                    {selectMode && (
+                                        <div className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedIds.has(item.id) ? 'bg-red-500 border-red-500' : 'bg-white/80 border-gray-400'}`}>
+                                            {selectedIds.has(item.id) && <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
+                                        </div>
+                                    )}
+                                    {item.type === 'video' && !selectMode && (
                                         <div className="absolute inset-0 bg-black/30 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-white"><path d="M7 4V20L20 12L7 4Z"></path></svg>
                                         </div>
@@ -390,8 +417,11 @@ const UploadManager = forwardRef(({
                 </>
             )}
 
-            <div className="flex justify-end mt-4 pt-4 border-t border-[#e2e8f0]">
-                <button className={'px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'} onClick={handleSave} style={{ background: 'var(--main_d)' }} disabled={selectedFiles.length === 0}>
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-[#e2e8f0]">
+                <button className="px-3 py-2 bg-gray-200 rounded text-sm font-medium cursor-pointer border-none hover:bg-gray-300" onClick={onClose}>
+                    Hủy
+                </button>
+                <button className={'px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'} onClick={handleSave} style={{ background: 'var(--main_d)' }} disabled={selectedFiles.length === 0}>
                     Tải lên ({selectedFiles.length}) file
                 </button>
             </div>
@@ -412,6 +442,11 @@ export default function ImageUploader({ session, courseId, Version }) {
     const [mediaItems, setMediaItems] = useState(session?.DetailImage || []);
     const [lightboxMedia, setLightboxMedia] = useState(null);
 
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [deleting, setDeleting] = useState(false);
+    const [noti, setNoti] = useState({ open: false, status: false, mes: '' });
+
     // *** STATE MỚI ĐỂ QUẢN LÝ TIẾN TRÌNH UPLOAD Ở CẤP CAO NHẤT ***
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState({
@@ -420,20 +455,19 @@ export default function ImageUploader({ session, courseId, Version }) {
 
     const uploaderRef = useRef();
 
-    useEffect(() => {
-        setMediaItems(session?.DetailImage || []);
-    }, [session?.DetailImage]);
-
     const handleUploadFinish = async () => {
+        await Re_lesson(session._id);
         try {
-            const res = await fetch(`/api/calendar/${session._id}`);
+            const res = await fetch(`/api/calendar/${session._id}?_=${Date.now()}`);
             const json = await res.json();
             if (json.success) {
                 setMediaItems(json.data.session?.DetailImage || []);
+            } else {
+                setMediaItems(session?.DetailImage || []);
             }
-        } catch {}
-        await Re_lesson(session._id);
-        router.refresh();
+        } catch {
+            setMediaItems(session?.DetailImage || []);
+        }
     };
 
     // *** CÁC HÀM MỚI ĐỂ KIỂM SOÁT UI TIẾN TRÌNH ***
@@ -451,6 +485,50 @@ export default function ImageUploader({ session, courseId, Version }) {
         setTimeout(() => {
             setIsUploading(false);
         }, 3000);
+    };
+
+    const toggleSelectMode = () => {
+        if (selectMode) {
+            setSelectMode(false);
+            setSelectedIds(new Set());
+        } else {
+            setSelectMode(true);
+        }
+    };
+
+    const toggleSelectItem = (id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.size === 0) return;
+        setDeleting(true);
+        let success = 0, fail = 0;
+        for (const id of selectedIds) {
+            try {
+                const res = await fetch(`/api/updateimage?id=${id}`, { method: 'DELETE' });
+                const json = await res.json();
+                if (res.ok && json.status === 2) success++;
+                else fail++;
+            } catch {
+                fail++;
+            }
+        }
+        setDeleting(false);
+        setSelectMode(false);
+        setSelectedIds(new Set());
+        if (success > 0) {
+            setMediaItems(prev => prev.filter(item => !selectedIds.has(item.id)));
+            setNoti({ open: true, status: true, mes: `Đã xóa ${success} file.${fail > 0 ? ` ${fail} file thất bại.` : ''}` });
+            await handleUploadFinish();
+        } else {
+            setNoti({ open: true, status: false, mes: 'Xóa thất bại.' });
+        }
     };
 
     const renderUploadManager = () => (
@@ -472,7 +550,14 @@ export default function ImageUploader({ session, courseId, Version }) {
             session={session}
             mediaItems={mediaItems}
             onAdd={() => setUploaderOpen(true)}
-            onMediaClick={setLightboxMedia}
+            onMediaClick={selectMode ? undefined : setLightboxMedia}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelectItem}
+            onStartSelect={() => { setSelectMode(true); setSelectedIds(new Set()); }}
+            onCancelSelect={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+            onDeleteSelected={handleDeleteSelected}
+            deleting={deleting}
         />
     );
 
@@ -512,6 +597,11 @@ export default function ImageUploader({ session, courseId, Version }) {
 
     return (
         <>
+            <Noti open={noti.open} onClose={() => setNoti({ ...noti, open: false })} status={noti.status} mes={noti.mes}
+                button={<button onClick={() => setNoti({ ...noti, open: false })}
+                    className="w-full p-3 border-none rounded-lg bg-[var(--main_d)] text-white text-base cursor-pointer font-medium mt-2">Đã hiểu</button>}
+            />
+
             <div className="flex flex-col items-start gap-1 p-4 rounded border border-[var(--border-color)] no-underline cursor-pointer" onClick={() => setPopupOpen(true)}>
                 <img src={'https://assets.minimals.cc/public/assets/icons/files/ic-img.svg'} alt="icon" loading="lazy" className="w-8 h-8" />
                 <div className="mt-1 text-base text-[var(--text-primary)]">Hình ảnh & Video</div>
@@ -524,16 +614,6 @@ export default function ImageUploader({ session, courseId, Version }) {
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200">
                             <h3 className="m-0 text-xl">{isUploaderOpen ? 'Tải lên file mới' : 'Thư viện hình ảnh & video'}</h3>
                             <button className="bg-transparent border-none text-2xl cursor-pointer" onClick={() => setPopupOpen(false)}>&times;</button>
-                        </div>
-                        <div className="flex gap-2 px-4 pt-3 pb-0">
-                            <button onClick={() => setUploaderOpen(false)}
-                                className={`px-3 py-1.5 text-sm rounded cursor-pointer border-none ${!isUploaderOpen ? 'bg-[var(--main_d)] text-white' : 'bg-gray-100 text-[var(--text-secondary)]'}`}>
-                                Thư viện
-                            </button>
-                            <button onClick={() => setUploaderOpen(true)}
-                                className={`px-3 py-1.5 text-sm rounded cursor-pointer border-none ${isUploaderOpen ? 'bg-[var(--main_d)] text-white' : 'bg-gray-100 text-[var(--text-secondary)]'}`}>
-                                Tải lên
-                            </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {isUploaderOpen ? renderUploadManager() : renderMediaGallery()}

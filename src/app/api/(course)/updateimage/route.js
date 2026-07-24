@@ -95,9 +95,10 @@ export async function POST(request) {
     } catch (error) {
         const errorMessage = error.errors?.[0]?.message || error.message || 'Lỗi server không xác định.';
         console.error('Lỗi API [POST]:', JSON.stringify(error, null, 2));
+        const httpStatus = typeof error.code === 'number' && error.code >= 200 && error.code <= 599 ? error.code : 500;
         return NextResponse.json(
             { status: 1, mes: errorMessage },
-            { status: error.code || 500 }
+            { status: httpStatus }
         );
     }
 }

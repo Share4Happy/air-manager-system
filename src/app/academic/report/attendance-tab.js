@@ -96,7 +96,7 @@ export default function AttendanceTab() {
                 <span className="text-xs text-[var(--text-secondary)] ml-auto">{lessons.length} lớp</span>
             </div>
 
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {[
                     { label: 'Tổng số lớp', value: lessons.length, bg: 'bg-violet-50', border: 'border-violet-200', textColor: 'text-violet-700', valueColor: 'text-violet-800' },
                     { label: 'Tổng số học sinh', value: totalStudents, bg: 'bg-blue-50', border: 'border-blue-200', textColor: 'text-blue-700', valueColor: 'text-blue-800' },
@@ -104,9 +104,9 @@ export default function AttendanceTab() {
                     { label: 'Học sinh vắng', value: totalAbsent, bg: 'bg-rose-50', border: 'border-rose-200', textColor: 'text-rose-700', valueColor: 'text-rose-800' },
                     { label: 'Tỉ lệ chuyên cần', value: `${totalRate}%`, bg: 'bg-amber-50', border: 'border-amber-200', textColor: 'text-amber-700', valueColor: totalRate >= 80 ? 'text-emerald-800' : totalRate >= 50 ? 'text-amber-800' : 'text-rose-800' },
                 ].map(c => (
-                    <div key={c.label} className={`flex flex-col items-center justify-center p-4 ${c.bg} ${c.border} border rounded-xl text-center gap-1`}>
-                        <span className={`text-xs font-medium ${c.textColor}`}>{c.label}</span>
-                        <strong className={`text-2xl font-bold ${c.valueColor}`}>{c.value}</strong>
+                    <div key={c.label} className={`flex flex-col items-center justify-center p-3 sm:p-4 ${c.bg} ${c.border} border rounded-xl text-center gap-0.5 sm:gap-1`}>
+                        <span className={`text-[11px] sm:text-xs font-medium ${c.textColor}`}>{c.label}</span>
+                        <strong className={`text-lg sm:text-xl lg:text-2xl font-bold ${c.valueColor}`}>{c.value}</strong>
                     </div>
                 ))}
             </div>
@@ -116,46 +116,44 @@ export default function AttendanceTab() {
                     <p className="text-base text-[var(--text-secondary)] italic">{loading ? 'Đang tải...' : 'Hôm nay không có buổi học nào'}</p>
                 </div>
             ) : (
-                <div className="bg-white border border-[var(--border-color)] rounded-lg" style={{ height: 560 }}>
-                    <div className="overflow-auto h-full">
-                    <table className="w-full text-sm table-fixed" style={{ minWidth: 800 }}>
-                        <colgroup>
-                            <col style={{ width: 56 }} />
-                            <col style={{ width: 130 }} />
-                            <col style={{ width: 130 }} />
-                            <col style={{ width: 90 }} />
-                            <col style={{ width: 110 }} />
-                            <col style={{ width: 100 }} />
-                            <col style={{ width: 70 }} />
-                            <col style={{ width: 70 }} />
-                            <col style={{ width: 70 }} />
-                        </colgroup>
-                        <thead className="sticky top-0 z-10">
-                            <tr className="bg-[var(--main_d)] text-white">
-                                <th className="p-2 font-medium text-center">STT</th>
-                                <th className="p-2 font-medium text-left">Lớp</th>
-                                <th className="p-2 font-medium text-left">Giáo viên</th>
-                                <th className="p-2 font-medium text-left">Phòng</th>
-                                <th className="p-2 font-medium text-left">Phân loại</th>
-                                <th className="p-2 font-medium text-left">Giờ</th>
-                                <th className="p-2 font-medium text-center">Sĩ số</th>
-                                <th className="p-2 font-medium text-center">Có mặt</th>
-                                <th className="p-2 font-medium text-center">Vắng</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {(() => {
-                                const rows = []
-                                for (let i = 0; i < ITEMS_PER_PAGE; i++) {
-                                    const l = pageItems[i]
-                                    if (l) {
+                <>
+                    {/* Desktop: Table */}
+                    <div className="hidden md:block bg-white border border-[var(--border-color)] rounded-lg" style={{ height: 560 }}>
+                        <div className="overflow-auto h-full">
+                            <table className="w-full text-sm">
+                                <colgroup>
+                                    <col style={{ width: '6%' }} />
+                                    <col style={{ width: '18%' }} />
+                                    <col style={{ width: '16%' }} />
+                                    <col style={{ width: '10%' }} />
+                                    <col style={{ width: '12%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '8%' }} />
+                                    <col style={{ width: '8%' }} />
+                                    <col style={{ width: '8%' }} />
+                                </colgroup>
+                                <thead className="sticky top-0 z-10">
+                                    <tr className="bg-[var(--main_d)] text-white">
+                                        <th className="p-2 font-medium text-center">STT</th>
+                                        <th className="p-2 font-medium text-left">Lớp</th>
+                                        <th className="p-2 font-medium text-left">Giáo viên</th>
+                                        <th className="p-2 font-medium text-left">Phòng</th>
+                                        <th className="p-2 font-medium text-left">Phân loại</th>
+                                        <th className="p-2 font-medium text-left">Giờ</th>
+                                        <th className="p-2 font-medium text-center">Sĩ số</th>
+                                        <th className="p-2 font-medium text-center">Có mặt</th>
+                                        <th className="p-2 font-medium text-center">Vắng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pageItems.map((l, i) => {
                                         const hasUnchecked = l.unchecked > 0
-                                        rows.push(
-                                            <tr key={l._id} className="bg-white border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors" style={{ height: 48 }}>
+                                        return (
+                                            <tr key={l._id} className="border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors">
                                                 <td className="p-2 text-center text-[var(--text-secondary)]">{startIdx + i + 1}</td>
-                                                <td className="p-2 font-medium truncate">
+                                                <td className="p-2 font-medium">
                                                     <div className="flex items-center gap-1">
-                                                        <Link href={`/course/${l.courseId || l._id}`} className="text-[var(--main_d)] hover:underline font-semibold">
+                                                        <Link href={`/course/${l.courseId || l._id}`} className="text-[var(--main_d)] hover:underline font-semibold truncate">
                                                             {l.courseId || l.courseName}
                                                         </Link>
                                                         {hasUnchecked && (
@@ -180,31 +178,66 @@ export default function AttendanceTab() {
                                                 <td className="p-2 text-center text-red-600 font-bold">{l.absent}</td>
                                             </tr>
                                         )
-                                    } else {
-                                        rows.push(
-                                            <tr key={`empty-${i}`} className="bg-white border-b border-[var(--border-color)]" style={{ height: 48 }}>
-                                                <td colSpan={9}></td>
-                                            </tr>
-                                        )
-                                    }
-                                }
-                                return rows
-                            })()}
-                        </tbody>
-                    </table>
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+
+                    {/* Mobile: Cards */}
+                    <div className="md:hidden flex flex-col gap-2">
+                        {pageItems.map((l, i) => {
+                            const hasUnchecked = l.unchecked > 0
+                            return (
+                                <div key={l._id} className="bg-white border border-[var(--border-color)] rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className="text-xs text-[var(--text-secondary)] shrink-0">#{startIdx + i + 1}</span>
+                                            <Link href={`/course/${l.courseId || l._id}`} className="text-[var(--main_d)] font-semibold text-sm hover:underline truncate">
+                                                {l.courseId || l.courseName}
+                                            </Link>
+                                            {hasUnchecked && (
+                                                <span className="shrink-0 px-1 py-0.5 rounded font-bold bg-orange-500 text-white" style={{ fontSize: 10 }}>
+                                                    Chưa ĐD
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className={`px-1.5 py-0.5 rounded font-semibold text-white text-xs shrink-0 ml-1 ${
+                                            l.typeLabel === 'Lớp học thử' ? 'bg-purple-600' : 'bg-blue-600'
+                                        }`}>
+                                            {l.typeLabel === 'Lớp học thử' ? 'Học thử' : 'Thường'}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                        <span className="text-[var(--text-secondary)]">Giáo viên:</span>
+                                        <span className="text-[var(--text-primary)] truncate">{l.teacher?.name || '—'}</span>
+                                        <span className="text-[var(--text-secondary)]">Phòng:</span>
+                                        <span className="text-[var(--text-primary)]">{l.room?.name || '—'}</span>
+                                        <span className="text-[var(--text-secondary)]">Giờ:</span>
+                                        <span className="text-[var(--text-primary)]">{l.time || '—'}</span>
+                                        <span className="text-[var(--text-secondary)]">Sĩ số:</span>
+                                        <span className="text-[var(--text-primary)] font-medium">{l.totalStudents}</span>
+                                        <span className="text-[var(--text-secondary)]">Có mặt:</span>
+                                        <span className="text-green-600 font-bold">{l.present}</span>
+                                        <span className="text-[var(--text-secondary)]">Vắng:</span>
+                                        <span className="text-red-600 font-bold">{l.absent}</span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </>
             )}
 
             {!loading && lessons.length > ITEMS_PER_PAGE && (
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
                     <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
                         className="px-3 py-1.5 rounded bg-gray-200 text-sm cursor-pointer border-none disabled:opacity-40 hover:bg-gray-100">
                         Trước
                     </button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                         <button key={p} onClick={() => setPage(p)}
-                            className={`w-8 h-8 rounded text-sm cursor-pointer border-none ${
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded text-xs sm:text-sm cursor-pointer border-none ${
                                 p === page ? 'bg-[var(--main_d)] text-white' : 'bg-gray-200 hover:bg-gray-100'
                             }`}>
                             {p}

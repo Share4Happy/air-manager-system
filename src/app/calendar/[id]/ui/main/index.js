@@ -37,6 +37,9 @@ export default function Main({ data }) {
     const [popupImageUrl, setPopupImageUrl] = useState('');
     const [showComment, setShowComment] = useState(false);
     const [selStu, setSelStu] = useState(null);
+    const [showNote, setShowNote] = useState(false);
+    const [note, setNote] = useState(() => session?.Note || '');
+    const [mobileDocsOpen, setMobileDocsOpen] = useState(true);
     const router = useRouter();
 
     if (!course || !session) {
@@ -73,10 +76,27 @@ export default function Main({ data }) {
 
     const changeAtt = (id, v) => setAtt(prev => ({ ...prev, [id]: v }));
 
-    const saveComment = arr => {
-        if (selStu) setCmts(p => ({ ...p, [selStu.ID]: arr }));
+    const saveComment = async (arr) => {
+        if (!selStu) return;
+        setCmts(p => ({ ...p, [selStu.ID]: arr }));
         setShowComment(false);
-        setSelStu(null);
+        const checkinVal = cur(selStu);
+        setSaving(true);
+        try {
+            const res = await updateAttendance(course._id, session._id, [{ studentId: selStu.ID, checkin: checkinVal, comment: arr }]);
+            if (res.status === 2) {
+                setNotiOK(true); setNotiMsg('Lưu nhận xét thành công!');
+            } else {
+                setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
+                setNotiOK(false); setNotiMsg(res.mes || 'Lưu nhận xét thất bại!');
+            }
+        } catch {
+            setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
+            setNotiOK(false); setNotiMsg('Có lỗi xảy ra khi lưu nhận xét!');
+        } finally {
+            setSaving(false); setNotiOpen(true);
+            setSelStu(null);
+        }
     };
 
     const buildPayload = () => {
@@ -93,6 +113,20 @@ export default function Main({ data }) {
         return arr;
     };
 
+    const reloadData = async () => {
+        setAtt({});
+        setCmts({});
+        setReloading(true);
+        try {
+            await Re_lesson(data.session._id);
+            router.refresh();
+        } catch (e) {
+            console.error('Reload error:', e);
+        } finally {
+            setReloading(false);
+        }
+    }
+
     const saveAll = async () => {
         const payload = buildPayload();
         if (!payload.length) {
@@ -104,18 +138,17 @@ export default function Main({ data }) {
         setSaving(true);
         try {
             const res = await updateAttendance(course._id, session._id, payload);
-            setNotiOK(res.status === 2);
-            setNotiMsg(res.mes || (res.status === 2 ? 'Lưu thành công!' : 'Lưu thất bại!'));
-
             if (res.status === 2) {
-                setAtt({}); setCmts({});
+                setNotiOK(true); setNotiMsg('Lưu thành công!'); setNotiOpen(true);
                 await Re_lesson(session._id);
                 router.refresh();
+            } else {
+                setNotiOK(false); setNotiMsg(res.mes || 'Lưu thất bại!'); setNotiOpen(true);
             }
         } catch {
-            setNotiOK(false); setNotiMsg('Có lỗi xảy ra khi gọi API!');
+            setNotiOK(false); setNotiMsg('Có lỗi xảy ra khi gọi API!'); setNotiOpen(true);
         } finally {
-            setSaving(false); setNotiOpen(true);
+            setSaving(false);
         }
     };
 
@@ -132,16 +165,6 @@ export default function Main({ data }) {
         </button>
     );
 
-    const reloadData = async () => {
-        setReloading(true);
-        try {
-            await Re_lesson(data.session._id);
-            router.refresh();
-        } catch {
-            setReloading(false);
-        }
-    }
-
     const handleImageClick = (imageUrl) => {
         setPopupImageUrl(imageUrl);
         setShowImagePopup(true);
@@ -150,6 +173,12 @@ export default function Main({ data }) {
     const headers = isTrialCourse
         ? ['ID', 'Học sinh', 'Có mặt', 'Vắng mặt', 'Nhận xét']
         : ['ID', 'Học sinh', 'Có mặt', 'Vắng mặt', 'Có phép', 'Nhận xét'];
+
+    const colFlex = (t) => {
+        if (t === 'Học sinh') return 3;
+        if (t === 'Có mặt' || t === 'Vắng mặt') return isTrialCourse ? 1.5 : 1;
+        return 1;
+    };
 
     const attendanceOptions = isTrialCourse ? ['1', '2'] : ['1', '2', '3'];
 
@@ -165,108 +194,140 @@ export default function Main({ data }) {
                 status={notiOK} mes={notiMsg} button={notiBtn} />
 
             {showImagePopup && (
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1050, cursor: 'pointer' }} onClick={() => setShowImagePopup(false)}>
-                    <div style={{ position: 'relative', width: '60vh', height: '60vh', backgroundColor: 'white', overflow: 'hidden', borderRadius: '8px' }} onClick={(e) => e.stopPropagation()}>
-                        <Image src={popupImageUrl} alt="Student Avatar Popup" fill sizes="60vh" style={{ objectFit: 'contain' }} />
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1050] cursor-pointer p-4" onClick={() => setShowImagePopup(false)}>
+                    <div className="relative w-full max-w-[85vw] sm:max-w-[50vh] aspect-square bg-white overflow-hidden rounded-lg" onClick={e => e.stopPropagation()}>
+                        <Image src={popupImageUrl} alt="Student Avatar Popup" fill sizes="(max-width: 640px) 85vw, 50vh" style={{ objectFit: 'contain' }} />
                     </div>
                 </div>
             )}
 
             <div className="flex flex-col w-full overflow-hidden rounded-lg h-[calc(100%-2px)] bg-[var(--bg-primary)] border border-[var(--border-color)]">
-                <header className="flex items-center justify-between bg-[var(--bg-primary)] text-[var(--text-primary)] px-6 py-3 border-b border-[var(--border-color)]">
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <p className="text-lg font-semibold text-[var(--text-primary)]" style={{ color: 'var(--text-primary)' }}>{course.ID ?? '-'} – Chủ đề: {session.Topic.Name ?? '-'}</p>
-                        <Link href={`/course/${course._id}`} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100' >
+                {/* Header */}
+                <header className="flex flex-col md:flex-row md:items-center justify-between bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 md:px-6 py-3 border-b border-[var(--border-color)] gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <p className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{course.ID ?? '-'} – Chủ đề: {session.Topic.Name ?? '-'}</p>
+                        <Link href={`/course/${course._id}`} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 self-start sm:self-auto' >
                             <Svg_Detail w={16} h={16} c={'var(--main_d)'} />
                             <h5>Chi tiết khóa học</h5>
                         </Link>
                     </div>
-                    <div className="flex gap-3">
-                        <h5 className={`px-4 py-2 rounded border-2 border-[#43a300] bg-[#e6f4e6] text-[#1f4d1f]`}>Có mặt: {cm}</h5>
-                        <h5 className={`px-4 py-2 rounded border-2 border-[#cc1d1d] bg-[#fdecea] text-[#5a1a1a]`}>Vắng mặt: {vk + (isTrialCourse ? vc : 0)}</h5>
+                    <div className="flex flex-wrap gap-2">
+                        <h5 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded border-2 border-[#43a300] bg-[#e6f4e6] text-[#1f4d1f] text-sm sm:text-base`}>Có mặt: {cm}</h5>
+                        <h5 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded border-2 border-[#cc1d1d] bg-[#fdecea] text-[#5a1a1a] text-sm sm:text-base`}>Vắng mặt: {vk + (isTrialCourse ? vc : 0)}</h5>
                         {!isTrialCourse && (
-                            <h5 className={`px-4 py-2 rounded border-2 border-[#d6a800] bg-[#fff8e1] text-[#665900]`}>Vắng có phép: {vc}</h5>
+                            <h5 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded border-2 border-[#d6a800] bg-[#fff8e1] text-[#665900] text-sm sm:text-base`}>Vắng có phép: {vc}</h5>
                         )}
                     </div>
                 </header>
 
-                <div className="flex flex-1 overflow-hidden">
-                    <aside className="w-[240px] p-6 bg-[var(--bg-primary)] border-r border-[var(--border-color)] overflow-y-auto flex flex-col gap-4">
+                {/* Mobile: Documents section */}
+                <div className="md:hidden border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
+                    <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onClick={() => setMobileDocsOpen(o => !o)}>
+                        <p className="text-sm font-semibold text-[var(--text-primary)]">Tài liệu buổi học</p>
+                        <svg className={`w-4 h-4 transition-transform ${mobileDocsOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+                    </div>
+                    {mobileDocsOpen && (
+                        <div className="px-4 pb-3 flex flex-row gap-3">
+                            <div className="flex-1 min-w-0">
+                                {course.Version == 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} />}
+                            </div>
+                            {session.Topic?.Slide && (
+                                <div className="flex-1 min-w-0">
+                                    <BoxFile type="Ppt" name="Slide giảng dạy" href={session.Topic.Slide} />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+                    {/* Desktop: Sidebar */}
+                    <aside className="hidden md:flex w-[240px] p-6 bg-[var(--bg-primary)] border-r border-[var(--border-color)] overflow-y-auto flex-col gap-4 shrink-0">
                         <p className="text-base font-semibold text-[var(--text-primary)]">Tài liệu buổi học</p>
                         {course.Version == 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} />}
                         {session.Topic?.Slide && <BoxFile type="Ppt" name="Slide giảng dạy" href={session.Topic.Slide} />}
                     </aside>
 
-                    <main className="flex-1 p-6 overflow-y-auto">
-                        <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 16 }}>Thông tin buổi học</p>
-                        <section className="bg-[var(--bg-primary)] rounded border border-[var(--border-color)] p-4">
-                            <div className="flex gap-4 bg-[var(--main_d)] text-white p-2 rounded">
-                                <h5 style={{ color: 'white' }}>Thời gian: <span className="font-normal">{session.Time}</span></h5>
-                                <h5 style={{ color: 'white' }}>Giáo viên: <span className="font-normal">{session.Teacher.name}</span></h5>
-                                <h5 style={{ color: 'white' }}>Trợ giảng: <span className="font-normal">{session.TeachingAs?.name || '–'}</span></h5>
+                    <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+                        <p className="text-base font-semibold text-[var(--text-primary)] mb-4">Thông tin buổi học</p>
+                        <section className="bg-[var(--bg-primary)] rounded border border-[var(--border-color)] p-3 md:p-4">
+                            <div className="flex flex-wrap gap-2 md:gap-4 bg-[var(--main_d)] text-white p-2 md:p-2.5 rounded">
+                                <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Thời gian: <span className="font-normal">{session.Time}</span></h5>
+                                <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Giáo viên: <span className="font-normal">{session.Teacher.name}</span></h5>
+                                <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Trợ giảng: <span className="font-normal">{session.TeachingAs?.name || '–'}</span></h5>
                             </div>
                             <div className="h-px bg-[#e0e0e0] my-3" />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                 <p className="text-base font-semibold text-[var(--text-primary)]">Sổ điểm danh</p>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <button onClick={reloadData} disabled={reloading} className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: '8px 16px', background: reloading ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: reloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div className="flex flex-wrap gap-2 self-stretch sm:self-auto">
+                                    <button onClick={reloadData} disabled={reloading} className="text-sm font-normal text-[var(--text-primary)] flex-1 sm:flex-none" style={{ padding: '8px 16px', background: reloading ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: reloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         {reloading && <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                                         {reloading ? 'Đang tải lại…' : 'Tải lại dữ liệu '}
                                     </button>
-                                    <button onClick={saveAll} disabled={saving} className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: '8px 16px', background: saving ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <button onClick={saveAll} disabled={saving} className="text-sm font-normal text-[var(--text-primary)] flex-1 sm:flex-none" style={{ padding: '8px 16px', background: saving ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         {saving && <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                                        {saving ? 'Đang lưu…' : 'Lưu tất cả thay đổi'}
+                                        {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
+                                    </button>
+                                    <button onClick={() => setShowNote(true)} className="text-sm font-normal text-white w-full sm:w-auto sm:flex-none" style={{ padding: '8px 16px', background: 'var(--main_d)', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                        Ghi chú
                                     </button>
                                 </div>
                             </div>
                             {roll.length ? (
-                                <>
-                                    <div className="flex items-center transition-colors duration-200 bg-[var(--main_d)] rounded text-white mt-2 border-b border-[var(--border-color)]">
-                                        {headers.map((t, i) => (
-                                            <div key={t} className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: t === 'Học sinh' ? 3 : (t === 'Có mặt' || t === 'Vắng mặt') ? (isTrialCourse ? 1.5 : 1) : 1, color: '#fff', padding: i <= 1 ? 8 : '8px 0', textAlign: i <= 1 ? 'left' : 'center' }}>
-                                                {t}
-                                            </div>
-                                        ))}
-                                        {course.Version != 0 && (<div className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: 1, color: '#fff', padding: '8px 0', textAlign: 'center' }}>Hình ảnh</div>)}
-                                    </div>
-                                    {roll.map(stu => {
-                                        if (stu.Checkin == '-1') return null;
+                                <div className="overflow-x-auto">
+                                    <div className="min-w-[600px] md:min-w-0">
+                                        <div className="flex items-center transition-colors duration-200 bg-[var(--main_d)] rounded text-white mt-2 border-b border-[var(--border-color)]">
+                                            {headers.map(t => (
+                                                <div key={t} className="text-sm font-normal text-white px-2 py-2" style={{ flex: colFlex(t), textAlign: t === 'ID' || t === 'Học sinh' ? 'left' : 'center' }}>
+                                                    {t}
+                                                </div>
+                                            ))}
+                                            {course.Version != 0 && <div className="text-sm font-normal text-white px-2 py-2 text-center" style={{ flex: 1 }}>Hình ảnh</div>}
+                                        </div>
+                                        {roll.map(stu => {
+                                            if (stu.Checkin == '-1') return null;
 
-                                        const currentCheckinValue = cur(stu);
-                                        let displayValue = currentCheckinValue;
-                                        if (isTrialCourse) {
-                                            displayValue = (currentCheckinValue == 1) ? '1' : '2';
-                                        }
+                                            const currentCheckinValue = cur(stu);
+                                            let displayValue = currentCheckinValue;
+                                            if (isTrialCourse) {
+                                                displayValue = (currentCheckinValue == 1) ? '1' : '2';
+                                            }
 
-                                        return (
-                                            <div key={stu.ID} className="flex items-center transition-colors duration-200 hover:bg-[var(--hover)]" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-primary)' }}>
-                                                <div className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: 1, padding: '12px 8px', fontWeight: 500 }}>{stu.ID}</div>
-                                                <div className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: 3, padding: '0 8px', fontWeight: 500, display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                    <div className="w-9 h-9 relative shrink-0 overflow-hidden cursor-pointer" style={{ borderRadius: 5 }} onClick={() => handleImageClick(stu.Avt)}>
-                                                        <Image fill sizes="35px" className="object-cover" src={stu.Avt} alt={stu.Name} />
+                                            return (
+                                                <div key={stu.ID} className="flex items-center transition-colors duration-200 hover:bg-[var(--hover)]" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-primary)' }}>
+                                                    <div className="text-xs md:text-sm text-[var(--text-primary)] font-medium px-2 py-2.5 md:py-3" style={{ flex: colFlex('ID') }}>{stu.ID}</div>
+                                                    <div className="text-xs md:text-sm text-[var(--text-primary)] font-medium px-2 flex items-center gap-1.5 min-w-0" style={{ flex: colFlex('Học sinh') }}>
+                                                        <div className="w-7 h-7 md:w-9 md:h-9 relative shrink-0 overflow-hidden cursor-pointer rounded" onClick={() => handleImageClick(stu.Avt)}>
+                                                            <Image fill sizes="36px" className="object-cover" src={stu.Avt} alt={stu.Name} />
+                                                        </div>
+                                                        <span className="truncate">{stu.Name}</span>
                                                     </div>
-                                                    {stu.Name}
+                                                    {attendanceOptions.map(v => {
+                                                        return (
+                                                            <div key={v} className="flex items-center justify-center px-2 py-2.5 md:py-3" style={{ flex: isTrialCourse && (v === '1' || v === '2') ? 1.5 : 1 }}>
+                                                                <label className="flex items-center justify-center cursor-pointer">
+                                                                    <input type="radio" name={`att_${stu.ID}`} value={v}
+                                                                        checked={displayValue == v}
+                                                                        onChange={() => changeAtt(stu.ID, v)}
+                                                                        className="cursor-pointer" />
+                                                                </label>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <button onClick={() => { setSelStu(stu); setShowComment(true); }} className="flex items-center justify-center bg-transparent border-none cursor-pointer px-2 py-2.5 md:py-3" style={{ flex: colFlex('Nhận xét') }}>
+                                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--text-primary)"><path d="M14 11c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1s.45-1 1-1h9c.55 0 1-.45 1-1M3 7c0 .55.45 1 1 1h9c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1m7 8c0-.55-.45 1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1h5c.55 0 1-.45 1-1m8.01-2.13.71-.71c.39-.39 1.02-.39 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71zm-.71.71-5.16 5.16c-.09.09-.14.21-.14.35v1.41c0 .28.22.5.5.5h1.41c.13 0 .26-.05.35-.15l5.16-5.16z" /></svg>
+                                                    </button>
+                                                    {course.Version != 0 && (
+                                                        <div className="flex items-center justify-center px-2" style={{ flex: 1 }}>
+                                                            <StudentCourseImageManager courseInfo={data.session} studentInfo={stu} course={data.course} />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div style={{ flex: 3, display: 'flex', alignItems: 'center' }}>
-                                                    {attendanceOptions.map(v => (
-                                                        <label key={v} style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '16px 0', cursor: 'pointer' }}>
-                                                            <input type="radio" name={`att_${stu.ID}`} value={v}
-                                                                checked={displayValue == v}
-                                                                onChange={() => changeAtt(stu.ID, v)}
-                                                                style={{ transform: 'scale(1.1)', cursor: 'pointer' }} />
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                                <button onClick={() => { setSelStu(stu); setShowComment(true); }} style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: 0, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="var(--text-primary)"><path d="M14 11c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1s.45-1 1-1h9c.55 0 1-.45 1-1M3 7c0 .55.45 1 1 1h9c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1m7 8c0-.55-.45 1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1h5c.55 0 1-.45 1-1m8.01-2.13.71-.71c.39-.39 1.02-.39 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71zm-.71.71-5.16 5.16c-.09.09-.14.21-.14.35v1.41c0 .28.22.5.5.5h1.41c.13 0 .26-.05.35-.15l5.16-5.16z" /></svg>
-                                                </button>
-                                                {course.Version != 0 && (
-                                                    <StudentCourseImageManager courseInfo={data.session} studentInfo={stu} course={data.course} />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="p-4 text-center text-[#777]"><p>Không có học sinh tham gia khóa học</p></div>
                             )}
@@ -282,6 +343,25 @@ export default function Main({ data }) {
                     onSave={saveComment}
                     onCancel={() => setShowComment(false)}
                 />
+            </CenterPopup>
+
+            <CenterPopup open={showNote} onClose={() => setShowNote(false)} size="md">
+                <div className="flex flex-col gap-4 p-4 w-full sm:min-w-[400px]">
+                    <h3 className="text-base font-semibold text-[var(--text-primary)]">Ghi chú buổi học</h3>
+                    <textarea
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-200 bg-white text-sm outline-none text-gray-700 resize-none"
+                        style={{ minHeight: 150, resize: 'vertical' }}
+                        placeholder="Nhập ghi chú cho buổi học này..."
+                    />
+                    <div className="flex gap-3 justify-end">
+                        <button onClick={() => setShowNote(false)}
+                            className="px-4 py-2 bg-gray-200 text-sm cursor-pointer border-none rounded">
+                            Đóng
+                        </button>
+                    </div>
+                </div>
             </CenterPopup>
         </>
     );
