@@ -31,7 +31,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 export default function TeacherDashboard({ currentUser: currentUserArray, courses }) {
     const currentUser = currentUserArray?.[0];
-    console.log(currentUser);
     
     // State quản lý bộ lọc
     const [timeGranularity, setTimeGranularity] = useState('month');

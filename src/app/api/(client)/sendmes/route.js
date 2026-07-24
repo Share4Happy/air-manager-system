@@ -72,7 +72,6 @@ export async function POST(req) {
         const url = new URL('https://script.google.com/macros/s/AKfycbx17JMuK_X-OhUAjin3IlDTAvhBgOOocoWMrTqT7q7_lWNq0eES-GHLwD4MKMIQ43p9eg/exec');
         if (rawUid) url.searchParams.set('uid', rawUid);
         else url.searchParams.set('phone', phone);
-        console.log(rawUid);
         url.searchParams.set('mes', mes);
        
         
@@ -81,7 +80,6 @@ export async function POST(req) {
 
         if (json.status === 2) {
             result.status = 'success';
-            console.log(json.data);
             if (json.data?.uid) result.uid = json.data.uid;
             if (json.data?.name) result.name = json.data.name;
             else result.mes = mes;

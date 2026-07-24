@@ -129,7 +129,6 @@ function TaskItem({ task }) {
 }
 
 export default function RunningActions({ user, running = [] }) {
-    console.log(running);
 
     useEffect(() => {
         let intervalId = null;
@@ -233,7 +232,6 @@ export default function RunningActions({ user, running = [] }) {
     const handleOpenCancelConfirm = (job) => setJobToCancel(job);
     const handleCloseCancelConfirm = () => setJobToCancel(null);
     const handleCloseNoti = () => setNotification(prev => ({ ...prev, open: false }));
-    console.log(running);
 
     return (
         <>

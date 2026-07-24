@@ -111,105 +111,90 @@ export default function AttendanceTab() {
                 ))}
             </div>
 
-            <div className="bg-white border border-[var(--border-color)] rounded-lg" style={{ height: 560 }}>
-                <div className="overflow-auto h-full">
-                <table className="w-full text-sm table-fixed" style={{ minWidth: 800 }}>
-                    <colgroup>
-                        <col style={{ width: 56 }} />
-                        <col style={{ width: 130 }} />
-                        <col style={{ width: 130 }} />
-                        <col style={{ width: 90 }} />
-                        <col style={{ width: 110 }} />
-                        <col style={{ width: 100 }} />
-                        <col style={{ width: 70 }} />
-                        <col style={{ width: 70 }} />
-                        <col style={{ width: 70 }} />
-                    </colgroup>
-                    <thead className="sticky top-0 z-10">
-                        <tr className="bg-[var(--main_d)] text-white">
-                            <th className="p-2 font-medium text-center">STT</th>
-                            <th className="p-2 font-medium text-left">Lớp</th>
-                            <th className="p-2 font-medium text-left">Giáo viên</th>
-                            <th className="p-2 font-medium text-left">Phòng</th>
-                            <th className="p-2 font-medium text-left">Phân loại</th>
-                            <th className="p-2 font-medium text-left">Giờ</th>
-                            <th className="p-2 font-medium text-center">Sĩ số</th>
-                            <th className="p-2 font-medium text-center">Có mặt</th>
-                            <th className="p-2 font-medium text-center">Vắng</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan={9} className="p-8 text-center text-sm text-[var(--text-secondary)]">Đang tải...</td>
+            {loading || lessons.length === 0 ? (
+                <div className="flex items-center justify-center bg-white border border-[var(--border-color)] rounded-lg" style={{ height: 560 }}>
+                    <p className="text-base text-[var(--text-secondary)] italic">{loading ? 'Đang tải...' : 'Hôm nay không có buổi học nào'}</p>
+                </div>
+            ) : (
+                <div className="bg-white border border-[var(--border-color)] rounded-lg" style={{ height: 560 }}>
+                    <div className="overflow-auto h-full">
+                    <table className="w-full text-sm table-fixed" style={{ minWidth: 800 }}>
+                        <colgroup>
+                            <col style={{ width: 56 }} />
+                            <col style={{ width: 130 }} />
+                            <col style={{ width: 130 }} />
+                            <col style={{ width: 90 }} />
+                            <col style={{ width: 110 }} />
+                            <col style={{ width: 100 }} />
+                            <col style={{ width: 70 }} />
+                            <col style={{ width: 70 }} />
+                            <col style={{ width: 70 }} />
+                        </colgroup>
+                        <thead className="sticky top-0 z-10">
+                            <tr className="bg-[var(--main_d)] text-white">
+                                <th className="p-2 font-medium text-center">STT</th>
+                                <th className="p-2 font-medium text-left">Lớp</th>
+                                <th className="p-2 font-medium text-left">Giáo viên</th>
+                                <th className="p-2 font-medium text-left">Phòng</th>
+                                <th className="p-2 font-medium text-left">Phân loại</th>
+                                <th className="p-2 font-medium text-left">Giờ</th>
+                                <th className="p-2 font-medium text-center">Sĩ số</th>
+                                <th className="p-2 font-medium text-center">Có mặt</th>
+                                <th className="p-2 font-medium text-center">Vắng</th>
                             </tr>
-                        ) : (
-                            (() => {
+                        </thead>
+                        <tbody>
+                            {(() => {
                                 const rows = []
-                                if (lessons.length === 0) {
-                                    rows.push(
-                                        <tr key="empty-msg">
-                                            <td colSpan={9} className="p-8 text-center text-sm text-[var(--text-secondary)]">Hôm nay không có buổi học nào</td>
-                                        </tr>
-                                    )
-                                    for (let i = 1; i < ITEMS_PER_PAGE; i++) {
+                                for (let i = 0; i < ITEMS_PER_PAGE; i++) {
+                                    const l = pageItems[i]
+                                    if (l) {
+                                        const hasUnchecked = l.unchecked > 0
+                                        rows.push(
+                                            <tr key={l._id} className="bg-white border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors" style={{ height: 48 }}>
+                                                <td className="p-2 text-center text-[var(--text-secondary)]">{startIdx + i + 1}</td>
+                                                <td className="p-2 font-medium truncate">
+                                                    <div className="flex items-center gap-1">
+                                                        <Link href={`/course/${l.courseId || l._id}`} className="text-[var(--main_d)] hover:underline font-semibold">
+                                                            {l.courseId || l.courseName}
+                                                        </Link>
+                                                        {hasUnchecked && (
+                                                            <span className="shrink-0 px-1 py-0.5 rounded font-bold bg-orange-500 text-white" style={{ fontSize: 11 }}>
+                                                                Chưa ĐD
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-2 text-[var(--text-secondary)] truncate">{l.teacher?.name || '—'}</td>
+                                                <td className="p-2 text-[var(--text-secondary)]">{l.room?.name || '—'}</td>
+                                                <td className="p-2">
+                                                    <span className={`px-1.5 py-0.5 rounded font-semibold text-white text-sm ${
+                                                        l.typeLabel === 'Lớp học thử' ? 'bg-purple-600' : 'bg-blue-600'
+                                                    }`}>
+                                                        {l.typeLabel === 'Lớp học thử' ? 'Học thử' : 'Thường'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-2 text-[var(--text-secondary)]">{l.time || '—'}</td>
+                                                <td className="p-2 text-center text-[var(--text-primary)] font-medium">{l.totalStudents}</td>
+                                                <td className="p-2 text-center text-green-600 font-bold">{l.present}</td>
+                                                <td className="p-2 text-center text-red-600 font-bold">{l.absent}</td>
+                                            </tr>
+                                        )
+                                    } else {
                                         rows.push(
                                             <tr key={`empty-${i}`} className="bg-white border-b border-[var(--border-color)]" style={{ height: 48 }}>
                                                 <td colSpan={9}></td>
                                             </tr>
                                         )
                                     }
-                                } else {
-                                    for (let i = 0; i < ITEMS_PER_PAGE; i++) {
-                                        const l = pageItems[i]
-                                        if (l) {
-                                            const hasUnchecked = l.unchecked > 0
-                                            rows.push(
-                                                <tr key={l._id} className="bg-white border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors" style={{ height: 48 }}>
-                                                    <td className="p-2 text-center text-[var(--text-secondary)]">{startIdx + i + 1}</td>
-                                                    <td className="p-2 font-medium truncate">
-                                                        <div className="flex items-center gap-1">
-                                                            <Link href={`/course/${l.courseId || l._id}`} className="text-[var(--main_d)] hover:underline font-semibold">
-                                                                {l.courseId || l.courseName}
-                                                            </Link>
-                                                            {hasUnchecked && (
-                                                                <span className="shrink-0 px-1 py-0.5 rounded font-bold bg-orange-500 text-white" style={{ fontSize: 11 }}>
-                                                                    Chưa ĐD
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-2 text-[var(--text-secondary)] truncate">{l.teacher?.name || '—'}</td>
-                                                    <td className="p-2 text-[var(--text-secondary)]">{l.room?.name || '—'}</td>
-                                                    <td className="p-2">
-                                                        <span className={`px-1.5 py-0.5 rounded font-semibold text-white text-sm ${
-                                                            l.typeLabel === 'Lớp học thử' ? 'bg-purple-600' : 'bg-blue-600'
-                                                        }`}>
-                                                            {l.typeLabel === 'Lớp học thử' ? 'Học thử' : 'Thường'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-2 text-[var(--text-secondary)]">{l.time || '—'}</td>
-                                                    <td className="p-2 text-center text-[var(--text-primary)] font-medium">{l.totalStudents}</td>
-                                                    <td className="p-2 text-center text-green-600 font-bold">{l.present}</td>
-                                                    <td className="p-2 text-center text-red-600 font-bold">{l.absent}</td>
-                                                </tr>
-                                            )
-                                        } else {
-                                            rows.push(
-                                                <tr key={`empty-${i}`} className="bg-white border-b border-[var(--border-color)]" style={{ height: 48 }}>
-                                                    <td colSpan={9}></td>
-                                                </tr>
-                                            )
-                                        }
-                                    }
                                 }
                                 return rows
-                            })()
-                        )}
-                    </tbody>
-                </table>
+                            })()}
+                        </tbody>
+                    </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {!loading && lessons.length > ITEMS_PER_PAGE && (
                 <div className="flex items-center justify-center gap-2">

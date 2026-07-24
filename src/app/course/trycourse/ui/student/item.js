@@ -24,7 +24,6 @@ const updateCareInfo = async (payload) => {
 };
 
 export default function CareSessionPopup({ open, onClose, session }) {
-    console.log(session);
     
     const router = useRouter();
 

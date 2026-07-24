@@ -267,7 +267,6 @@ export async function updateCustomerStatusAction(previousState, formData) {
         revalidateData();
         return { success: true, message: 'Cập nhật trạng thái thành công!' };
     } catch (error) {
-        console.log(error);
 
         return { success: false, error: 'Lỗi server khi cập nhật trạng thái.' };
     }

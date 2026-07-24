@@ -25,7 +25,6 @@ async function formatMessage(template, targetDoc, zaloAccountDoc) {
             message = message.replace(placeholder, randomPhrase);
         }
     }
-    console.log(message);
 
     return message;
 }

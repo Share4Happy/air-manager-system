@@ -21,9 +21,9 @@ export async function dataCourse(_id) {
 
 
         //    if (courses && courses.length > 0 && courses[0].Detail && courses[0].Detail.length > 0) {
-        //         console.log("\n=== CHI TIẾT 1 OBJECT TRONG DETAIL ĐỂ DEBUG ===");
-        //         console.log(JSON.stringify(courses[0].Detail[0], null, 2)); 
-        //         console.log(`=> Khóa học này đang chứa ${courses[0].Detail.length} object Detail như trên.\n`);
+        //         ("\n=== CHI TIẾT 1 OBJECT TRONG DETAIL ĐỂ DEBUG ===");
+        //         (JSON.stringify(courses[0].Detail[0], null, 2)); 
+        //         (`=> Khóa học này đang chứa ${courses[0].Detail.length} object Detail như trên.\n`);
         //     }
 
             

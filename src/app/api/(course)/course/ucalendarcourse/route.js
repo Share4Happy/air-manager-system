@@ -20,7 +20,6 @@ async function findRoomIdByName(roomName) {
 export async function POST(request) {
     try {
         const { courseId, detailId, data, student = [], type } = await request.json();
-        console.log(type);
         
         if (!courseId || !data || typeof data !== 'object') {
             return NextResponse.json({ status: 1, mes: 'Thiếu courseId hoặc data' }, { status: 400 });

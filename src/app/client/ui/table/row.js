@@ -28,7 +28,6 @@ function HistoryLogItem({ log }) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[m]));
     const message = (log.status?.message ?? '').replace(/\r\n?/g, '\n');
-    console.log(message);
 
     return (
         <div className='flex gap-3 py-3 px-4 border-b border-gray-100 items-start'>

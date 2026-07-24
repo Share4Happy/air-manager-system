@@ -100,7 +100,6 @@ export async function GET(request, { params }) {
         );
 
     } catch (error) {
-        console.log(error);
 
         return NextResponse.json(
             { status: false, mes: error.message, data: null },

@@ -31,11 +31,9 @@ export async function POST(request) {
         if (roomNames.length > 0) {
             const pipeline = [{ $unwind: '$rooms' }, { $match: { 'rooms.name': { $in: roomNames } } }, { $project: { _id: 0, name: '$rooms.name', roomId: '$rooms._id' } }];
             const foundRooms = await PostArea.aggregate(pipeline);
-            console.log(foundRooms);
             
             foundRooms.forEach(room => roomNameToIdMap.set(room.name, room.roomId));
         }
-        console.log(roomNameToIdMap);
         
         const yearPrefix = new Date().getFullYear().toString().slice(-2);
         const coursePrefix = `${yearPrefix}${code.trim().toUpperCase()}`;
@@ -60,7 +58,6 @@ export async function POST(request) {
                 throw new Error(`Buổi học thứ ${i + 1} thiếu Topic hoặc Day, hoặc ID không hợp lệ.`);
             }
             const roomId = d.Room ? roomNameToIdMap.get(d.Room.trim()) : null;
-            console.log(roomId);
             
             return { Topic: d.Topic, Day: new Date(d.Day), Room: roomId || null, Time: d.Time || '', Teacher: mongoose.Types.ObjectId.isValid(d.Teacher) ? d.Teacher : null, TeachingAs: mongoose.Types.ObjectId.isValid(d.TeachingAs) ? d.TeachingAs : null, Image: imageUrls[i] || '' };
         });
