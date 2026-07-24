@@ -25,7 +25,7 @@ export async function POST(request) {
         const BadgeFile = formData.get('Badge');
         const TopicsStr = formData.get('Topics');
         if (!ID || !Name || !Type || Price === null || Price === undefined || !ImageFile || ImageFile.size === 0) {
-            return jsonRes(400, { status: false, mes: 'Các trường ID, Name, Type, Price là bắt buộc.' });
+            return jsonRes(400, { status: false, mes: 'Các trường ID, Name, Type, Price và ảnh bìa là bắt buộc.' });
         }
         await connectDB();
         const normalizedID = ID.toUpperCase();

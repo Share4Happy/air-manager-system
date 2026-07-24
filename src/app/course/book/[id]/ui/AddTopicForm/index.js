@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-const AddTopicForm = ({ onSave, onCancel, isLoading }) => {
+const AddTopicForm = ({ onSave, onCancel, isLoading, initialData }) => {
     const [formData, setFormData] = useState({
-        Name: '',
-        Period: '',
-        Slide: ''
+        Name: initialData?.Name || '',
+        Period: initialData?.Period || '',
+        Slide: initialData?.Slide || ''
     });
 
     const handleChange = (e) => {
@@ -44,7 +44,7 @@ const AddTopicForm = ({ onSave, onCancel, isLoading }) => {
             <div className='mt-auto pt-4 flex gap-4 border-t border-[var(--border-color)]'>
                 <button type="button" onClick={onCancel} className='inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:bg-[var(--hover)]' disabled={isLoading}>Hủy</button>
                 <button type="submit" className='inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-[var(--main_b)] text-white flex-1 hover:bg-[var(--main_d)]' disabled={isLoading}>
-                    {isLoading ? 'Đang lưu...' : 'Thêm chủ đề'}
+                    {isLoading ? 'Đang lưu...' : initialData ? 'Cập nhật' : 'Thêm chủ đề'}
                 </button>
             </div>
         </form>

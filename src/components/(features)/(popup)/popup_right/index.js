@@ -19,6 +19,8 @@ export default function FlexiblePopup({
     dataSecondary: providedDataSecondary = null,
     renderSecondaryList = () => null,
     secondaryTitle = 'Chi tiết',
+    centered = false,
+    titleCentered = false,
     secondaryCentered = false,
     width = 500,
     width2 = 500,
@@ -181,18 +183,28 @@ export default function FlexiblePopup({
         <>
             {/* Popup 1 */}
             <div
-                className={`fixed inset-0 bg-black/50 opacity-0 transition-opacity duration-300 ease-in-out will-change-opacity ${visible ? 'opacity-100' : 'pointer-events-none'}`}
+                className={`fixed inset-0 bg-black/50 opacity-0 transition-opacity duration-300 ease-in-out will-change-opacity ${visible ? 'opacity-100' : 'pointer-events-none'} ${centered ? 'flex items-center justify-center' : ''}`}
                 style={{ zIndex: globalZIndex }}
                 onMouseDown={onClose}
             >
                 <div
                     ref={popupRef}
-                    className='fixed top-0 right-0 h-full bg-[var(--bg-primary)] flex flex-col'
-                    style={{ zIndex: globalZIndex, width: width, transform: visible2 ? `translateX(-${width2})` : visible ? 'translateX(0)' : `translateX(${width})`, transition: 'transform 300ms ease-in-out' }}
+                    className={centered
+                        ? `bg-[var(--bg-primary)] rounded-2xl shadow-2xl flex flex-col max-h-[85vh] transition-all duration-300 ease-in-out ${visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`
+                        : 'fixed top-0 right-0 h-full bg-[var(--bg-primary)] flex flex-col'
+                    }
+                    style={{
+                        zIndex: globalZIndex,
+                        width: width,
+                        maxWidth: centered ? 'calc(100vw - 32px)' : undefined,
+                        transform: centered ? undefined : (visible2 ? `translateX(-${width2})` : visible ? 'translateX(0)' : `translateX(${width})`),
+                        transition: centered ? 'transform 300ms ease-in-out, opacity 300ms ease-in-out' : 'transform 300ms ease-in-out'
+                    }}
                     onMouseDown={e => e.stopPropagation()}
                 >
-                    <div className='flex justify-between items-center px-4 py-3 h-7 border-b border-[var(--border-color)]'>
-                        <h4 className='font-normal'>{title}</h4>
+                    <div className={`items-center px-4 py-3 h-12 border-b border-[var(--border-color)] ${titleCentered ? 'grid grid-cols-[1fr_auto_1fr]' : 'flex justify-between'}`}>
+                        {titleCentered && <div />}
+                        <h4 className={`${titleCentered ? 'text-lg font-semibold text-center' : 'font-normal'}`}>{title}</h4>
                         <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={onClose}>&times;</button>
                     </div>
                     <div className='scroll' style={{ flex: 1 }}>
@@ -206,7 +218,7 @@ export default function FlexiblePopup({
             {/* Popup 2 */}
             {mounted2 && (
                 <div
-                    className={`fixed inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 ease-in-out will-change-opacity ${visible2 ? 'opacity-100' : 'pointer-events-none'}`}
+                    className={`fixed inset-0 flex items-center justify-center ${mounted && visible ? '' : 'bg-black/50'} opacity-0 transition-opacity duration-300 ease-in-out will-change-opacity ${visible2 ? 'opacity-100' : 'pointer-events-none'}`}
                     style={{ zIndex: globalZIndex + 1 }}
                     onMouseDown={secondaryCentered ? undefined : onCloseSecondary}
                 >

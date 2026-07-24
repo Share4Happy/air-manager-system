@@ -20,6 +20,7 @@ const ProgramCard = ({ program }) => {
             <div className={'flex-[2] p-5 flex flex-col'}>
                 <div className={'flex justify-between items-start mb-2'}>
                     <p className='text-lg font-semibold text-[var(--text-primary)]'>{program.Name}</p>
+                    <span className='shrink-0 px-2 py-0.5 rounded text-xs font-semibold text-white bg-blue-600'>{program.Type || 'AI Robotic'}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <p className='text-sm font-semibold text-[var(--text-primary)]'>Mã chương trình: <span style={{ fontWeight: 400 }}>{program.ID}</span></p>

@@ -25,7 +25,7 @@ const reorder = (list, startIndex, endIndex) => {
 const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
     <aside className={'flex-1 min-w-[300px] flex flex-col'}>
         <div className={'w-full rounded-md overflow-hidden mb-6 shadow-[var(--boxshaw2)] flex gap-2'}>
-            <Image
+            {bookData.Image && <Image
                 src={driveImage(bookData.Image)}
                 alt={bookData.Name}
                 width={400}
@@ -34,7 +34,7 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className={'w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block'}
                 style={{ width: bookData.Badge ? 'calc(50% - 4px)' : '100%' }}
-            />
+            />}
             {bookData.Badge && <Image
                 src={driveImage(bookData.Badge)}
                 alt={bookData.Name}
@@ -44,6 +44,9 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className={'w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block'}
             />}
+            {!bookData.Image && !bookData.Badge && (
+                <div className={'w-full aspect-[3/4] bg-gray-100 flex items-center justify-center text-gray-400 text-sm'}>Không có ảnh</div>
+            )}
         </div>
         <p className='text-xl font-semibold text-[var(--text-primary)]' style={{ marginBottom: '8px' }}>{bookData.Name}</p>
         <div className={'flex flex-col gap-1 mb-4'}>
