@@ -48,38 +48,17 @@ export default function CommentPopup({ data, course, lesson }) {
 
     const handleConvertComment = async () => {
         if (isConverting || cmt[0] !== 1) return;
-        const studentId = data?.ID;
-        const courseId = course;
-        const lessonId = lesson;
-
-        if (!studentId || !courseId || !lessonId) {
-            setNoti({ open: true, mes: 'Thiếu thông tin cần thiết.', status: false });
+        const rawComments = cmt[1];
+        if (!rawComments || rawComments.length === 0) {
+            setNoti({ open: true, mes: 'Không có nhận xét để chuyển đổi.', status: false });
             return;
         }
-
         setIsConverting(true);
-        const prompt = 'Hãy chuyển đổi mảng các câu nhận xét dưới đây thành 1 văn bản hoàn chỉnh để gửi cho phụ huynh. Giữ vai trò là một giáo viên, sử dụng giọng văn nhẹ nhàng, trang trọng, lịch sự và rõ ràng. Nội dung cần mạch lạc, mang tính xây dựng và chia thành 3 mục chính: Thái độ học tập, Kết quả học tập, và Điểm cần cải thiện. Mỗi đoạn chỉ cần xuống dòng, không cần tạo khoảng cách giữa các đoạn.';
-        const rawComments = cmt[1];
-
-        try {
-            const response = await fetch('/api/reaicmt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, data: rawComments, studentId, courseId, lessonId })
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Chuyển đổi thất bại.');
-            }
-            const result = await response.json();
-            setCmt([2, { text: result.output }]);
-            await Re_course_one(data.course);
-            router.refresh();
-        } catch (error) {
-            setNoti({ open: true, mes: error.message, status: false });
-        } finally {
-            setIsConverting(false);
-        }
+        const combined = rawComments.join('. ');
+        setCmt([2, { text: combined }]);
+        await Re_course_one(data.course);
+        router.refresh();
+        setIsConverting(false);
     };
 
     const handleUpdateComment = async () => {

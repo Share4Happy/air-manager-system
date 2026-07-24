@@ -1,7 +1,5 @@
-import { user_data } from "@/data/actions/get";
 import { CheckRole } from "@/function/server"
 import AdminPage from "@/app/(admin)/index";
-import TeacherPage from "@/app/(teacher)/index";
 import { redirect } from 'next/navigation';
 
 export default async function Dashboard() {
@@ -9,9 +7,16 @@ export default async function Dashboard() {
   if (!user) {
     redirect('/login');
   }
-  return (
-    <>
-      {user.role == 'Admin' ? <AdminPage /> : <TeacherPage data={await user_data({ _id: user.id })} />}
-    </>
-  )
+
+  const roles = Array.isArray(user.role) ? user.role : [user.role]
+  const allowed = roles.some(r => r === 'Admin' || r === 'Academic')
+  if (!allowed) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <h4 style={{ fontStyle: 'italic' }}>Bạn không có quyền truy cập trang này</h4>
+      </div>
+    )
+  }
+
+  return <AdminPage />
 }

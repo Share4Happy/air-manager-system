@@ -69,8 +69,9 @@ function DayLessons({ lessons }) {
             <span>{safeRoom(item)}</span>
             {item.room?.area && <span className="opacity-50 font-normal">· {item.room.area}</span>}
           </div>
-          <div className="truncate text-xs">
-            {item.courseId}{item.teacher?.name ? <span> — {item.teacher.name}</span> : null}
+          <div className="truncate text-xs flex sm:flex-col items-baseline gap-x-1">
+            <span>{item.courseId}</span>
+            {item.teacher?.name ? <span><span className="sm:hidden">— </span>{item.teacher.name}</span> : null}
           </div>
           {item.time && <div className="text-xs opacity-60">{item.time}</div>}
         </Link>

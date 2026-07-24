@@ -69,7 +69,7 @@ export default function CourseItem({ data = {} }) {
     const studentCount = Student.length;
 
     return (
-        <Link href={`/course/${data._id}`} className={'bg-[var(--bg-primary)] rounded-lg p-4 w-[calc(25%-12px)] border border-[var(--border-color)] transition-shadow duration-300 flex flex-col justify-between no-underline hover:cursor-pointer hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)]'} style={{ borderBottom: `3px solid ${data.Status ? 'var(--green)' : 'var(--main_b)'}` }}>
+        <Link href={`/course/${data._id}`} className={'bg-[var(--bg-primary)] rounded-lg p-4 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.33%-11px)] xl:w-[calc(25%-12px)] border border-[var(--border-color)] transition-shadow duration-300 flex flex-col justify-between no-underline hover:cursor-pointer hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)]'} style={{ borderBottom: `3px solid ${data.Status ? 'var(--green)' : 'var(--main_b)'}` }}>
             <div>
                 <div className={'flex items-center mb-4'}>
                     <div className={'w-11 h-11 rounded-md bg-[var(--main_d)] text-white flex items-center justify-center font-medium mr-3'}>

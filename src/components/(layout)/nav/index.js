@@ -33,6 +33,7 @@ const academicChildren = [
   { href: '/academic/report', content: 'Báo cáo chuyên cần' },
   { href: '/academic/program', content: 'Quản lý chương trình học' },
   { href: '/academic/rooms', content: 'Quản lý phòng học' },
+  { href: '/academic/course-manager', content: 'Quản lý khóa học' },
   { href: '/academic/debt', content: 'Quản lý học phí' },
   { href: '/academic/makeup', content: 'Quản lý học bù' },
 ]

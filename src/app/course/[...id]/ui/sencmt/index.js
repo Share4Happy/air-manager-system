@@ -2,23 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 
 
-// --- Các hàm API không thay đổi ---
 const fetchStudentCommentsAPI = async (cmtArray) => {
-    try {
-        const response = await fetch('/api/cmt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comments: cmtArray })
-        });
-        if (!response.ok) {
-            throw new Error(`API call failed with status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data.data;
-    } catch (error) {
-        console.error("Lỗi khi gọi API nhận xét:", error);
-        return "Không thể tạo nhận xét. Vui lòng thử lại.";
-    }
+    if (!cmtArray || cmtArray.length === 0) return 'Chưa có nhận xét.';
+    return cmtArray.join('. ');
 };
 
 const sendCommentAPI = async (studentId, comment) => {

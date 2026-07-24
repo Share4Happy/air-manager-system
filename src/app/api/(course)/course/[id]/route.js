@@ -7,39 +7,8 @@ import User from '@/models/users';
 import PostStudent from '@/models/student';
 import { NextResponse } from 'next/server';
 import authenticate from '@/utils/authenticate';
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { reloadCourse, reloadStudent } from '@/data/actions/reload';
 import { course_data } from '@/data/actions/get';
-
-async function generateSummaryComment(comments) {
-    if (!comments || comments.length === 0) {
-        return "Học sinh đã hoàn thành khóa học. Cần theo dõi thêm để có nhận xét chi tiết.";
-    }
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        console.warn("GEMINI_API_KEY chưa được cấu hình. Sử dụng nhận xét mặc định.");
-        return "Học sinh đã hoàn thành khóa học đầy đủ các buổi.";
-    }
-
-    try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const prompt = `
-            Với vai trò là giáo viên nhận xét học sinh. Dựa trên danh sách các nhận xét rời rạc sau đây về một học sinh trong suốt khóa học, hãy viết một đoạn văn tổng kết dài (khoảng 400 chữ) về thái độ và kết quả học tập của học sinh này. Chỉ trả về đoạn văn, không thêm bất kỳ lời dẫn nào.
-            DỮ LIỆU NHẬN XÉT:
-            - ${comments.join('\n- ')}
-        `;
-
-        const result = await model.generateContent(prompt);
-        return result.response.text().trim();
-    } catch (error) {
-        console.log(error);
-
-        console.error("Lỗi khi gọi Gemini AI:", error);
-        return "Học sinh đã hoàn thành các buổi học với sự tham gia tích cực.";
-    }
-}
 
 // Xác nhận hoàn thành khóa học
 export async function PATCH(request, { params }) {
@@ -76,7 +45,7 @@ export async function PATCH(request, { params }) {
 
                     const studentInCourseData = updatedCourse.Student.find(s => s.ID === student.ID);
                     const allComments = studentInCourseData?.Learn.flatMap(l => l.Cmt || []).filter(cmt => cmt && cmt.trim() !== '');
-                    const summaryComment = await generateSummaryComment(allComments);
+                    const summaryComment = allComments?.length > 0 ? allComments.join('. ') : "Học sinh đã hoàn thành khóa học.";
 
                     const newPresentation = {
                         course: updatedCourse._id,
@@ -86,7 +55,6 @@ export async function PATCH(request, { params }) {
                         Video: '',
                         Img: ''
                     };
-                    console.log(newPresentation,1);
                     
                     const currentPresentations = student.Profile?.Present || [];
                     const otherPresentations = currentPresentations.filter(p => p.bookId !== updatedCourse.Book.ID);
