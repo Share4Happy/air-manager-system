@@ -1,99 +1,197 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Svg_Add, Svg_Delete, Svg_Save, Svg_Pen, Svg_Close } from '@/components/(icon)/svg'
-
-const STORAGE_KEY = 'tools_list'
 
 function ToolsClient() {
     const [tools, setTools] = useState([])
+    const [labels, setLabels] = useState([])
+    const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [search, setSearch] = useState('')
+    const [filterLabel, setFilterLabel] = useState('')
     const [name, setName] = useState('')
     const [desc, setDesc] = useState('')
     const [link, setLink] = useState('')
+    const [selectedLabels, setSelectedLabels] = useState([])
     const [editingId, setEditingId] = useState(null)
-    const [openMenuId, setOpenMenuId] = useState(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+    const [showNewLabelInput, setShowNewLabelInput] = useState(false)
+    const [newLabelName, setNewLabelName] = useState('')
+    const [labelError, setLabelError] = useState('')
+    const [layout, setLayout] = useState('grid')
+    const [menuPos, setMenuPos] = useState(null)
+    const [menuToolId, setMenuToolId] = useState(null)
     const menuRef = useRef(null)
 
-    useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved) {
-            try { setTools(JSON.parse(saved)) } catch {}
-        }
+    const loadData = useCallback(async () => {
+        try {
+            const [toolsRes, labelsRes] = await Promise.all([
+                fetch('/api/tools'),
+                fetch('/api/tools/label')
+            ])
+            if (toolsRes.ok) { const d = await toolsRes.json(); setTools(d.data || []) }
+            if (labelsRes.ok) { const d = await labelsRes.json(); setLabels(d.data || []) }
+        } catch {} finally { setLoading(false) }
     }, [])
+
+    useEffect(() => { loadData() }, [loadData])
+
+    const openMenu = (id, e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        setMenuPos({ top: rect.bottom + 4, right: document.documentElement.clientWidth - rect.right })
+        setMenuToolId(id)
+    }
+
+    const closeMenu = () => { setMenuToolId(null); setMenuPos(null) }
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setOpenMenuId(null)
-            }
+            if (menuToolId && !e.target.closest('[data-menu]')) closeMenu()
         }
-        if (openMenuId) document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [openMenuId])
+        if (menuToolId) { document.addEventListener('mousedown', handleClickOutside); document.addEventListener('scroll', closeMenu, true) }
+        return () => { document.removeEventListener('mousedown', handleClickOutside); document.removeEventListener('scroll', closeMenu, true) }
+    }, [menuToolId])
 
-    const saveTools = (newTools) => {
-        setTools(newTools)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newTools))
+    const addLabel = async () => {
+        if (!newLabelName.trim()) return
+        setLabelError('')
+        try {
+            const res = await fetch('/api/tools/label', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newLabelName.trim() })
+            })
+            const d = await res.json()
+            if (d.status) { setLabels(prev => [...prev, d.data]); setNewLabelName(''); setShowNewLabelInput(false) }
+            else setLabelError(d.mes || 'Lỗi khi tạo nhãn.')
+        } catch { setLabelError('Lỗi kết nối.') }
     }
 
-    const addTool = (e) => {
+    const deleteLabel = async (id) => {
+        try {
+            const res = await fetch(`/api/tools/label/${id}`, { method: 'DELETE' })
+            const d = await res.json()
+            if (d.status) {
+                setLabels(prev => prev.filter(l => l._id !== id))
+                setSelectedLabels(prev => prev.filter(lId => lId !== id))
+            } else {
+                setLabelError(d.mes || 'Không thể xóa nhãn.')
+                setTimeout(() => setLabelError(''), 15000)
+            }
+        } catch { setLabelError('Lỗi kết nối.') }
+    }
+
+    const toggleSelectedLabel = (labelId) => {
+        setLabelError('')
+        setSelectedLabels(prev =>
+            prev.includes(labelId) ? prev.filter(id => id !== labelId) : [...prev, labelId]
+        )
+    }
+
+    const addTool = async (e) => {
         e.preventDefault()
         if (!name.trim()) return
-        if (editingId) {
-            saveTools(tools.map(t => t.id === editingId ? { ...t, name: name.trim(), desc: desc.trim(), link: link.trim() } : t))
-        } else {
-            const newTool = { id: Date.now(), name: name.trim(), desc: desc.trim(), link: link.trim() }
-            saveTools([...tools, newTool])
-        }
-        setName('')
-        setDesc('')
-        setLink('')
-        setShowForm(false)
-        setEditingId(null)
+        try {
+            const method = editingId ? 'PUT' : 'POST'
+            const url = editingId ? `/api/tools/${editingId}` : '/api/tools'
+            const res = await fetch(url, {
+                method, headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim(), desc: desc.trim(), link: link.trim(), labels: selectedLabels })
+            })
+            const d = await res.json()
+            if (d.status) {
+                if (editingId) setTools(prev => prev.map(t => t._id === editingId ? d.data : t))
+                else setTools(prev => [...prev, d.data])
+                setName(''); setDesc(''); setLink(''); setSelectedLabels([])
+                setShowForm(false); setEditingId(null)
+            }
+        } catch {}
     }
 
-    const deleteTool = (id) => {
-        saveTools(tools.filter(t => t.id !== id))
-        setOpenMenuId(null)
+    const deleteTool = async (id) => {
+        try {
+            const res = await fetch(`/api/tools/${id}`, { method: 'DELETE' })
+            const d = await res.json()
+            if (d.status) { setTools(prev => prev.filter(t => t._id !== id)); setConfirmDeleteId(null); closeMenu() }
+        } catch {}
     }
 
     const editTool = (tool) => {
         setName(tool.name)
         setDesc(tool.desc)
         setLink(tool.link)
-        setEditingId(tool.id)
+        setSelectedLabels((tool.labels || []).map(l => typeof l === 'string' ? l : l._id))
+        setEditingId(tool._id)
         setShowForm(true)
-        setOpenMenuId(null)
+        closeMenu()
     }
 
     const cancelForm = () => {
-        setName('')
-        setDesc('')
-        setLink('')
-        setShowForm(false)
-        setEditingId(null)
+        setName(''); setDesc(''); setLink(''); setSelectedLabels([])
+        setShowForm(false); setEditingId(null)
     }
 
-    const filtered = tools.filter(t =>
-        t.name.toLowerCase().includes(search.toLowerCase()) ||
-        t.desc.toLowerCase().includes(search.toLowerCase())
-    )
+    const getLabelName = (id) => labels.find(l => l._id === id)?.name || ''
+
+    const filtered = tools.filter(t => {
+        const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) || (t.desc || '').toLowerCase().includes(search.toLowerCase())
+        const matchLabel = !filterLabel || (t.labels || []).some(l => (typeof l === 'string' ? l : l._id) === filterLabel)
+        return matchSearch && matchLabel
+    })
+
+    if (loading) return <div className="h-full overflow-auto p-4"><p className="text-gray-400 text-center pt-8">Đang tải...</p></div>
 
     return (
-        <div className="p-4 h-full overflow-auto">
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-xl font-semibold">Công cụ</h1>
+        <div className="h-full overflow-auto">
+            <div className="text-center py-2">
+                <p className="text-base font-semibold" style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Công cụ</p>
+            </div>
+            <div className="border-t border-gray-300" />
+
+            <div className="p-2">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Tìm kiếm..."
+                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none flex-1 bg-white min-w-[140px]"
+                />
+                <select
+                    value={filterLabel}
+                    onChange={e => setFilterLabel(e.target.value)}
+                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white"
+                >
+                    <option value="">Tất cả nhãn</option>
+                    {labels.map(l => (
+                        <option key={l._id} value={l._id}>{l.name}</option>
+                    ))}
+                </select>
                 <div className="flex items-center gap-2">
-                    <input
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Tìm kiếm..."
-                        className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none w-[200px]"
-                    />
+                    <div className="flex border border-gray-200 rounded-lg overflow-hidden bg-white shrink-0">
+                        <button
+                            onClick={() => setLayout('grid')}
+                            className={`p-2.5 cursor-pointer border-none ${layout === 'grid' ? 'bg-[var(--main_d)] text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
+                            title="Chế độ lưới"
+                        >
+                            <svg viewBox="0 0 24 24" height={15} width={15} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="7" height="7" rx="1" />
+                                <rect x="14" y="3" width="7" height="7" rx="1" />
+                                <rect x="3" y="14" width="7" height="7" rx="1" />
+                                <rect x="14" y="14" width="7" height="7" rx="1" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={() => setLayout('list')}
+                            className={`p-2.5 cursor-pointer border-none ${layout === 'list' ? 'bg-[var(--main_d)] text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
+                            title="Chế độ danh sách"
+                        >
+                            <svg viewBox="0 0 24 24" height={15} width={15} fill="currentColor">
+                                <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/>
+                            </svg>
+                        </button>
+                    </div>
                     <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none flex-1 sm:flex-none"
                         onClick={() => { cancelForm(); setShowForm(!showForm) }}
                     >
                         <Svg_Add w={16} h={16} c="white" />
@@ -103,104 +201,177 @@ function ToolsClient() {
             </div>
 
             {showForm && (
-                <form onSubmit={addTool} className="mb-4 p-4 border rounded-lg bg-white shadow-sm flex flex-col gap-3">
-                    <input
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Tên công cụ"
-                        className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none"
-                        required
-                    />
-                    <input
-                        value={desc}
-                        onChange={e => setDesc(e.target.value)}
-                        placeholder="Mô tả"
-                        className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none"
-                    />
-                    <input
-                        value={link}
-                        onChange={e => setLink(e.target.value)}
-                        placeholder="Đường dẫn (URL)"
-                        className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none"
-                    />
-                    <div className="flex gap-2">
-                        <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none">
-                            <Svg_Save w={14} h={14} c="white" />
-                            {editingId ? 'Cập nhật' : 'Lưu'}
-                        </button>
-                        <button type="button" onClick={cancelForm} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer border-none">
-                            <Svg_Close w={12} h={12} c="currentColor" />
-                            Hủy
-                        </button>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={cancelForm}>
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-[95vw] sm:w-[480px] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <p className="text-sm font-semibold text-gray-800 mb-4">{editingId ? 'Chỉnh sửa công cụ' : 'Thêm công cụ'}</p>
+                        <form onSubmit={addTool} className="flex flex-col gap-3">
+                            <input
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                placeholder="Tên công cụ"
+                                className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none"
+                                required
+                            />
+                            <textarea
+                                value={desc}
+                                onChange={e => setDesc(e.target.value)}
+                                placeholder="Mô tả"
+                                className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none resize-y"
+                                rows={3}
+                            />
+                            <input
+                                value={link}
+                                onChange={e => setLink(e.target.value)}
+                                placeholder="Đường dẫn (URL)"
+                                className="px-3 py-2.5 border border-gray-200 rounded text-sm outline-none h-[48px]"
+                            />
+
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 mb-1.5">Nhãn {labelError && <span className="text-red-500 ml-1 font-normal" style={{fontSize:'11px'}}>{labelError}</span>}</p>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                    {labels.map(l => {
+                                        const active = selectedLabels.includes(l._id)
+                                        return (
+                                            <div key={l._id} className="relative group">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSelectedLabel(l._id)}
+                                                    className={`text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                                                        active ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]' : 'bg-white text-gray-600 border-gray-300 hover:border-[var(--main_d)]'
+                                                    }`}
+                                                >
+                                                    {l.name}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={e => { e.stopPropagation(); deleteLabel(l._id) }}
+                                                    className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-400 text-white rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none p-0 leading-none"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                {showNewLabelInput ? (
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={newLabelName}
+                                            onChange={e => setNewLabelName(e.target.value)}
+                                            placeholder="Tên nhãn mới"
+                                            className="px-2.5 py-1.5 border border-gray-200 rounded text-xs outline-none flex-1"
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLabel() } }}
+                                        />
+                                        <button type="button" onClick={addLabel} className="px-3 py-1.5 bg-[var(--main_d)] text-white rounded text-xs cursor-pointer border-none">Thêm</button>
+                                        <button type="button" onClick={() => { setShowNewLabelInput(false); setNewLabelName('') }} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-xs cursor-pointer border-none">Hủy</button>
+                                    </div>
+                                ) : (
+                                    <button type="button" onClick={() => setShowNewLabelInput(true)} className="text-xs text-[var(--main_d)] hover:underline cursor-pointer border-none bg-transparent p-0">
+                                        + Tạo nhãn mới
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-1">
+                                <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none">
+                                    <Svg_Save w={14} h={14} c="white" />
+                                    {editingId ? 'Cập nhật' : 'Lưu'}
+                                </button>
+                                <button type="button" onClick={cancelForm} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer border-none">
+                                    <Svg_Close w={12} h={12} c="currentColor" />
+                                    Hủy
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             )}
 
-            <div className="flex flex-wrap gap-4">
-                {filtered.map(tool => (
-                    <div key={tool.id} className="flex flex-col border rounded-lg bg-white shadow-sm w-[calc(25%-12px)] p-5 hover:-translate-y-1 hover:shadow-md transition-all duration-300 relative">
-                        <div className="flex items-start justify-between">
-                            <a
-                                href={tool.link || '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-base font-semibold text-[var(--main_d)] hover:underline"
-                            >
-                                {tool.name}
-                            </a>
-                            <div className="relative shrink-0 ml-2" ref={openMenuId === tool.id ? menuRef : null}>
-                                <button
-                                    onClick={() => setOpenMenuId(openMenuId === tool.id ? null : tool.id)}
-                                    className="p-1 rounded hover:bg-gray-100 cursor-pointer border-none bg-transparent"
-                                >
+            <div className={`flex ${layout === 'grid' ? 'flex-wrap gap-4' : 'flex-col'}`}>
+                {filtered.map(tool => {
+                    const toolLabels = (tool.labels || []).map(l => typeof l === 'string' ? l : l._id)
+                    return layout === 'grid' ? (
+                        <div key={tool._id} className="flex flex-col border border-gray-300 rounded-lg bg-white shadow-sm p-3 hover:-translate-y-1 hover:shadow-md transition-all duration-300 relative w-full sm:w-[calc(50%-8px)] md:w-[calc(33.33%-11px)] lg:w-[calc(25%-12px)]">
+                            <div className="flex items-start justify-between">
+                                <a href={tool.link || '#'} target="_blank" rel="noopener noreferrer" className="text-base font-semibold text-[var(--main_d)] hover:underline">
+                                    {tool.name}
+                                </a>
+                                <button data-menu onClick={e => { e.stopPropagation(); openMenu(tool._id, e) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer border-none bg-transparent shrink-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" height={16} width={16} fill="currentColor" className="text-gray-400">
                                         <path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm56-104A56 56 0 1 0 8 96a56 56 0 1 0 112 0z" />
                                     </svg>
                                 </button>
-                                {openMenuId === tool.id && (
-                                    <div className="absolute right-0 top-full mt-1 w-[140px] bg-white border rounded-lg shadow-lg z-50 py-1">
-                                        <button
-                                            onClick={() => editTool(tool)}
-                                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer border-none bg-transparent"
-                                        >
-                                            <Svg_Pen w={14} h={14} c="currentColor" />
-                                            Chỉnh sửa
-                                        </button>
-                                        <button
-                                            onClick={() => deleteTool(tool.id)}
-                                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 cursor-pointer border-none bg-transparent"
-                                        >
-                                            <Svg_Delete w={14} h={14} c="currentColor" />
-                                            Xóa
-                                        </button>
+                            </div>
+                            {toolLabels.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                    {toolLabels.map(lId => (
+                                        <span key={lId} className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--main_d)]/10 text-[var(--main_d)]">{getLabelName(lId)}</span>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="border-t border-gray-100 my-3" />
+                            {tool.desc && <p className="text-gray-500" style={{ fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap' }}>{tool.desc}</p>}
+                            {tool.link && (
+                                <div className="mt-2">
+                                    <a href={tool.link} target="_blank" rel="noopener noreferrer" className="truncate block underline underline-offset-2" style={{ fontSize: '12px', color: '#3b82f6' }}>{tool.link}</a>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div key={tool._id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border border-gray-300 rounded-lg bg-white shadow-sm px-3 py-2 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 relative w-full">
+                            <div className="flex items-center gap-3 sm:flex-shrink-0 sm:min-w-0 sm:max-w-[30%]">
+                                <a href={tool.link || '#'} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[var(--main_d)] hover:underline truncate">
+                                    {tool.name}
+                                </a>
+                                {toolLabels.length > 0 && (
+                                    <div className="flex gap-1 flex-shrink-0">
+                                        {toolLabels.map(lId => (
+                                            <span key={lId} className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--main_d)]/10 text-[var(--main_d)]">{getLabelName(lId)}</span>
+                                        ))}
                                     </div>
                                 )}
                             </div>
+                            {tool.desc && <p className="truncate sm:flex-1 sm:min-w-0 text-gray-500" style={{ fontSize: '11px', margin: 0, whiteSpace: 'pre-wrap' }}>{tool.desc}</p>}
+                            {tool.link && (
+                                <a href={tool.link} target="_blank" rel="noopener noreferrer" className="truncate sm:flex-1 sm:min-w-0 underline underline-offset-2" style={{ fontSize: '11px', color: '#3b82f6' }}>{tool.link}</a>
+                            )}
+                            <button data-menu onClick={e => { e.stopPropagation(); openMenu(tool._id, e) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer border-none bg-transparent shrink-0 self-end sm:self-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" height={14} width={14} fill="currentColor" className="text-gray-400">
+                                    <path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm56-104A56 56 0 1 0 8 96a56 56 0 1 0 112 0z" />
+                                </svg>
+                            </button>
                         </div>
-
-                        <div className="border-t border-gray-100 my-3" />
-
-                        {tool.desc && <p className="text-sm text-gray-500">{tool.desc}</p>}
-
-                        {tool.link && (
-                            <div className="mt-2">
-                                <a
-                                    href={tool.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-400 hover:text-blue-600 truncate block"
-                                >
-                                    {tool.link}
-                                </a>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    )
+                })}
                 {filtered.length === 0 && (
                     <p className="text-gray-400 italic text-center py-8 w-full">
-                        {search ? 'Không tìm thấy công cụ phù hợp.' : 'Chưa có công cụ nào. Hãy thêm công cụ đầu tiên!'}
+                        {search || filterLabel ? 'Không tìm thấy công cụ phù hợp.' : 'Chưa có công cụ nào. Hãy thêm công cụ đầu tiên!'}
                     </p>
                 )}
+            </div>
+
+            {menuPos && menuToolId && (
+                <div ref={menuRef} data-menu className="fixed z-[9999] bg-white border rounded-lg shadow-lg py-1" style={{ top: menuPos.top, right: menuPos.right, width: '140px' }}>
+                    <button onClick={() => { editTool(tools.find(t => t._id === menuToolId)); closeMenu() }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer border-none bg-transparent">
+                        <Svg_Pen w={14} h={14} c="currentColor" /> Chỉnh sửa
+                    </button>
+                    <button onClick={() => { setConfirmDeleteId(menuToolId); closeMenu() }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 cursor-pointer border-none bg-transparent">
+                        <Svg_Delete w={14} h={14} c="currentColor" /> Xóa
+                    </button>
+                </div>
+            )}
+
+            {confirmDeleteId && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => setConfirmDeleteId(null)}>
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-[90vw] sm:w-[360px]" onClick={e => e.stopPropagation()}>
+                        <p className="text-sm font-medium text-gray-800 mb-4">Bạn có chắc chắn muốn xóa công cụ này?</p>
+                        <div className="flex gap-3 justify-end">
+                            <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer border-none">Hủy</button>
+                            <button onClick={() => deleteTool(confirmDeleteId)} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium cursor-pointer border-none">Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            )}
             </div>
         </div>
     )

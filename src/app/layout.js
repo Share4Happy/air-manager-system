@@ -63,7 +63,7 @@ export default async function RootLayout({ children }) {
               <Nav data={data} />
             </div>
             <NavMobile data={data} />
-            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px))] h-full bg-[var(--bg-secondary)] overflow-hidden overflow-y-auto p-2 max-md:ml-0 max-md:w-full max-md:h-[calc(100%-76px)] max-md:p-2 max-md:pb-[68px] transition-all duration-300">
+            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px))] h-full bg-[var(--bg-secondary)] overflow-hidden overflow-y-auto p-2 max-md:ml-0 max-md:w-full max-md:h-[calc(100%-76px)] max-md:p-2 max-md:pb-2 transition-all duration-300">
               {children}
             </div>
           </div> :

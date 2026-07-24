@@ -23,8 +23,7 @@ const statusOf = s => {
 }
 
 export default function CourseTryFilter({ data, student, teacher = [], area = [], book = [] }) {
-    console.log(data);
-
+    
     const [statusFilter, setStatusFilter] = useState('all')
     const [teacherFilter, setTeacherFilter] = useState('all')
     const [activeSessionId, setActiveSessionId] = useState(null)
