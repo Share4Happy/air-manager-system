@@ -21,7 +21,7 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
 
     let fileUrl = '';
     if (mediaItem.type === 'image') {
-        fileUrl = `https://lh3.googleusercontent.com/d/${mediaItem.id}=w800`;
+        fileUrl = `https://drive.google.com/thumbnail?id=${mediaItem.id}&sz=w1200`;
     } else if (mediaItem.type === 'video') {
         fileUrl = `https://drive.google.com/file/d/${mediaItem.id}/preview`;
     }
@@ -193,7 +193,7 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
 }
 
 function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMode, selectedIds, onToggleSelect, onStartSelect, onCancelSelect, onDeleteSelected, deleting }) {
-    const getDriveImageUrl = (id) => `https://lh3.googleusercontent.com/d/${id}=w400`;
+    const getDriveImageUrl = (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
 
     return (
         <div className="flex flex-col gap-4 h-full">
@@ -433,7 +433,7 @@ const UploadManager = forwardRef(({
 //================================================================
 // 3. COMPONENT CHÍNH ĐIỀU KHIỂN - ĐÃ CẬP NHẬT
 //================================================================
-export default function ImageUploader({ session, courseId, Version }) {
+export default function ImageUploader({ session, courseId, Version, onUploadSuccess }) {
 
 
     const router = useRouter();
@@ -481,9 +481,9 @@ export default function ImageUploader({ session, courseId, Version }) {
     };
 
     const handleUploadComplete = () => {
-        // Giữ UI thêm vài giây để người dùng thấy kết quả, sau đó ẩn đi
         setTimeout(() => {
             setIsUploading(false);
+            onUploadSuccess?.();
         }, 3000);
     };
 
@@ -569,24 +569,26 @@ export default function ImageUploader({ session, courseId, Version }) {
         if (!isUploading) return null;
 
         return (
-            <div className="flex flex-col p-2 fixed gap-1 top-5 right-5 w-[150px] z-[99999] bg-white rounded-lg shadow-[var(--boxshaw2)]">
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <p className='text-xs font-normal text-[var(--text-primary)]'>{Math.round(progressPercentage)}%</p>
-                    <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                        <div className="w-2 h-2 rounded bg-[var(--green)]"></div>
-                        <p className='text-xs font-semibold text-[var(--text-primary)]'>{uploadProgress.success}</p>
+            <div className="flex flex-col p-3 fixed gap-2 top-5 right-5 min-w-[240px] z-[99999] bg-white rounded-lg shadow-[var(--boxshaw2)]">
+                <div className="flex items-center justify-between gap-2">
+                    <p className='text-sm font-semibold text-[var(--text-primary)] shrink-0'>{Math.round(progressPercentage)}%</p>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded bg-[var(--green)] shrink-0"></div>
+                            <p className='text-xs text-[var(--text-primary)]'>{uploadProgress.success}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 rounded bg-[var(--red)] shrink-0"></div>
+                            <p className='text-xs text-[var(--text-primary)]'>{uploadProgress.failed}</p>
+                        </div>
+                        <p className='text-xs text-[var(--text-secondary)]'>/ {uploadProgress.total}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                        <div className="w-2 h-2 rounded bg-[var(--red)]"></div>
-                        <p className='text-xs font-semibold text-[var(--text-primary)]'>{uploadProgress.failed}</p>
-                    </div>
-                    <p className='text-xs font-normal text-[var(--text-primary)]'>Tổng: {uploadProgress.total}</p>
                 </div>
-                <div className="w-full h-3 bg-[#e2e8f0] rounded overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#4ade80] to-[#22c55e] flex items-center justify-center transition-all duration-300 rounded" style={{ width: `${progressPercentage}%` }}></div>
+                <div className="w-full h-2 bg-[#e2e8f0] rounded overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#4ade80] to-[#22c55e] rounded transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                 </div>
                 {uploadProgress.lastError && (
-                    <p className="text-[#dc2626] text-sm text-center italic mt-2">{uploadProgress.lastError}</p>
+                    <p className="text-[#dc2626] text-xs italic">{uploadProgress.lastError}</p>
                 )}
             </div>
         );

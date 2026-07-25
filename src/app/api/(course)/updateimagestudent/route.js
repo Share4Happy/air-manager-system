@@ -26,9 +26,9 @@ export async function POST(req) {
                 { status: 400 }
             );
         }
-        if (!Array.isArray(newImages) || newImages.length === 0) {
+        if (!Array.isArray(newImages)) {
             return NextResponse.json(
-                { success: false, message: "'newImages' phải là một mảng và không được rỗng." },
+                { success: false, message: "'newImages' phải là một mảng." },
                 { status: 400 }
             );
         }
@@ -37,15 +37,12 @@ export async function POST(req) {
 
         // --- Trường hợp 1: Cập nhật cho Khóa học chính thức ---
         let result = await PostCourse.updateOne(
-            // 1. Lọc document cha chứa buổi học và học sinh
             { "Detail._id": lessonIdObj, "Student.ID": studentId },
-            // 2. Thêm ảnh vào mảng Image của học sinh đó trong buổi học đó
             {
-                $addToSet: {
-                    "Student.$[stuElem].Learn.$[learnElem].Image": { $each: newImages }
+                $set: {
+                    "Student.$[stuElem].Learn.$[learnElem].Image": newImages
                 }
             },
-            // 3. Dùng arrayFilters để chỉ định stuElem và learnElem
             {
                 arrayFilters: [
                     { "stuElem.ID": studentId },
@@ -56,8 +53,6 @@ export async function POST(req) {
 
         // --- Trường hợp 2: Nếu không tìm thấy trong khóa chính thức, thử cập nhật cho Khóa học thử ---
         if (result.matchedCount === 0) {
-
-            // Vì TrialCourse lưu studentId là ObjectId, ta cần tìm ObjectId từ ID ("AI0001")
             const studentDoc = await PostStudent.findOne({ ID: studentId }).select('_id').lean();
 
             if (!studentDoc) {
@@ -69,19 +64,16 @@ export async function POST(req) {
             const studentObjectId = studentDoc._id;
 
             result = await TrialCourse.updateOne(
-                // 1. Lọc document cha chứa buổi học
                 { 'sessions._id': lessonIdObj },
-                // 2. Thêm ảnh vào mảng images của học sinh đó trong buổi học đó
                 {
-                    $addToSet: {
-                        'sessions.$[sesElem].students.$[stuElem].images': { $each: newImages }
+                    $set: {
+                        'sessions.$[sesElem].students.$[stuElem].images': newImages
                     }
                 },
-                // 3. Dùng arrayFilters để chỉ định sesElem và stuElem
                 {
                     arrayFilters: [
                         { 'sesElem._id': lessonIdObj },
-                        { 'stuElem.studentId': studentObjectId } // Lọc bằng ObjectId của học sinh
+                        { 'stuElem.studentId': studentObjectId }
                     ]
                 }
             );
@@ -96,13 +88,13 @@ export async function POST(req) {
 
         if (result.modifiedCount === 0 && result.matchedCount > 0) {
             return NextResponse.json(
-                { success: true, message: 'Dữ liệu không thay đổi (có thể tất cả ảnh đã tồn tại).' },
+                { success: true, message: 'Dữ liệu không thay đổi.' },
                 { status: 200 }
             );
         }
         Re_coursetry();
         return NextResponse.json(
-            { success: true, message: `Thêm ảnh cho học sinh ${studentId} thành công.` },
+            { success: true, message: `Cập nhật ảnh cho học sinh ${studentId} thành công.` },
             { status: 200 }
         );
 

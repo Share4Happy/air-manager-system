@@ -250,6 +250,16 @@ export async function DELETE(request) {
             }
         }
 
+        await PostCourse.updateMany(
+            {},
+            { $pull: { 'Student.$[].Learn.$[].Image': { id: id } } }
+        );
+
+        await TrialCourse.updateMany(
+            {},
+            { $pull: { 'sessions.$[].students.$[].images': { id: id } } }
+        );
+
         try {
             await drive.files.delete({ fileId: id, supportsAllDrives: true });
         } catch (driveError) {
