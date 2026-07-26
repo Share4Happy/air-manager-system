@@ -1,4 +1,7 @@
-const cache = new Map();
+if (typeof globalThis.__cache === 'undefined') {
+    globalThis.__cache = new Map();
+}
+const cache = globalThis.__cache;
 
 export function cacheData(callback, tags) {
     const key = tags?.join(':') || callback.name || callback.toString();
@@ -16,4 +19,8 @@ export function clearCacheByTag(tag) {
             cache.delete(key);
         }
     }
+}
+
+export function clearAllCache() {
+    cache.clear();
 }

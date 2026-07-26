@@ -12,10 +12,14 @@ export default async function OverviewTab({ params }) {
     data.Progress = tienDo; 
     
     return (
-        <div style={{ display: 'flex', height: '100%', width: '100%', gap: 16 }}>
-            <Timeline data={data} props={id} />
-            <div style={{ flex: 4 }}>
-                <Detail data={data} params={id} studentsx={students} users={users} />
+        <div className="flex flex-col lg:flex-row" style={{ height: '100%', width: '100%', gap: 16 }}>
+            <div className="hidden lg:block" style={{ flex: '1.6 1.6 0%', minWidth: 0 }}>
+                <Timeline data={data} props={id} />
+            </div>
+            <div className="lg:flex-[4]">
+                <Detail data={data} params={id} studentsx={students} users={users}>
+                    <Timeline data={data} props={id} />
+                </Detail>
             </div>
         </div>
     );

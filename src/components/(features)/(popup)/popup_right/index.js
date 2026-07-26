@@ -197,7 +197,7 @@ export default function FlexiblePopup({
                     style={{
                         zIndex: globalZIndex,
                         width: width,
-                        maxWidth: centered ? 'calc(100vw - 32px)' : undefined,
+                        maxWidth: centered ? 'calc(100vw - 32px)' : 'calc(100vw - 16px)',
                         transform: centered ? undefined : (visible2 ? `translateX(-${width2})` : visible ? 'translateX(0)' : `translateX(${width})`),
                         transition: centered ? 'transform 300ms ease-in-out, opacity 300ms ease-in-out' : 'transform 300ms ease-in-out'
                     }}

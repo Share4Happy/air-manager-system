@@ -38,16 +38,12 @@ export default function AttendancePage() {
 
     return (
         <div className="flex flex-col gap-4 p-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Chuyên cần hôm nay</h2>
-                <p className="text-sm text-[var(--text-secondary)]">{data.date}</p>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {cards.map(c => (
-                    <div key={c.label} className="flex flex-col items-center justify-center p-4 bg-[var(--bg-primary)] rounded border border-[var(--border-color)] text-center gap-1">
+                    <div key={c.label} className="flex flex-col items-center justify-center p-3 sm:p-4 bg-[var(--bg-primary)] rounded border border-[var(--border-color)] text-center gap-1">
                         <span className="text-xs text-[var(--text-secondary)]">{c.label}</span>
-                        <strong className={`text-2xl ${c.color}`}>{c.value}</strong>
+                        <strong className={`text-xl sm:text-2xl ${c.color}`}>{c.value}</strong>
                     </div>
                 ))}
             </div>

@@ -3,48 +3,7 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import connectDB from '@/config/connectDB';
 import users from '@/models/users';
-
-const loginAttempts = new Map();
-
-const FIFTEEN_MIN = 15 * 60 * 1000;
-const TWENTY_FOUR_H = 24 * 60 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-
-function getAttempts(key) {
-  const entry = loginAttempts.get(key);
-  if (!entry) return null;
-  if (entry.banUntil && Date.now() > entry.banUntil) {
-    if (entry.banLevel === 1 && entry.count >= MAX_ATTEMPTS) {
-      // After 15-min ban expires, next fail -> 24h ban
-      entry.banLevel = 2;
-      entry.banUntil = Date.now() + TWENTY_FOUR_H;
-      entry.count = 0;
-    } else {
-      loginAttempts.delete(key);
-      return null;
-    }
-  }
-  return entry;
-}
-
-function recordFail(key) {
-  let entry = loginAttempts.get(key);
-  if (!entry) {
-    entry = { count: 0, banUntil: null, banLevel: 0 };
-    loginAttempts.set(key, entry);
-  }
-  if (entry.banUntil) return entry;
-  entry.count++;
-  if (entry.count >= MAX_ATTEMPTS) {
-    entry.banLevel = 1;
-    entry.banUntil = Date.now() + FIFTEEN_MIN;
-  }
-  return entry;
-}
-
-function recordSuccess(key) {
-  loginAttempts.delete(key);
-}
+import { getAttempts, recordFail, recordSuccess } from '@/lib/login-attempts';
 
 export async function POST(req) {
   try {

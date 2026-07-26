@@ -278,18 +278,38 @@ export default function CalendarPage() {
       {/* RIGHT: week grid */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* header bar */}
-        <div style={{ background: 'var(--main)' }} className="px-3 py-2 border-b border-[var(--border-color)] flex items-center gap-2">
-          <button onClick={() => navWeek(-1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20">‹</button>
-          <span className="text-sm font-semibold text-white">{monthLabel}</span>
-          <button onClick={() => navWeek(1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20">›</button>
-          <button onClick={() => setCurrentMonday(getWeekRange(new Date()).monday)} className="ml-2 px-3 py-1 text-xs font-semibold text-gray-800 bg-white/85 rounded cursor-pointer border-0 leading-none">Hôm nay</button>
-          <div className="ml-auto flex rounded-md overflow-hidden">
-            <button onClick={() => setViewMode('my')}
-              style={{ background: isActive('my') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('my') ? '#222' : 'rgba(255,255,255,0.8)' }}
-              className="px-3.5 py-1 text-xs font-bold border-0 cursor-pointer transition-all duration-150">Lịch của tôi</button>
-            <button onClick={() => setViewMode('all')}
-              style={{ background: isActive('all') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('all') ? '#222' : 'rgba(255,255,255,0.8)' }}
-              className="px-3.5 py-1 text-xs font-bold border-0 cursor-pointer transition-all duration-150">Lịch trung tâm</button>
+        <div style={{ background: 'var(--main)' }}>
+          {/* Desktop/tablet: single row (original) */}
+          <div className="hidden lg:flex px-3 py-2 border-b border-[var(--border-color)] items-center gap-2">
+            <button onClick={() => navWeek(-1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20">‹</button>
+            <span className="text-sm font-semibold text-white">{monthLabel}</span>
+            <button onClick={() => navWeek(1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20">›</button>
+            <button onClick={() => setCurrentMonday(getWeekRange(new Date()).monday)} className="ml-2 px-3 py-1 text-xs font-semibold text-gray-800 bg-white/85 rounded cursor-pointer border-0 leading-none">Hôm nay</button>
+            <div className="ml-auto flex rounded-md overflow-hidden">
+              <button onClick={() => setViewMode('my')}
+                style={{ background: isActive('my') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('my') ? '#222' : 'rgba(255,255,255,0.8)' }}
+                className="px-3.5 py-1 text-xs font-bold border-0 cursor-pointer transition-all duration-150">Lịch của tôi</button>
+              <button onClick={() => setViewMode('all')}
+                style={{ background: isActive('all') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('all') ? '#222' : 'rgba(255,255,255,0.8)' }}
+                className="px-3.5 py-1 text-xs font-bold border-0 cursor-pointer transition-all duration-150">Lịch trung tâm</button>
+            </div>
+          </div>
+          {/* Mobile: two rows */}
+          <div className="lg:hidden">
+            <div className="px-3 py-2 flex items-center gap-2">
+              <button onClick={() => navWeek(-1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20 shrink-0">‹</button>
+              <span className="text-sm font-semibold text-white">{monthLabel}</span>
+              <button onClick={() => navWeek(1)} className="text-white text-sm px-1.5 py-0.5 rounded cursor-pointer bg-transparent border-0 hover:bg-white/20 shrink-0">›</button>
+              <button onClick={() => setCurrentMonday(getWeekRange(new Date()).monday)} className="ml-2 px-3 py-1 text-xs font-semibold text-gray-800 bg-white/85 rounded cursor-pointer border-0 leading-none shrink-0">Hôm nay</button>
+            </div>
+            <div className="px-3 pb-2 flex gap-2">
+              <button onClick={() => setViewMode('my')}
+                style={{ background: isActive('my') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('my') ? '#222' : 'rgba(255,255,255,0.8)' }}
+                className="flex-1 py-1.5 text-xs font-bold border-0 cursor-pointer transition-all duration-150 rounded">Lịch của tôi</button>
+              <button onClick={() => setViewMode('all')}
+                style={{ background: isActive('all') ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.2)', color: isActive('all') ? '#222' : 'rgba(255,255,255,0.8)' }}
+                className="flex-1 py-1.5 text-xs font-bold border-0 cursor-pointer transition-all duration-150 rounded">Lịch trung tâm</button>
+            </div>
           </div>
         </div>
 

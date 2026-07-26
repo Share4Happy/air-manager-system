@@ -11,7 +11,7 @@ import Noti from '@/components/(features)/(noti)/noti';
 import Image from 'next/image';
 import ImageUploader from '../formimage';
 import StudentCourseImageManager from '../formimages';
-import { Svg_Detail } from '@/components/(icon)/svg';
+import { Svg_Detail, Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
 
 const updateAttendance = async (courseId, sessionId, attendanceData) => {
@@ -40,6 +40,7 @@ export default function Main({ data }) {
     const [showNote, setShowNote] = useState(false);
     const [note, setNote] = useState(() => session?.Note || '');
     const [mobileDocsOpen, setMobileDocsOpen] = useState(true);
+    const [savingNote, setSavingNote] = useState(false);
     const router = useRouter();
 
     if (!course || !session) {
@@ -70,9 +71,9 @@ export default function Main({ data }) {
 
     const cur = s => (att[s.ID] !== undefined ? att[s.ID] : s.Checkin);
 
-    const cm = roll.filter(s => cur(s) == '1').length;
-    const vk = roll.filter(s => cur(s) == '2').length;
-    const vc = isTrialCourse ? 0 : roll.filter(s => cur(s) == '3').length;
+    const cm = roll.filter(s => cur(s) === '1').length;
+    const vk = roll.filter(s => cur(s) === '2').length;
+    const vc = isTrialCourse ? 0 : roll.filter(s => cur(s) === '3').length;
 
     const changeAtt = (id, v) => setAtt(prev => ({ ...prev, [id]: v }));
 
@@ -131,6 +132,44 @@ export default function Main({ data }) {
         router.refresh();
     }
 
+    const saveNote = async () => {
+        setSavingNote(true);
+        try {
+            if (isTrialCourse) {
+                const res = await fetch('/api/coursetry', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: session._id,
+                        note: note
+                    })
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.mes || 'Lưu thất bại');
+            } else {
+                const res = await fetch('/api/course/ucalendarcourse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        courseId: course._id,
+                        detailId: session._id,
+                        data: { Note: note }
+                    })
+                });
+                const json = await res.json();
+                if (json.status !== 2) throw new Error(json.mes || 'Lưu thất bại');
+            }
+            setNotiOK(true); setNotiMsg('Lưu ghi chú thành công!'); setNotiOpen(true);
+            setShowNote(false);
+            await Re_lesson(session._id);
+            router.refresh();
+        } catch (err) {
+            setNotiOK(false); setNotiMsg(err.message); setNotiOpen(true);
+        } finally {
+            setSavingNote(false);
+        }
+    }
+
     const saveAll = async () => {
         const payload = buildPayload();
         if (!payload.length) {
@@ -157,14 +196,8 @@ export default function Main({ data }) {
     };
 
     const notiBtn = (
-        <button
-            onClick={() => setNotiOpen(false)}
-            style={{
-                alignSelf: 'flex-start', padding: '10px 26px', border: 'none', borderRadius: 6,
-                background: 'var(--main_d)', color: '#fff', fontWeight: 500, cursor: 'pointer',
-                transition: 'opacity .25s', width: '100%'
-            }}
-        >
+        <button onClick={() => setNotiOpen(false)}
+            className="px-3 py-2.5 border-none rounded bg-[var(--main_d)] text-white font-medium cursor-pointer transition-opacity w-full">
             Tắt thông báo
         </button>
     );
@@ -233,7 +266,7 @@ export default function Main({ data }) {
                     {mobileDocsOpen && (
                         <div className="px-4 pb-3 flex flex-row gap-3">
                             <div className="flex-1 min-w-0">
-                                {course.Version == 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
+                                {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
                             </div>
                             {session.Topic?.Slide && (
                                 <div className="flex-1 min-w-0">
@@ -248,7 +281,7 @@ export default function Main({ data }) {
                     {/* Desktop: Sidebar */}
                     <aside className="hidden md:flex w-[240px] p-6 bg-[var(--bg-primary)] border-r border-[var(--border-color)] overflow-y-auto flex-col gap-4 shrink-0">
                         <p className="text-base font-semibold text-[var(--text-primary)]">Tài liệu buổi học</p>
-                        {course.Version == 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
+                        {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
                         {session.Topic?.Slide && <BoxFile type="Ppt" name="Slide giảng dạy" href={session.Topic.Slide} />}
                     </aside>
 
@@ -259,21 +292,22 @@ export default function Main({ data }) {
                                 <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Thời gian: <span className="font-normal">{session.Time}</span></h5>
                                 <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Giáo viên: <span className="font-normal">{session.Teacher.name}</span></h5>
                                 <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Trợ giảng: <span className="font-normal">{session.TeachingAs?.name || '–'}</span></h5>
+                                <h5 className="text-xs md:text-sm" style={{ color: 'white' }}>Phòng học: <span className="font-normal">{session.Room || '–'}</span></h5>
                             </div>
                             <div className="h-px bg-[#e0e0e0] my-3" />
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                 <p className="text-base font-semibold text-[var(--text-primary)]">Sổ điểm danh</p>
                                 <div className="flex flex-wrap gap-2 self-stretch sm:self-auto">
-                                    <button onClick={reloadData} disabled={reloading} className="text-sm font-normal text-[var(--text-primary)] flex-1 sm:flex-none" style={{ padding: '8px 16px', background: reloading ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: reloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <button onClick={reloadData} disabled={reloading} className="text-sm text-white flex-1 sm:flex-none" style={{ padding: '8px 16px', background: reloading ? 'var(--text-secondary)' : 'var(--green)', border: 'none', borderRadius: 5, cursor: reloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         {reloading && <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                                         {reloading ? 'Đang tải lại…' : 'Tải lại dữ liệu '}
                                     </button>
-                                    <button onClick={saveAll} disabled={saving} className="text-sm font-normal text-[var(--text-primary)] flex-1 sm:flex-none" style={{ padding: '8px 16px', background: saving ? 'var(--text-secondary)' : 'var(--green)', color: '#fff', border: 'none', borderRadius: 5, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <button onClick={saveAll} disabled={saving} className="text-sm text-white flex-1 sm:flex-none" style={{ padding: '8px 16px', background: saving ? 'var(--text-secondary)' : 'var(--green)', border: 'none', borderRadius: 5, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         {saving && <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                                         {saving ? 'Đang lưu…' : 'Lưu thay đổi'}
                                     </button>
-                                    <button onClick={() => setShowNote(true)} className="text-sm font-normal text-white w-full sm:w-auto sm:flex-none" style={{ padding: '8px 16px', background: 'var(--main_d)', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                    <button onClick={() => setShowNote(true)} className="text-sm text-white w-full sm:w-auto sm:flex-none" style={{ padding: '8px 16px', background: 'var(--main_d)', border: 'none', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        <Svg_Pen w={16} h={16} c="white" />
                                         Ghi chú
                                     </button>
                                 </div>
@@ -287,15 +321,15 @@ export default function Main({ data }) {
                                                     {t}
                                                 </div>
                                             ))}
-                                            {course.Version != 0 && <div className="text-sm font-normal text-white px-2 py-2 text-center" style={{ flex: 1 }}>Hình ảnh</div>}
+                                            {course.Version !== 0 && <div className="text-sm font-normal text-white px-2 py-2 text-center" style={{ flex: 1 }}>Hình ảnh</div>}
                                         </div>
                                         {roll.map(stu => {
-                                            if (stu.Checkin == '-1') return null;
+                                            if (stu.Checkin === '-1') return null;
 
                                             const currentCheckinValue = cur(stu);
                                             let displayValue = currentCheckinValue;
                                             if (isTrialCourse) {
-                                                displayValue = (currentCheckinValue == 1) ? '1' : '2';
+                                                displayValue = (currentCheckinValue === '1') ? '1' : '2';
                                             }
 
                                             return (
@@ -312,7 +346,7 @@ export default function Main({ data }) {
                                                             <div key={v} className="flex items-center justify-center px-2 py-2.5 md:py-3" style={{ flex: isTrialCourse && (v === '1' || v === '2') ? 1.5 : 1 }}>
                                                                 <label className="flex items-center justify-center cursor-pointer">
                                                                     <input type="radio" name={`att_${stu.ID}`} value={v}
-                                                                        checked={displayValue == v}
+                                                                        checked={displayValue === v}
                                                                         onChange={() => changeAtt(stu.ID, v)}
                                                                         className="cursor-pointer" />
                                                                 </label>
@@ -322,7 +356,7 @@ export default function Main({ data }) {
                                                     <button onClick={() => { setSelStu(stu); setShowComment(true); }} className="flex items-center justify-center bg-transparent border-none cursor-pointer px-2 py-2.5 md:py-3" style={{ flex: colFlex('Nhận xét') }}>
                                                         <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--text-primary)"><path d="M14 11c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1s.45-1 1-1h9c.55 0 1-.45 1-1M3 7c0 .55.45 1 1 1h9c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1m7 8c0-.55-.45 1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1h5c.55 0 1-.45 1-1m8.01-2.13.71-.71c.39-.39 1.02-.39 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71zm-.71.71-5.16 5.16c-.09.09-.14.21-.14.35v1.41c0 .28.22.5.5.5h1.41c.13 0 .26-.05.35-.15l5.16-5.16z" /></svg>
                                                     </button>
-                                                    {course.Version != 0 && (
+                                                    {course.Version !== 0 && (
                                                         <div className="flex items-center justify-center px-2" style={{ flex: 1 }}>
                                                             <StudentCourseImageManager courseInfo={data.session} studentInfo={stu} course={data.course} />
                                                         </div>
@@ -363,6 +397,10 @@ export default function Main({ data }) {
                         <button onClick={() => setShowNote(false)}
                             className="px-4 py-2 bg-gray-200 text-sm cursor-pointer border-none rounded">
                             Đóng
+                        </button>
+                        <button onClick={saveNote} disabled={savingNote}
+                            className="px-4 py-2 bg-[var(--main_b)] text-white text-sm cursor-pointer border-none rounded hover:bg-[var(--main_d)] disabled:opacity-50">
+                            {savingNote ? 'Đang lưu...' : 'Lưu ghi chú'}
                         </button>
                     </div>
                 </div>

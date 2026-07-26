@@ -3,7 +3,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Svg_Student, Svg_Course, Svg_Canlendar, Svg_Chart, Svg_Bell } from '@/components/(icon)/svg';
 
 const tabs = [
-  { href: '/', icon: (c) => <Svg_Chart h={22} w={22} c={c} />, label: 'Thống kê' },
+  { href: '/dashboard', icon: (c) => <Svg_Chart h={22} w={22} c={c} />, label: 'Thống kê' },
   { href: '/student/list', icon: (c) => <Svg_Student w={22} h={22} c={c} />, label: 'Học sinh' },
   { href: '/course', icon: (c) => <Svg_Course w={20} h={19} c={c} />, label: 'Khóa học' },
   { href: '/calendar', icon: (c) => <Svg_Canlendar w={20} h={19} c={c} />, label: 'Lịch dạy' },

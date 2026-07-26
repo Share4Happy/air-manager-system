@@ -11,11 +11,7 @@ export default function ReportClient({ initialReports }) {
 
     return (
         <div className="flex flex-col gap-3 p-4 h-full">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Báo cáo chuyên cần</h2>
-            </div>
-
-            <div className="flex gap-0 border-b border-[var(--border-color)]">
+            <div className="flex gap-0 border-b border-[var(--border-color)] overflow-x-auto">
                 <button
                     className={`px-4 py-2 text-sm font-medium transition-colors ${tab === 'report' ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                     onClick={() => setTab('report')}

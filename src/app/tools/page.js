@@ -19,9 +19,9 @@ function ToolsClient() {
     const [showNewLabelInput, setShowNewLabelInput] = useState(false)
     const [newLabelName, setNewLabelName] = useState('')
     const [labelError, setLabelError] = useState('')
-    const [layout, setLayout] = useState('grid')
     const [menuPos, setMenuPos] = useState(null)
     const [menuToolId, setMenuToolId] = useState(null)
+    const [descPopup, setDescPopup] = useState(null)
     const menuRef = useRef(null)
 
     const loadData = useCallback(async () => {
@@ -35,7 +35,7 @@ function ToolsClient() {
         } catch {} finally { setLoading(false) }
     }, [])
 
-    useEffect(() => { loadData() }, [loadData])
+    useEffect(() => { loadData()     }, [loadData])
 
     const openMenu = (id, e) => {
         const rect = e.currentTarget.getBoundingClientRect()
@@ -143,11 +143,6 @@ function ToolsClient() {
 
     return (
         <div className="h-full overflow-auto">
-            <div className="text-center py-2">
-                <p className="text-base font-semibold" style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Công cụ</p>
-            </div>
-            <div className="border-t border-gray-300" />
-
             <div className="p-2">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <input
@@ -167,29 +162,6 @@ function ToolsClient() {
                     ))}
                 </select>
                 <div className="flex items-center gap-2">
-                    <div className="flex border border-gray-200 rounded-lg overflow-hidden bg-white shrink-0">
-                        <button
-                            onClick={() => setLayout('grid')}
-                            className={`p-2.5 cursor-pointer border-none ${layout === 'grid' ? 'bg-[var(--main_d)] text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
-                            title="Chế độ lưới"
-                        >
-                            <svg viewBox="0 0 24 24" height={15} width={15} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="3" width="7" height="7" rx="1" />
-                                <rect x="14" y="3" width="7" height="7" rx="1" />
-                                <rect x="3" y="14" width="7" height="7" rx="1" />
-                                <rect x="14" y="14" width="7" height="7" rx="1" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={() => setLayout('list')}
-                            className={`p-2.5 cursor-pointer border-none ${layout === 'list' ? 'bg-[var(--main_d)] text-white' : 'bg-white text-gray-400 hover:text-gray-600'}`}
-                            title="Chế độ danh sách"
-                        >
-                            <svg viewBox="0 0 24 24" height={15} width={15} fill="currentColor">
-                                <path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/>
-                            </svg>
-                        </button>
-                    </div>
                     <button
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none flex-1 sm:flex-none"
                         onClick={() => { cancelForm(); setShowForm(!showForm) }}
@@ -287,15 +259,17 @@ function ToolsClient() {
                 </div>
             )}
 
-            <div className={`flex ${layout === 'grid' ? 'flex-wrap gap-4' : 'flex-col'}`}>
+            <div className="flex flex-wrap gap-2">
                 {filtered.map(tool => {
                     const toolLabels = (tool.labels || []).map(l => typeof l === 'string' ? l : l._id)
-                    return layout === 'grid' ? (
+                    return (
                         <div key={tool._id} className="flex flex-col border border-gray-300 rounded-lg bg-white shadow-sm p-3 hover:-translate-y-1 hover:shadow-md transition-all duration-300 relative w-full sm:w-[calc(50%-8px)] md:w-[calc(33.33%-11px)] lg:w-[calc(25%-12px)]">
                             <div className="flex items-start justify-between">
-                                <a href={tool.link || '#'} target="_blank" rel="noopener noreferrer" className="text-base font-semibold text-[var(--main_d)] hover:underline">
-                                    {tool.name}
-                                </a>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                    <a href={tool.link || '#'} target="_blank" rel="noopener noreferrer" className="text-base font-semibold text-[var(--main_d)] hover:underline line-clamp-2 break-words">
+                                        {tool.name}
+                                    </a>
+                                </div>
                                 <button data-menu onClick={e => { e.stopPropagation(); openMenu(tool._id, e) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer border-none bg-transparent shrink-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" height={16} width={16} fill="currentColor" className="text-gray-400">
                                         <path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm56-104A56 56 0 1 0 8 96a56 56 0 1 0 112 0z" />
@@ -310,36 +284,16 @@ function ToolsClient() {
                                 </div>
                             )}
                             <div className="border-t border-gray-100 my-3" />
-                            {tool.desc && <p className="text-gray-500" style={{ fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap' }}>{tool.desc}</p>}
+                            {tool.desc && <p className="text-gray-500 whitespace-pre-wrap" style={{ fontSize: '12px', margin: 0 }}>
+                                {tool.desc.length > 500
+                                    ? <>{tool.desc.slice(0, 500)}<button onClick={() => setDescPopup(tool)} className="text-[var(--main_d)] hover:underline ml-1 cursor-pointer border-none bg-transparent p-0 text-xs font-semibold">...Xem thêm</button></>
+                                    : tool.desc}
+                            </p>}
                             {tool.link && (
                                 <div className="mt-2">
                                     <a href={tool.link} target="_blank" rel="noopener noreferrer" className="truncate block underline underline-offset-2" style={{ fontSize: '12px', color: '#3b82f6' }}>{tool.link}</a>
                                 </div>
                             )}
-                        </div>
-                    ) : (
-                        <div key={tool._id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 border border-gray-300 rounded-lg bg-white shadow-sm px-3 py-2 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 relative w-full">
-                            <div className="flex items-center gap-3 sm:flex-shrink-0 sm:min-w-0 sm:max-w-[30%]">
-                                <a href={tool.link || '#'} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[var(--main_d)] hover:underline truncate">
-                                    {tool.name}
-                                </a>
-                                {toolLabels.length > 0 && (
-                                    <div className="flex gap-1 flex-shrink-0">
-                                        {toolLabels.map(lId => (
-                                            <span key={lId} className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--main_d)]/10 text-[var(--main_d)]">{getLabelName(lId)}</span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {tool.desc && <p className="truncate sm:flex-1 sm:min-w-0 text-gray-500" style={{ fontSize: '11px', margin: 0, whiteSpace: 'pre-wrap' }}>{tool.desc}</p>}
-                            {tool.link && (
-                                <a href={tool.link} target="_blank" rel="noopener noreferrer" className="truncate sm:flex-1 sm:min-w-0 underline underline-offset-2" style={{ fontSize: '11px', color: '#3b82f6' }}>{tool.link}</a>
-                            )}
-                            <button data-menu onClick={e => { e.stopPropagation(); openMenu(tool._id, e) }} className="p-1 rounded hover:bg-gray-100 cursor-pointer border-none bg-transparent shrink-0 self-end sm:self-auto">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" height={14} width={14} fill="currentColor" className="text-gray-400">
-                                    <path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm56-104A56 56 0 1 0 8 96a56 56 0 1 0 112 0z" />
-                                </svg>
-                            </button>
                         </div>
                     )
                 })}
@@ -353,7 +307,7 @@ function ToolsClient() {
             {menuPos && menuToolId && (
                 <div ref={menuRef} data-menu className="fixed z-[9999] bg-white border rounded-lg shadow-lg py-1" style={{ top: menuPos.top, right: menuPos.right, width: '140px' }}>
                     <button onClick={() => { editTool(tools.find(t => t._id === menuToolId)); closeMenu() }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer border-none bg-transparent">
-                        <Svg_Pen w={14} h={14} c="currentColor" /> Chỉnh sửa
+                        <Svg_Pen w={14} h={14} c="currentColor" /> Sửa
                     </button>
                     <button onClick={() => { setConfirmDeleteId(menuToolId); closeMenu() }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 cursor-pointer border-none bg-transparent">
                         <Svg_Delete w={14} h={14} c="currentColor" /> Xóa
@@ -368,6 +322,21 @@ function ToolsClient() {
                         <div className="flex gap-3 justify-end">
                             <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer border-none">Hủy</button>
                             <button onClick={() => deleteTool(confirmDeleteId)} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium cursor-pointer border-none">Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {descPopup && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={() => setDescPopup(null)}>
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-[90vw] sm:w-[500px] max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <p className="text-base font-semibold text-gray-800">{descPopup.name}</p>
+                        </div>
+                        {descPopup.desc && <><div className="border-t border-gray-100 my-3" /><p className="text-gray-600 whitespace-pre-wrap" style={{fontSize:'13px'}}>{descPopup.desc}</p></>}
+                        {descPopup.link && <><div className="border-t border-gray-100 my-3" /><a href={descPopup.link} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline break-all" style={{color:'#2563eb'}}>{descPopup.link}</a></>}
+                        <div className="flex justify-end mt-4">
+                            <button onClick={() => setDescPopup(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium cursor-pointer border-none">Đóng</button>
                         </div>
                     </div>
                 </div>

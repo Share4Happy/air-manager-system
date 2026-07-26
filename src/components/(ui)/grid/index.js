@@ -14,18 +14,29 @@ const ResponsiveGrid = ({ items = [], columns, type = 'grid', style = {}, width 
 
     const hiddenItemsCount = items.length - (maxItemsOnList - 1);
     const gridStyles = {
-        '--mobile-cols': columns.mobile,
-        '--tablet-cols': columns.tablet,
-        '--desktop-cols': columns.desktop,
         display: 'grid',
         gap: '16px',
-        gridTemplateColumns: `repeat(${columns.mobile}, 1fr)`,
     };
     const handleOpenPopup = () => setPopupOpen(true);
     const handleClosePopup = () => setPopupOpen(false);
     return (
         <>
-            <div className='grid gap-4' style={gridStyles}>
+            <style>{`
+                .grid-${columns.mobile}-${columns.tablet}-${columns.desktop} {
+                    grid-template-columns: repeat(${columns.mobile}, 1fr);
+                }
+                @media (min-width: 640px) {
+                    .grid-${columns.mobile}-${columns.tablet}-${columns.desktop} {
+                        grid-template-columns: repeat(${columns.tablet}, 1fr);
+                    }
+                }
+                @media (min-width: 1024px) {
+                    .grid-${columns.mobile}-${columns.tablet}-${columns.desktop} {
+                        grid-template-columns: repeat(${columns.desktop}, 1fr);
+                    }
+                }
+            `}</style>
+            <div className={`grid gap-4 grid-${columns.mobile}-${columns.tablet}-${columns.desktop}`} style={gridStyles}>
                 {itemsToRender.map((item, index) => (
                     <div key={`grid-item-${index}`} className='w-full'>
                         {item}
@@ -44,7 +55,7 @@ const ResponsiveGrid = ({ items = [], columns, type = 'grid', style = {}, width 
                 <div className='fixed inset-0 w-screen h-screen bg-black/70 flex justify-center items-center z-[1000]' style={{ left: width ? `-${width}px` : '0' }} onClick={handleClosePopup}>
                     <div className='bg-white p-4 rounded-lg max-w-[90vw] h-[80vh] relative overflow-hidden w-[1200px] shadow-lg' onClick={(e) => e.stopPropagation()}>
                         <div style={{ width: '100%', height: '100%', overflow: 'hidden', overflowY: 'auto' }}>
-                            <div className='grid gap-4' style={gridStyles}>
+                            <div className={`grid gap-4 grid-${columns.mobile}-${columns.tablet}-${columns.desktop}`} style={gridStyles}>
                                 {items.map((item, index) => (
                                     <div key={`popup-item-${index}`} className='w-full'>
                                         {item}

@@ -48,7 +48,8 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onShowStudents, on
     }, [course?.Student]);
 
     return (
-        <div className={'m-4 border border-[var(--border-color)] rounded-md overflow-hidden'}>
+        <div className={'m-4 border border-[var(--border-color)] rounded-md overflow-x-auto'}>
+            <div style={{ minWidth: 800 }}>
             <div className={'flex p-2 border-b border-[var(--border-color)] bg-[var(--border-color)]'}>{cols.map((col, i) => <Cell key={i} flex={col.flex} align={col.align} header>{col.label}</Cell>)}</div>
             {toArr(course?.Detail).map((row, index) => (
                 <div key={row._id || index} className={'flex items-center border-b border-[var(--border-color)] bg-white'}>
@@ -65,6 +66,7 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onShowStudents, on
                     })}
                 </div>
             ))}
+            </div>
         </div>
     );
 });
@@ -263,19 +265,11 @@ export default function Calendar({ course }) {
     return (
         <>
             {isProcessing && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.35)', zIndex: 2500 }}><Loading content="Đang xử lý..." /></div>}
-            <div className={'flex flex-col w-full h-full gap-1'}>
-                <div className={'flex-1 flex flex-col items-center justify-center gap-1 rounded-md cursor-pointer bg-[#eaf9ff] transition-all duration-100 hover:bg-[#e1fff6] hover:-translate-y-0.5'} onClick={() => setOpen(true)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="16" height="16"><path fill="currentColor" d="M96 32v32H48C21.5 64 0 85.5 0 112v48h448v-48c0-26.5-21.5-48-48-48h-48V32a32 32 0 1 0-64 0v32H160V32a32 32 0 1 0-64 0zM448 192H0v272c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V192z" /></svg>
-                    <p className="text-xs font-semibold text-[var(--text-primary)]">Lịch học</p>
-                </div>
-                <div className={'flex-1 flex flex-col items-center justify-center gap-1 rounded-md cursor-pointer bg-green-50 transition-all duration-100 hover:bg-green-100 hover:-translate-y-0.5'} onClick={() => handleOpenPopup('makeup', { initialStudents: [] })}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="14" height="14" fill="#16a34a">
-                        <path d="M96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3zM504 312l0-64 64 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-64 0 0-64c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 64-64 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l64 0 0 64c0 13.3 10.7 24 24 24s24-10.7 24-24z"/>
-                    </svg>
-                    <p className="text-xs font-semibold text-green-700">Tạo buổi bù</p>
-                </div>
+            <div className={'w-full h-full flex flex-col items-center justify-center gap-1 rounded-md cursor-pointer bg-[#eaf9ff] transition-all duration-100 hover:bg-[#e1fff6] hover:-translate-y-0.5'} onClick={() => setOpen(true)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="16" height="16"><path fill="currentColor" d="M96 32v32H48C21.5 64 0 85.5 0 112v48h448v-48c0-26.5-21.5-48-48-48h-48V32a32 32 0 1 0-64 0v32H160V32a32 32 0 1 0-64 0zM448 192H0v272c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V192z" /></svg>
+                <p className="text-xs font-semibold text-[var(--text-primary)]">Lịch học</p>
             </div>
-            <FlexiblePopup open={open} onClose={() => setOpen(false)} title={`Lịch học - ${curCourse.ID}`} width={1200}             renderItemList={() => <><ScheduleTable course={curCourse} onEdit={(lesson) => handleOpenPopup('edit', lesson)} onDelete={(lesson) => handleOpenPopup('cancel', lesson)} onShowStudents={(lesson) => handleOpenPopup('studentList', lesson)} onMakeup={(lesson) => openMakeupForCancelled(lesson)} /></>} />
+            <FlexiblePopup open={open} onClose={() => setOpen(false)} title={`Lịch học - ${curCourse.ID}`} width={1200} renderItemList={() => <><div className="flex justify-end px-4 pt-2"><div className='px-2 py-1.5 flex items-center gap-1 w-max rounded text-white text-xs font-medium cursor-pointer border-none' style={{ background: 'var(--green)' }} onClick={() => handleOpenPopup('makeup', { initialStudents: [] })}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width={12} height={12} fill="white"><path d="M96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3zM504 312l0-64 64 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-64 0 0-64c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 64-64 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l64 0 0 64c0 13.3 10.7 24 24 24s24-10.7 24-24z"/></svg>Tạo buổi bù</div></div><ScheduleTable course={curCourse} onEdit={(lesson) => handleOpenPopup('edit', lesson)} onDelete={(lesson) => handleOpenPopup('cancel', lesson)} onShowStudents={(lesson) => handleOpenPopup('studentList', lesson)} onMakeup={(lesson) => openMakeupForCancelled(lesson)} /></>} />
             {popupState.type && <FlexiblePopup open={true} onClose={handleClosePopup} title={popupState.type === 'makeup' ? 'Tạo buổi bù' : popupState.type === 'edit' ? 'Chỉnh sửa buổi học' : popupState.type === 'cancel' ? 'Báo nghỉ buổi học' : `Học sinh buổi "${popupState.data?.LessonDetails?.Name || ''}"`} width={popupState.type === 'studentList' ? 500 : popupState.type === 'cancel' ? 420 : 600} renderItemList={renderPopupContent} />}
             <Noti open={toast.open} status={toast.status} mes={toast.mes} onClose={() => setToast(t => ({ ...t, open: false }))} />
         </>

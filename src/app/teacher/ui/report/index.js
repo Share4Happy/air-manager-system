@@ -252,17 +252,17 @@ const EnhancedViolationsReport = ({ initialReports }) => {
 
     return (
         <div className={'mt-4 flex-1 overflow-hidden flex flex-col'}>
-            <div className={'flex flex-wrap justify-between gap-4 items-center p-2 bg-[var(--bg-primary)] rounded-md mb-4 border border-[var(--border-color)]'}>
-                <div className={'flex gap-4'}>
+            <div className={'flex flex-col lg:flex-row flex-wrap justify-between gap-3 items-start p-2 bg-[var(--bg-primary)] rounded-md mb-4 border border-[var(--border-color)]'}>
+                <div className={'flex flex-wrap gap-3 items-center'}>
                     <div className={'flex bg-[#e9ecef] rounded-md p-1'}>
                         <button onClick={() => setShowMode('violations')} className={`${'p-[0.4rem_0.8rem] border-none bg-transparent cursor-pointer text-sm text-[var(--text-primary)] font-medium rounded transition-all duration-200'} ${showMode === 'violations' ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : ''}`}>Chỉ vi phạm</button>
                         <button onClick={() => setShowMode('all')} className={`${'p-[0.4rem_0.8rem] border-none bg-transparent cursor-pointer text-sm text-[var(--text-primary)] font-medium rounded transition-all duration-200'} ${showMode === 'all' ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : ''}`}>Tất cả</button>
                     </div>
-                    <input type="text" placeholder="Tìm tên giáo viên..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none ${'w-[180px]'}`} />
-                    <div className={'flex items-center gap-1'}>
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none ${'w-[135px]'}`} title="Từ ngày" />
+                    <input type="text" placeholder="Tìm tên giáo viên..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full sm:w-[180px]`} />
+                    <div className={'flex items-center gap-1 flex-wrap'}>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Từ ngày" />
                         <span className={'text-[var(--text-primary)]'}>–</span>
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none ${'w-[135px]'}`} title="Đến ngày" />
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Đến ngày" />
                     </div>
                 </div>
                 <div className={'flex gap-4'}>
@@ -270,9 +270,9 @@ const EnhancedViolationsReport = ({ initialReports }) => {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 16, flex: 1, overflow: 'hidden' }}>
+            <div className={'flex flex-col lg:flex-row gap-4 flex-1 overflow-hidden'}>
                 {/* Khu vực biểu đồ */}
-                <div className={'flex-1 overflow-hidden p-2 bg-white rounded-lg border border-[#e5e7eb] max-h-[calc(100vh-180px)]'}>
+                <div className={'w-full lg:w-[400px] shrink-0 overflow-hidden p-2 bg-white rounded-lg border border-[#e5e7eb] max-h-[300px] lg:max-h-[calc(100vh-180px)]'}>
                     <StatusCharts
                         summaryData={reportSummary}
                         violationTypesData={violationTypesSummary}
@@ -280,36 +280,36 @@ const EnhancedViolationsReport = ({ initialReports }) => {
                 </div>
 
                 {/* Khu vực danh sách */}
-                <div style={{ flex: 2, overflow: 'hidden', overflowY: 'auto' }}>
-                    <div className={'flex flex-col mx-auto gap-2 flex-[2]'}>
+                <div style={{ flex: 1, overflow: 'hidden', overflowY: 'auto' }}>
+                    <div className={'flex flex-col mx-auto gap-2'}>
                         <p className='text-base font-semibold text-[var(--text-primary)]'>Danh sách giáo viên giảng dạy</p>
                         {filteredReports.length > 0 ? (
                             filteredReports.map(report => (
                                 <div key={report.teacherInfo._id} className={'bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md overflow-hidden'}>
                                     <div className={'flex justify-between items-center p-[0.75rem_1.25rem] cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} onClick={() => toggleDetails(report.teacherInfo._id)}>
-                                        <p className={'font-medium text-[var(--text-primary)] m-0'}>{report.teacherInfo.name}</p>
-                                        <div className={'flex items-center gap-3'}>
-                                            <span className={'text-sm text-[var(--text-primary)] bg-[#f0f0f0] p-[0.25rem_0.75rem] rounded-full'}>
+                                        <p className={'font-medium text-[var(--text-primary)] m-0 text-sm sm:text-base truncate'}>{report.teacherInfo.name}</p>
+                                        <div className={'flex items-center gap-3 shrink-0 ml-2'}>
+                                            <span className={'text-xs sm:text-sm text-[var(--text-primary)] bg-[#f0f0f0] p-[0.25rem_0.75rem] rounded-full shrink-0'}>
                                                 <span className={'font-bold text-[var(--main_d)]'}>{report.violationsInScope}</span> / {report.totalInScope} buổi
                                             </span>
-                                            <ChevronIcon expanded={visibleTeacher === report.teacherInfo._id} />
+                                            <ChevronIcon expanded={visibleTeacher === report.teacherInfo._id} size={18} />
                                         </div>
                                     </div>
 
                                     {visibleTeacher === report.teacherInfo._id && (
                                         <div className={'p-[0.25rem_0] border-t border-[#f0f0f0] bg-[#fafbfd]'}>
                                             {report.lessonsToDisplay.map(lesson => (
-                                                <Link href={`/course/${lesson.courseId}/${lesson.lessonId}`} key={lesson.lessonId} className={`${'flex flex-wrap justify-between items-center gap-[0.5rem_1rem] p-[0.75rem_1.25rem] border-b border-[#f0f0f0] cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} ${lesson.isViolation ? 'border-l-4 border-[var(--main_d)]' : 'border-l-4 border-[var(--green)]'}`}>
-                                                    <div className={'flex items-center gap-4 text-sm text-[var(--text-primary)]'}>
+                                                <Link href={`/course/${lesson.courseId}/${lesson.lessonId}`} key={lesson.lessonId} className={`${'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-[0.75rem_1.25rem] border-b border-[#f0f0f0] cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} ${lesson.isViolation ? 'border-l-4 border-[var(--main_d)]' : 'border-l-4 border-[var(--green)]'}`}>
+                                                    <div className={'flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-[var(--text-primary)]'}>
                                                         <span className={'font-medium text-[var(--text-primary)]'}>{lesson.courseId}</span>
-                                                        <span className='text-sm text-gray-600'>{new Date(lesson.day).toLocaleDateString('vi-VN')}</span>
-                                                        <span className={'italic'}>{lesson.room && !/^[0-9a-fA-F]{24}$/.test(lesson.room) ? lesson.room : 'N/A'}</span>
+                                                        <span className='text-xs sm:text-sm text-gray-600'>{new Date(lesson.day).toLocaleDateString('vi-VN')}</span>
+                                                        <span className={'italic text-xs'}>{lesson.room && !/^[0-9a-fA-F]{24}$/.test(lesson.room) ? lesson.room : 'N/A'}</span>
                                                     </div>
                                                     {lesson.isViolation ? (
-                                                        <div className={'flex gap-2'}>
-                                                            {lesson.errors.attendance && <span className={`${'p-[0.2rem_0.6rem] rounded-full text-xs font-medium text-white'} ${'bg-[rgba(255,159,64,0.7)] border border-[rgba(255,159,64,1)]'}`}>Thiếu Điểm Danh</span>}
-                                                            {lesson.errors.comment && <span className={`${'p-[0.2rem_0.6rem] rounded-full text-xs font-medium text-white'} ${'bg-[#b794ff] border border-[rgba(153,102,255,1)]'}`}>Thiếu Nhận Xét</span>}
-                                                            {lesson.errors.image && <span className={`${'p-[0.2rem_0.6rem] rounded-full text-xs font-medium text-white'} ${'bg-[#42A5F5] border border-[rgba(54,162,235,1)]'}`}>Thiếu Hình Ảnh</span>}
+                                                        <div className={'flex gap-1.5 flex-wrap'}>
+                                                            {lesson.errors.attendance && <span className={`${'p-[0.2rem_0.5rem] rounded-full text-[10px] sm:text-xs font-medium text-white'} ${'bg-[rgba(255,159,64,0.7)] border border-[rgba(255,159,64,1)]'}`}>Thiếu Điểm Danh</span>}
+                                                            {lesson.errors.comment && <span className={`${'p-[0.2rem_0.5rem] rounded-full text-[10px] sm:text-xs font-medium text-white'} ${'bg-[#b794ff] border border-[rgba(153,102,255,1)]'}`}>Thiếu Nhận Xét</span>}
+                                                            {lesson.errors.image && <span className={`${'p-[0.2rem_0.5rem] rounded-full text-[10px] sm:text-xs font-medium text-white'} ${'bg-[#42A5F5] border border-[rgba(54,162,235,1)]'}`}>Thiếu Hình Ảnh</span>}
                                                         </div>
                                                     ) : (
                                                         <div className={'flex items-center gap-1 text-xs font-medium text-[var(--green)]'}>

@@ -63,6 +63,7 @@ const promotionsData = [
 const PopupContent = React.memo(({ data, onStartInvoice, onDetailClick }) => {
     const tuition = data?.Course?.filter(course => course.tuition === null) || [];
     const tuitiondone = data?.Course?.filter(course => course.tuition !== null) || [];
+    const debts = data?.debts || [];
     return (
         <>
             <div style={{ padding: 16, paddingBottom: 0 }}>
@@ -70,14 +71,23 @@ const PopupContent = React.memo(({ data, onStartInvoice, onDetailClick }) => {
             </div>
             <div style={{ margin: 16, border: 'thin solid var(--main_d)', borderRadius: 5, overflow: 'hidden' }}>
                 <p className='text-base font-semibold text-[var(--text-primary)]' style={{ padding: '10px 8px', background: 'var(--main_d)', color: 'white' }}>Thông tin nợ học phí</p>
-                {tuition.length > 0 ? (
-                    tuition.map((course, index) => (
-                        <div key={index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
-                            <p>Khóa học: {course.ID}</p>
-                            <p>{formatCurrencyVN(course.Book?.Price || 0)}</p>
-                            <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice(course)} />
-                        </div>
-                    ))
+                {tuition.length > 0 || debts.length > 0 ? (
+                    <>
+                        {tuition.map((course, index) => (
+                            <div key={index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
+                                <p>Khóa học: {course.ID}</p>
+                                <p>{formatCurrencyVN(course.Book?.Price || 0)}</p>
+                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice(course)} />
+                            </div>
+                        ))}
+                        {debts.map((d, index) => (
+                            <div key={'debt-' + index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
+                                <p>{d.courseName || 'Khoản nợ'} {d.note ? `(${d.note})` : ''}</p>
+                                <p>{formatCurrencyVN(d.amount || 0)}</p>
+                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice({ _id: d._id, ID: d.courseName || 'Khoản nợ', Book: { Price: d.amount || 0 }, tuition: null })} />
+                            </div>
+                        ))}
+                    </>
                 ) : (
                     <p className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: 12, textAlign: 'center', fontStyle: 'italic' }}>Không có thông tin nợ học phí</p>
                 )}
@@ -130,6 +140,15 @@ export default function Pay({ _id, courseId = null, status = false }) {
         let finalData = (Array.isArray(data) && data.length > 0) ? data[0] : data;
         if (courseId && finalData?.Course) {
             finalData.Course = finalData.Course.filter(c => c._id === courseId);
+        }
+        try {
+            const res = await fetch('/api/debt');
+            const json = await res.json();
+            if (json.data) {
+                finalData.debts = json.data.filter(d => String(d.studentId) === String(_id));
+            }
+        } catch (e) {
+            finalData.debts = [];
         }
         setStudentData(finalData);
         return finalData;

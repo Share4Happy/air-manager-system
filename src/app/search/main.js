@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getEportfolioUrl } from '@/utils/env'
 
 const getStatusColor = (s) => {
   if (!s) return 'bg-gray-100 text-gray-500'
@@ -90,14 +91,13 @@ const Main = ({ data }) => {
             <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">ID</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Họ và tên</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Giới thiệu</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Avatar</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Kĩ năng</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Sản phẩm</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Trạng thái</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Ngày tạo</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">ePort</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,7 +111,6 @@ const Main = ({ data }) => {
                   const statusColor = getStatusColor(s)
                   return (
                     <tr key={s._id} className="hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer" onClick={() => router.push(`/${s._id}`)}>
-                      <td className="px-4 py-3 text-sm text-gray-500">{s._id}</td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-800">{s.Name}</td>
                       <td className="px-4 py-3">{hasIntro ? <span className="text-xs text-emerald-600">✓</span> : <span className="text-xs text-rose-400">—</span>}</td>
                       <td className="px-4 py-3">{hasAvatar ? <span className="text-xs text-emerald-600">✓</span> : <span className="text-xs text-rose-400">—</span>}</td>
@@ -120,7 +119,14 @@ const Main = ({ data }) => {
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 text-[11px] font-semibold rounded ${statusColor}`}>{statusLabel}</span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(s.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`${getEportfolioUrl()}/e-portfolio/${s._id}`} target="_blank"
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded cursor-pointer transition-colors ${s.statusProfile ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-rose-50 text-rose-500 hover:bg-rose-100'}`}
+                          onClick={(e) => e.stopPropagation()}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${s.statusProfile ? 'bg-emerald-500' : 'bg-rose-400'}`}></span>
+                          {s.statusProfile ? 'Công khai' : 'Chưa sẵn sàng'}
+                        </Link>
+                      </td>
                     </tr>
                   )
                 })}

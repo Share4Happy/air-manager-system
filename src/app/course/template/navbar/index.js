@@ -20,6 +20,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
     const [timeRange, setTimeRange] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
 
 
     useEffect(() => {
@@ -143,7 +144,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
         <>
             <div className={'flex flex-col h-full'}>
                 <div className={'flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 p-2 md:p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
-                    <div className='flex items-center gap-2 flex-1 flex-wrap'>
+                    <div className={`flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 w-full ${showFilters ? 'flex' : 'hidden'} md:flex`}>
                         <input
                             className='px-3 py-2 md:py-2.5 border border-gray-200 rounded bg-white text-sm outline-none resize-none text-[var(--text-primary)] w-full md:flex-1 min-w-0'
                             placeholder="Tìm kiếm..."
@@ -201,6 +202,13 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                              </button>
                          </div>
                     </div>
+                    <button className="md:hidden flex items-center justify-end w-full border-none cursor-pointer bg-transparent" onClick={() => setShowFilters(!showFilters)}>
+                        <div className="w-7 h-7 rounded-full border border-[var(--border-color)] flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="var(--text-secondary)">
+                                <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
+                            </svg>
+                        </div>
+                    </button>
                 </div>
 
                 <div className={'flex-1 overflow-y-auto p-3 md:p-[16px_3px] m-[0_-3px] box-border'}>

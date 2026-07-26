@@ -62,12 +62,12 @@ export default function Export() {
             <div>
                 {/* Nút bấm để kích hoạt */}
                 <div
-                    className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'
+                    className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'
                     style={{ marginTop: 8, borderRadius: 5, background: 'var(--main_d)', cursor: 'pointer' }}
                     onClick={handleReload}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none"><path d="M24 0v24H0V0z" /><path fill="#FFF" d="M15 5.5a3.5 3.5 0 1 1 .994 2.443L11.67 10.21c.213.555.33 1.16.33 1.79a4.99 4.99 0 0 1-.33 1.79l4.324 2.267a3.5 3.5 0 1 1-.93 1.771l-4.475-2.346a5 5 0 1 1 0-6.963l4.475-2.347A3.524 3.524 0 0 1 15 5.5" /></g></svg>
-                    <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Xuất thông tin</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><g fill="none"><path d="M24 0v24H0V0z" /><path fill="#FFF" d="M15 5.5a3.5 3.5 0 1 1 .994 2.443L11.67 10.21c.213.555.33 1.16.33 1.79a4.99 4.99 0 0 1-.33 1.79l4.324 2.267a3.5 3.5 0 1 1-.93 1.771l-4.475-2.346a5 5 0 1 1 0-6.963l4.475-2.347A3.524 3.524 0 0 1 15 5.5" /></g></svg>
+                    <p className='hidden sm:inline text-xs font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Xuất thông tin</p>
                 </div>
 
                 {/* Popup hiển thị trạng thái */}

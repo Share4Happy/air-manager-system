@@ -124,6 +124,9 @@ export async function POST(request) {
                 return NextResponse.json({ status: 1, mes: 'ID trợ giảng (TeachingAs) không hợp lệ' }, { status: 400 });
             }
         }
+        if (data.Note !== undefined) {
+            setObj['Detail.$.Note'] = data.Note;
+        }
 
         let courseAfterUpdate;
         if (Object.keys(setObj).length > 0) {

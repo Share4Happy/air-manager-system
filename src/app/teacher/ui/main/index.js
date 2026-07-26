@@ -172,6 +172,8 @@ const Main = ({ initialTeachers }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState({ open: false, status: false, message: '' });
   const [confirmUser, setConfirmUser] = useState(null);
+  const [resetLoginUser, setResetLoginUser] = useState(null);
+  const [resetting, setResetting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [toggling, setToggling] = useState(false);
@@ -256,6 +258,25 @@ const Main = ({ initialTeachers }) => {
       setNotification({ open: true, status: false, message: 'Lỗi kết nối đến máy chủ.' });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResetLogin = async (userId) => {
+    setResetting(true);
+    try {
+      const res = await fetch('/api/user/reset-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const result = await res.json();
+      setNotification({ open: true, status: res.ok, message: result.mes || (res.ok ? 'Đã xóa khóa đăng nhập' : 'Lỗi') });
+      setResetLoginUser(null);
+      if (res.ok) router.refresh();
+    } catch {
+      setNotification({ open: true, status: false, message: 'Lỗi kết nối' });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -501,6 +522,12 @@ const Main = ({ initialTeachers }) => {
                               >
                                 Chuyển đổi role
                               </button>
+                              <button
+                                onClick={() => { setOpenMenuId(null); setResetLoginUser(user); }}
+                                className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors"
+                              >
+                                Reset thời gian khóa
+                              </button>
                             </div>
                           </>
                         )}
@@ -564,6 +591,33 @@ const Main = ({ initialTeachers }) => {
                 className={`px-4 py-2 text-sm rounded text-white transition-colors cursor-pointer border-none disabled:opacity-50 ${confirmUser.status !== false ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
               >
                 {toggling ? 'Đang xử lý...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {resetLoginUser && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !resetting && setResetLoginUser(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <p className="text-sm text-gray-700">
+              Bạn có chắc muốn reset thời gian khóa đăng nhập của tài khoản "<span className="font-semibold">{resetLoginUser.name}</span>"?<br />
+              Người dùng sẽ có thể đăng nhập lại ngay lập tức.
+            </p>
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                onClick={() => setResetLoginUser(null)}
+                disabled={resetting}
+                className="px-4 py-2 text-sm rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer border-none disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => handleResetLogin(resetLoginUser._id)}
+                disabled={resetting}
+                className="px-4 py-2 text-sm rounded text-white transition-colors cursor-pointer border-none disabled:opacity-50 bg-orange-600 hover:bg-orange-700"
+              >
+                {resetting ? 'Đang xử lý...' : 'Xác nhận'}
               </button>
             </div>
           </div>

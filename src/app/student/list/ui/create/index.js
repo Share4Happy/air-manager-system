@@ -285,7 +285,7 @@ export default function Create() {
         onClick={handleOpenPopup}
       >
         <Svg_Add w={16} h={16} c='white' />
-        Thêm học sinh mới
+        Thêm học sinh
       </button>
 
             {isLoading && (
@@ -297,7 +297,7 @@ export default function Create() {
             <FlexiblePopup
                 open={isPopupOpen}
                 onClose={triggerFormCloseCheck}
-                title="Thêm học sinh mới"
+                title="Thêm học sinh"
                 width={700}
                 fetchData={area_data}
                 renderItemList={(fetchedAreaData) => (
