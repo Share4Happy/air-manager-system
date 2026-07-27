@@ -149,7 +149,7 @@ function ToolsClient() {
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Tìm kiếm..."
-                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none flex-1 bg-white min-w-[140px]"
+                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white w-48"
                 />
                 <select
                     value={filterLabel}

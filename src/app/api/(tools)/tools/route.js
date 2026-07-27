@@ -6,7 +6,7 @@ import authenticate from '@/utils/authenticate'
 export async function GET() {
     try {
         await connectDB()
-        const tools = await Tool.find({}).populate('labels').lean()
+        const tools = await Tool.find({}).populate('labels').sort({ createdAt: -1 }).lean()
         return jsonRes(200, { status: true, data: tools })
     } catch (err) {
         return jsonRes(500, { status: false, mes: err.message, data: [] })
@@ -16,9 +16,6 @@ export async function GET() {
 export async function POST(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role.includes('Admin') && !user.role.includes('Manager')) {
-            return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
-        }
         await connectDB()
         const { name, desc, link, labels } = body
         if (!name?.trim()) {

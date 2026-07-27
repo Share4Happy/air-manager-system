@@ -8,9 +8,6 @@ export async function DELETE(request, { params }) {
     const { id } = await params
     try {
         const { user } = await authenticate(request)
-        if (!user.role.includes('Admin') && !user.role.includes('Manager')) {
-            return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
-        }
         await connectDB()
 
         const used = await Tool.exists({ labels: id })

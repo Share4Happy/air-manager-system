@@ -7,9 +7,6 @@ export async function PUT(request, { params }) {
     const { id } = await params
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role.includes('Admin') && !user.role.includes('Manager')) {
-            return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
-        }
         await connectDB()
         const { name, desc, link, labels } = body
         if (!name?.trim()) {
@@ -34,9 +31,6 @@ export async function DELETE(request, { params }) {
     const { id } = await params
     try {
         const { user } = await authenticate(request)
-        if (!user.role.includes('Admin') && !user.role.includes('Manager')) {
-            return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
-        }
         await connectDB()
         const tool = await Tool.findByIdAndDelete(id)
         if (!tool) {

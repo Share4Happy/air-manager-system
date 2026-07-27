@@ -16,9 +16,6 @@ export async function GET() {
 export async function POST(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role.includes('Admin') && !user.role.includes('Manager')) {
-            return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
-        }
         await connectDB()
         const { name } = body
         if (!name?.trim()) {

@@ -12,10 +12,17 @@ export async function GET(req) {
         const status = searchParams.get('status')
         const courseId = searchParams.get('courseId')
         const studentId = searchParams.get('studentId')
+        const scope = searchParams.get('scope')
 
         await connectDB()
         const filter = {}
-        if (status) filter.makeupStatus = status
+        if (status) {
+            filter.makeupStatus = status
+        } else if (scope === 'need') {
+            filter.makeupStatus = { $in: ['MAKEUP_PENDING', 'MAKEUP_REQUIRED', 'MAKEUP_SCHEDULED'] }
+        } else if (scope === 'history') {
+            filter.makeupStatus = { $in: ['MAKEUP_COMPLETED', 'MAKEUP_ABSENT', 'MAKEUP_EXPIRED', 'MAKEUP_CANCELLED'] }
+        }
         if (courseId) filter.course = new mongoose.Types.ObjectId(courseId)
         if (studentId) filter.studentId = studentId
 
