@@ -78,6 +78,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
             issues.push('Dữ liệu khóa học không hợp lệ.');
         } else {
             for (const lesson of data.Detail) {
+                if (lesson.Type === 'Báo nghỉ') continue;
                 const lessonDate = new Date(lesson.Day);
                 if (isNaN(lessonDate.getTime()) || lessonDate > today) {
                     issues.push(`Còn buổi học trong tương lai (${formatDate(lessonDate)}).`);
@@ -229,8 +230,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     let lesson;
     let statusLesson = [1, 1, 1];
     let slide = ''
-    if (params.length > 1) {
-        lesson = data.Detail.find(lesson => lesson._id === params[1]);
+    const lessonId = activeLessonTab || (params.length > 1 ? params[1] : null);
+    if (lessonId) {
+        lesson = data.Detail.find(lesson => lesson._id === lessonId);
         slide = lesson?.LessonDetails?.Slide || '';
         if (!lesson) lesson = data.Detail[0];
         lesson.Student = data.Student.flatMap((s) => {
@@ -269,9 +271,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     )}
                 </div>
                 <div style={{ flex: 1 }}>
-                    <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>{params.length == 1 ? 'Thông tin khóa học' : `Thông tin buổi học (${lesson.Type || 'Chính thức'})`}</p>
+                    <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>{lessonId ? `Thông tin buổi học (${lesson.Type || 'Chính thức'})` : 'Thông tin khóa học'}</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        {params.length == 1 ?
+                        {!lessonId ?
                             <>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" width={14} height={14} fill='var(--text-primary)'><path d="M249.6 471.5c10.8 3.8 22.4-4.1 22.4-15.5l0-377.4c0-4.2-1.6-8.4-5-11C247.4 52 202.4 32 144 32C93.5 32 46.3 45.3 18.1 56.1C6.8 60.5 0 71.7 0 83.8L0 454.1c0 11.9 12.8 20.2 24.1 16.5C55.6 460.1 105.5 448 144 448c33.9 0 79 14 105.6 23.5zm76.8 0C353 462 398.1 448 432 448c38.5 0 88.4 12.1 119.9 22.6c11.3 3.8 24.1-4.6 24.1-16.5l0-370.3c0-12.1-6.8-23.3-18.1-27.6C529.7 45.3 482.5 32 432 32c-58.4 0-103.4 20-123 35.6c-3.3 2.6-5 6.8-5 11L304 456c0 11.4 11.7 19.3 22.4 15.5z" /></svg>
@@ -356,15 +358,15 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                                     <path d="M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160 352 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l111.5 0c0 0 0 0 0 0l.4 0c17.7 0 32-14.3 32-32l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 35.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0C73.2 122 55.6 150.7 44.8 181.4c-5.9 16.7 2.9 34.9 19.5 40.8s34.9-2.9 40.8-19.5zM39 289.3c-5 1.5-9.8 4.2-13.7 8.2c-4 4-6.7 8.8-8.1 14c-.3 1.2-.6 2.5-.8 3.8c-.3 1.7-.4 3.4-.4 5.1L16 432c0 17.7 14.3 32 32 32s32-14.3 32-32l0-35.1 17.6 17.5c0 0 0 0 0 0c87.5 87.4 229.3 87.4 316.7 0c24.4-24.4 42.1-53.1 52.9-83.8c5.9-16.7-2.9-34.9-19.5-40.8s-34.9 2.9-40.8 19.5c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0l-.1-.1L125.6 352l34.4 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L48.4 288c-1.6 0-3.2 .1-4.8 .3s-3.1 .5-4.6 1z" /></svg>
                                 <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Tải lại dữ liệu</p>
                             </div>
-                            {params.length > 1 && <div className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ marginTop: 8, borderRadius: 5, background: '#f59e0b' }} onClick={() => router.push(`/calendar/${params[1]}`)}>
+                            {lessonId && <div className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ marginTop: 8, borderRadius: 5, background: '#f59e0b' }} onClick={() => router.push(`/calendar/${lessonId}`)}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill='white'>
                                     <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
                                 </svg>
                                 <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Điểm danh bù</p>
                             </div>}
-                            {(params.length > 1 && !data.Status) &&
-                                <SendCmt data={data} lesson={params[1]}/>}
-                            {params.length == 1 &&
+                            {(lessonId && !data.Status) &&
+                                <SendCmt data={data} lesson={lessonId}/>}
+                            {!lessonId &&
                                 <>
                                     {data.Status ?
                                         <div
@@ -480,13 +482,11 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     </div>
                     {activeLessonTab ? (
                         <> {data.Student.filter((stu, idx, arr) => { const k = stu._id?.toString() || stu.ID || idx; return arr.findIndex(s => (s._id?.toString() || s.ID) === k) === idx; }).map(stu => {
-                            if ((stu.Learn || []).filter(t => t.Lesson.toString() === activeLessonTab.toString()).length === 0) return null;
                             return (
                                 <div key={stu._id || stu.ID} style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }} >
                                     {title.map(col => {
                                         let learnDetailsArray = Object.values(stu.Learn || {});
                                         learnDetailsArray = (learnDetailsArray || []).filter(ld => ld.Lesson?.toString() === activeLessonTab.toString())[0]
-                                        if (learnDetailsArray === undefined) return null;
                                         let m = learnDetailsArray?.Checkin == '1' ? 1 : 0;
                                         let c = learnDetailsArray?.Checkin == '3' ? 1 : 0;
                                         let k = learnDetailsArray?.Checkin == '2' ? 1 : 0;
@@ -563,7 +563,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                 </div>
             </div>
 
-            {params.length > 1 &&
+            {lessonId &&
                 <div className={'bg-white rounded flex justify-between border border-[var(--border-color)]'}>
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                         <p style={{ padding: 16, borderBottom: 'thin solid var(--border-color)' }} className='text-base font-semibold text-[var(--text-primary)]'>Tài nguyên giảng dạy</p>

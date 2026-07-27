@@ -380,7 +380,10 @@ const UploadManager = forwardRef(({
             } catch (err) {
                 console.error(`Lỗi tải lên file ${file.name}:`, err);
                 failedCount++;
-                onProgressUpdate({ failed: failedCount, lastError: `Tệp "${file.name}": ${err.message}` });
+                const userMsg = err.message?.includes('oauth2') || err.message?.includes('token')
+                    ? 'Lỗi xác thực kết nối Google Drive (token/service account)'
+                    : err.message || 'Lỗi không xác định';
+                onProgressUpdate({ failed: failedCount, lastError: `Tệp "${file.name}": ${userMsg}` });
             }
         }
 
@@ -481,6 +484,12 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
     };
 
     const handleUploadComplete = () => {
+        setUploadProgress(prev => {
+            if (prev.failed > 0) {
+                setNoti({ open: true, status: false, mes: `Tải lên thất bại ${prev.failed}/${prev.total} file. ${prev.lastError || ''}` });
+            }
+            return prev;
+        });
         setTimeout(() => {
             setIsUploading(false);
             onUploadSuccess?.();

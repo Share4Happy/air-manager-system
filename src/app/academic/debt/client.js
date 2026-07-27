@@ -29,20 +29,20 @@ export default function DebtClient({ students, courseMap, attendanceMap, debts }
     const [manualEndDate, setManualEndDate] = useState('')
     const [manualNote, setManualNote] = useState('')
     const [saving, setSaving] = useState(false)
-    const [bulkRunning, setBulkRunning] = useState(false)
-    const [showBulkConfirm, setShowBulkConfirm] = useState(false)
     const [showFilter, setShowFilter] = useState(false)
     const [filterOpts, setFilterOpts] = useState({
         unpaid: true,
-        paid: false,
+        paid: true,
         fullAttended: true,
         incomplete: true,
+        completed: false,
     })
     const reloadPage = async () => {
         try { await fetch('/api/clear-cache', { method: 'POST' }) } catch {}
         window.location.href = '/academic/debt?' + Date.now()
     }
     const fullAttended = (r) => r.totalLessons > 0 && r.attended >= r.totalLessons
+    const isCompleted = (r) => r.endDate && new Date(r.endDate) < new Date()
 
 const rows = useMemo(() => {
     const result = []
@@ -113,12 +113,13 @@ const rows = useMemo(() => {
         const showFull = filterOpts.fullAttended
         const showIncomplete = filterOpts.incomplete
         result = result.filter(r => {
+            if (filterOpts.completed && !isCompleted(r)) return false
             const full = fullAttended(r)
             const paid = r.paid
-            if (paid && !showPaid) return false
-            if (!paid && !showUnpaid) return false
-            if (full && !showFull) return false
-            if (!full && !showIncomplete) return false
+            if (paid && !filterOpts.paid) return false
+            if (!paid && !filterOpts.unpaid) return false
+            if (full && !filterOpts.fullAttended) return false
+            if (!full && !filterOpts.incomplete) return false
             return true
         })
         return result
@@ -278,20 +279,6 @@ const rows = useMemo(() => {
 
     return (
         <div className="flex flex-col gap-3 p-4 h-full">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Quản lý học phí</h2>
-                <button
-                    onClick={() => setShowBulkConfirm(true)}
-                    disabled={bulkRunning}
-                    className="px-3 py-1.5 text-xs font-medium rounded text-white border-none cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                    style={{ background: 'var(--green)' }}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={12} height={12} fill="white">
-                        <path d="M64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
-                    </svg>
-                    {bulkRunning ? 'Đang xử lý...' : 'Hoàn tất tất cả'}
-                </button>
-            </div>
 
             <div className="flex gap-0 border-b border-[var(--border-color)]">
                 <button
@@ -333,11 +320,11 @@ const rows = useMemo(() => {
                             <div className="absolute z-20 top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px]">
                                 <p className="px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Đóng tiền</p>
                                 <label className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                    <input type="checkbox" checked={filterOpts.unpaid} onChange={e => setFilterOpts(p => ({ ...p, unpaid: e.target.checked }))} className="accent-red-600" />
+                                    <input type="checkbox" checked={filterOpts.unpaid} onChange={e => setFilterOpts(p => ({ ...p, unpaid: e.target.checked }))} className="accent-blue-600" />
                                     Chưa đóng
                                 </label>
                                 <label className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                    <input type="checkbox" checked={filterOpts.paid} onChange={e => setFilterOpts(p => ({ ...p, paid: e.target.checked }))} className="accent-green-600" />
+                                    <input type="checkbox" checked={filterOpts.paid} onChange={e => setFilterOpts(p => ({ ...p, paid: e.target.checked }))} className="accent-blue-600" />
                                     Đã đóng
                                 </label>
                                 <div className="border-t border-gray-100 my-1" />
@@ -347,8 +334,13 @@ const rows = useMemo(() => {
                                     Đủ buổi
                                 </label>
                                 <label className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                    <input type="checkbox" checked={filterOpts.incomplete} onChange={e => setFilterOpts(p => ({ ...p, incomplete: e.target.checked }))} className="accent-orange-600" />
+                                    <input type="checkbox" checked={filterOpts.incomplete} onChange={e => setFilterOpts(p => ({ ...p, incomplete: e.target.checked }))} className="accent-blue-600" />
                                     Chưa đủ buổi
+                                </label>
+                                <div className="border-t border-gray-100 my-1" />
+                                <label className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" checked={filterOpts.completed} onChange={e => setFilterOpts(p => ({ ...p, completed: e.target.checked }))} className="accent-blue-600" />
+                                    Đủ buổi (đã kết thúc)
                                 </label>
                             </div>
                         </>
@@ -618,47 +610,6 @@ const rows = useMemo(() => {
                 </div>
             </CenterPopup>
 
-            {showBulkConfirm && (
-                <div className="fixed inset-0 z-[1200] flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => !bulkRunning && setShowBulkConfirm(false)} />
-                    <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-                        <p className="text-sm text-gray-700 mb-2">
-                            Thao tác này sẽ tạo hóa đơn (đóng trực tiếp) cho <strong>tất cả học sinh chưa đóng học phí</strong>.
-                        </p>
-                        <p className="text-xs text-orange-600">Hành động này không thể hoàn tác.</p>
-                        <div className="flex gap-2 justify-end mt-4">
-                            <button
-                                onClick={() => setShowBulkConfirm(false)}
-                                disabled={bulkRunning}
-                                className="px-4 py-2 text-sm rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer border-none disabled:opacity-50"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                disabled={bulkRunning}
-                                className="px-4 py-2 text-sm rounded text-white transition-colors cursor-pointer border-none disabled:opacity-50"
-                                style={{ background: 'var(--green)' }}
-                                onClick={async () => {
-                                    setBulkRunning(true)
-                                    try {
-                                        const res = await fetch('/api/pay/bulk-all', { method: 'POST' })
-                                        const result = await res.json()
-                                        alert(result.mes || (res.ok ? 'Hoàn tất' : 'Lỗi'))
-                                        setShowBulkConfirm(false)
-                                        reloadPage()
-                                    } catch {
-                                        alert('Lỗi kết nối')
-                                    } finally {
-                                        setBulkRunning(false)
-                                    }
-                                }}
-                            >
-                                {bulkRunning ? 'Đang xử lý...' : 'Xác nhận'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

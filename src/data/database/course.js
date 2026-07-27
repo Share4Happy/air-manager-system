@@ -102,7 +102,7 @@ export async function dataCourse(_id) {
                 student.Name = info?.Name || 'Không tìm thấy';
                 student.userId = info?._id || null;
                 student.StatusProfile = CheckProfileDone(info?.Profile || {});
-                student.StatusCourse = info?.Course.filter(c => c.course.toString() == _id)[0]?.tuition == null ? false : true || false;
+                student.StatusCourse = info?.Course?.filter(c => c.course.toString() == _id)[0]?.tuition == null ? false : true || false;
             });
         }
         return JSON.parse(JSON.stringify(course));

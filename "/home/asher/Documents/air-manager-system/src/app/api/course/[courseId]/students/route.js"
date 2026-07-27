@@ -1,0 +1,30 @@
+import { NextResponse } from 'next/server';
+import connectDB from '@/config/connectDB';
+import Course from '@/models/course';
+import { clearCacheByTag } from '@/lib/cache';
+import { revalidatePath } from 'next/cache';
+
+export async function POST(request, { params }) {
+    try {
+        const courseId = (await params).courseId;
+        const body = await request.json();
+        const { students } = body;
+
+        if (!courseId || !Array.isArray(students)) {
+            return NextResponse.json({ mes: 'Thiếu thông tin' }, { status: 400 });
+        }
+
+        await connectDB();
+        const newStudents = students.map(s => ({ ID: s.ID, Learn: [] }));
+        await Course.findByIdAndUpdate(courseId, { $push: { Student: { $each: newStudents } } });
+
+        clearCacheByTag('courses');
+        clearCacheByTag(`course:${courseId}`);
+        revalidatePath(`/course/${courseId}`);
+
+        return NextResponse.json({ mes: `Đã thêm ${students.length} học viên` }, { status: 200 });
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ mes: 'Lỗi: ' + error.message }, { status: 500 });
+    }
+}

@@ -243,7 +243,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                         <div className={'flex flex-wrap gap-4'}>
                             {tab === 0 && <CourseTryItem data={trys} />}
                             {listForTab.map((c) =>
-                                <CourseItem key={c.ID} data={c} />
+                                <CourseItem key={c.ID} data={c} currentUser={user} teachers={teacher} books={book} areas={areas} />
                             )}
                         </div>
                     ) : (

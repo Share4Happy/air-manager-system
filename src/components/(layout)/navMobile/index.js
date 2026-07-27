@@ -20,7 +20,7 @@ export default function NavMobile({ data }) {
   const router = useRouter();
 
   return (
-    <div className="hidden max-md:flex fixed bottom-0 left-0 right-0 h-15 bg-[var(--bg-primary)] border-t border-[var(--border-color)] z-[100] justify-around items-center py-1 pb-[env(safe-area-inset-bottom,0)]">
+    <div className="hidden max-lg:flex fixed bottom-0 left-0 right-0 h-15 bg-[var(--bg-primary)] border-t border-[var(--border-color)] z-[100] justify-around items-center py-1 pb-[env(safe-area-inset-bottom,0)]">
       {tabs.map(({ href, icon, label }) => {
         const active = pathname === href || (href !== '/' && pathname.startsWith(href));
         const color = active ? 'var(--main_d)' : 'var(--text-secondary)';

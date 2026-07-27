@@ -1,8 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { calculatePastLessons, formatDate } from '@/function';
+import CreateCourse from '@/app/course/ui/create';
+import StudentPopup from './student';
 
-export default function CourseItem({ data = {} }) {
+export default function CourseItem({ data = {}, currentUser = {}, teachers = [], books = [], areas = [] }) {
+    const [showMenu, setShowMenu] = useState(false);
+    const [showCreate, setShowCreate] = useState(false);
+    const [showStudent, setShowStudent] = useState(false);
+    const [newCourseData, setNewCourseData] = useState(null);
+    const isAdmin = currentUser.role?.includes('Admin') || currentUser.role?.includes('Acadamic');
     const teacherMap = new Map();
     const teachingAsMap = new Map();
 
@@ -69,7 +76,32 @@ export default function CourseItem({ data = {} }) {
     const studentCount = Student.length;
 
     return (
-        <Link href={`/course/${data._id}`} className={'bg-[var(--bg-primary)] rounded-lg p-4 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.33%-11px)] xl:w-[calc(25%-12px)] border border-[var(--border-color)] transition-shadow duration-300 flex flex-col justify-between no-underline hover:cursor-pointer hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)]'} style={{ borderBottom: `3px solid ${data.Status ? 'var(--green)' : 'var(--main_b)'}` }}>
+        <>
+        <div className={'bg-[var(--bg-primary)] rounded-lg p-4 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.33%-11px)] xl:w-[calc(25%-12px)] border border-[var(--border-color)] transition-shadow duration-300 flex flex-col justify-between relative hover:cursor-pointer hover:shadow-[0_3px_8px_rgba(0,0,0,0.24)]'} style={{ borderBottom: `3px solid ${data.Status ? 'var(--green)' : 'var(--main_b)'}` }}>
+            
+            {data.Status && isAdmin && (
+                <div className="absolute top-2 right-2 z-10">
+                    <button onClick={(e) => { e.preventDefault(); setShowMenu(s => !s); }}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 transition-colors bg-transparent border-none cursor-pointer text-[var(--text-secondary)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512" width={16} height={16} fill="currentColor">
+                            <path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zM120 96A56 56 0 1 0 8 96a56 56 0 1 0 112 0z"/>
+                        </svg>
+                    </button>
+                    {showMenu && (
+                        <>
+                            <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
+                            <div className="absolute z-30 right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                                <button onClick={() => { setShowMenu(false); setShowCreate(true); }}
+                                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 bg-transparent border-none cursor-pointer">
+                                    Lên khóa mới
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+        <Link href={`/course/${data._id}`} className={'no-underline'}>
             <div>
                 <div className={'flex items-center mb-4'}>
                     <div className={'w-11 h-11 rounded-md bg-[var(--main_d)] text-white flex items-center justify-center font-medium mr-3'}>
@@ -134,5 +166,38 @@ export default function CourseItem({ data = {} }) {
                 </div>
             </div>
         </Link>
+        </div>
+        {showCreate && (
+            <CreateCourse
+                books={books} areas={areas} teachers={teachers}
+                autoOpen={true} hideButton={true}
+                initialType={data.Type}
+                initialArea={data.Area || areas.find(a => a._id === data.Area) || null}
+                onCreated={async (id) => {
+                    if (!id) { setShowCreate(false); return; }
+                    setShowCreate(false);
+                    setNewCourseData({ _id: id, Student: data.Student || [] });
+                    setShowStudent(true);
+                }}
+            />
+        )}
+        {showStudent && newCourseData && (
+            <StudentPopup course={newCourseData} autoOpenAdd={true}
+                initialSelected={(() => {
+                    const seen = new Set();
+                    return (data.Student || []).filter(s => {
+                        const key = s._id || s.ID;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    }).map((s, idx) => ({
+                        _id: s._id || s.ID || `old-${idx}`,
+                        ID: s.ID || '',
+                        Name: s.Name || s.ID || `Học viên ${idx + 1}`,
+                    }));
+                })()}
+            />
+        )}
+        </>
     );
 }

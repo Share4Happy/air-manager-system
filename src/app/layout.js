@@ -2,7 +2,7 @@ import { Inter, Oswald } from 'next/font/google';
 import { cookies } from 'next/headers';
 import Layout_Login from '@/app/(auth)/login';
 import Nav from '@/components/(layout)/nav';
-import NavMobile from '@/components/(layout)/navMobile';
+import MobileHeader from '@/components/(layout)/mobileHeader';
 import '@/styles/all.css'
 import '@/styles/font.css';
 import { getAppUrl, getCookieName } from '@/utils/env';
@@ -59,11 +59,13 @@ export default async function RootLayout({ children }) {
       <body className={`${inter.variable} ${oswald.variable}`}>
         {data ?
           <div className="w-full h-full overflow-hidden flex">
-            <div className="fixed top-0 left-0 h-full w-[var(--sidebar-w,240px)] border-r border-[var(--border-color)] bg-[var(--bg-primary)] z-[99] max-md:hidden transition-all duration-300">
+            <div className="fixed top-0 left-0 h-full w-[var(--sidebar-w,240px)] border-r border-[var(--border-color)] bg-[var(--bg-primary)] z-[99] max-lg:hidden transition-all duration-300">
               <Nav data={data} />
             </div>
-            <NavMobile data={data} />
-            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px))] h-full bg-[var(--bg-secondary)] overflow-hidden overflow-y-auto p-2 max-md:ml-0 max-md:w-full max-md:h-[calc(100%-76px)] max-md:p-2 max-md:pb-2 transition-all duration-300">
+            <MobileHeader>
+              <Nav data={data} />
+            </MobileHeader>
+            <div className="ml-[var(--sidebar-w,240px)] w-[calc(100%-var(--sidebar-w,240px))] h-full bg-[var(--bg-secondary)] overflow-hidden overflow-y-auto p-2 max-lg:ml-0 max-lg:w-full max-lg:h-[calc(100%-48px)] max-lg:pt-12 max-lg:p-2 transition-all duration-300">
               {children}
             </div>
           </div> :

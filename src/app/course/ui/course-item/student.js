@@ -56,6 +56,16 @@ export default function Student({ course, autoOpen = false, footer = null, initi
         fetchData();
     }, [open, openAdd, allStudents.length]);
 
+    useEffect(() => {
+        if (allStudents.length === 0 || selected.length === 0) return;
+        setSelected(prev => prev.map(s => {
+            if (s.Name && s.Name !== s.ID) return s;
+            const found = allStudents.find(a => a.ID === s.ID || a._id === s._id);
+            if (found) return { ...s, Name: found.Name || s.Name };
+            return s;
+        }));
+    }, [allStudents]);
+
     const handlePickStudent = (stu) => {
         if (selected.find((s) => s._id === stu._id || s.ID === stu.ID)) return;
         setSelected((prev) => [...prev, stu]);

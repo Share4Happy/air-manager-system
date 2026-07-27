@@ -188,12 +188,12 @@ const ScheduleList = memo(({ schedules, onEdit, onDelete }) => {
 });
 ScheduleList.displayName = 'ScheduleList';
 
-export default function Create({ books = [], areas = [], teachers = [] }) {
+export default function Create({ books = [], areas = [], teachers = [], autoOpen = false, onCreated = () => {}, hideButton = false, initialType, initialArea }) {
     const router = useRouter();
-    const [openPopup, setOpenPopup] = useState(false);
+    const [openPopup, setOpenPopup] = useState(autoOpen);
     const [program, setProgram] = useState(initialProgramState);
-    const [courseType, setCourseType] = useState(initialCourseTypeState);
-    const [area, setArea] = useState(initialAreaState);
+    const [courseType, setCourseType] = useState(initialType && !initialType.startsWith('Chọn') ? initialType : initialCourseTypeState);
+    const [area, setArea] = useState(initialArea && initialArea.name ? initialArea : initialAreaState);
     const [teacher, setTeacher] = useState(initialTeacherState);
     const [schedules, setSchedules] = useState([]);
     const [errorMsg, setErrorMsg] = useState('');
@@ -219,7 +219,8 @@ export default function Create({ books = [], areas = [], teachers = [] }) {
         setSecondaryOpen(false);
         setNoti(prev => ({ ...prev, open: false }));
         resetForm();
-    }, [resetForm]);
+        if (autoOpen) onCreated('');
+    }, [resetForm, autoOpen, onCreated]);
 
     const openSecondary = (type) => {
         if (program.Name.startsWith('Chọn') || courseType.startsWith('Chọn') || area.name.startsWith('Chọn') || teacher.startsWith('Chọn')) {
@@ -273,6 +274,8 @@ export default function Create({ books = [], areas = [], teachers = [] }) {
             const data = await res.json();
             setNoti({ open: true, status: res.ok, message: data.mes || 'Lỗi từ server' });
             if (res.ok) {
+                const createdId = data?.data?._id || '';
+                onCreated(createdId);
                 router.refresh();
                 closePopupHandler();
             }
@@ -320,10 +323,12 @@ export default function Create({ books = [], areas = [], teachers = [] }) {
 
     return (
         <>
+            {!hideButton && (
             <div className={'p-2.5 bg-[var(--main_d)] flex items-center gap-2 w-max rounded-lg text-white text-sm font-medium cursor-pointer'} onClick={() => setOpenPopup(true)}>
                 <Svg_Add w={16} h={16} c="white" />
                 <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Thêm khóa học</p>
             </div>
+            )}
             <FlexiblePopup open={openPopup} onClose={closePopupHandler} title="Thêm khóa học mới" width={700} renderItemList={renderCourseForm} secondaryOpen={secondaryOpen} onCloseSecondary={closeSecondary} renderSecondaryList={renderSecondaryList} secondaryTitle={secondaryType === 'single' ? 'Thêm buổi học' : secondaryType === 'edit' ? 'Chỉnh sửa buổi học' : 'Tạo lịch hàng loạt'} secondaryCentered width2={640} />
             {isLoading && <div className={'fixed inset-0 bg-black/80 flex justify-center items-center z-[9999]'}><Loading content={<p className='text-xs font-semibold text-[var(--text-primary)]' style={{ color: 'white' }}>Đang xử lý...</p>} /></div>}
             <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.message} button={<button className={'w-[calc(100%-24px)] justify-center p-2.5 bg-[var(--main_d)] flex items-center gap-2 rounded-lg text-white text-sm font-medium cursor-pointer'} onClick={() => { if (noti.status) closePopupHandler(); else setNoti(p => ({ ...p, open: false })); }}>Đóng</button>} />

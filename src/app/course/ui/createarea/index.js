@@ -1,185 +1,176 @@
-import React, { useState } from 'react';
-import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
-import { Svg_Add } from '@/components/(icon)/svg';
-import Noti from '@/components/(features)/(noti)/noti';
-import { useRouter } from 'next/navigation';
-import Loading from '@/components/(ui)/(loading)/loading';
+'use client'
+
+import React, { useState } from 'react'
+import CenterPopup from '@/components/(features)/(popup)/popup_center'
+import Noti from '@/components/(features)/(noti)/noti'
+import { useRouter } from 'next/navigation'
+import Loading from '@/components/(ui)/(loading)/loading'
 
 const CreateArea = () => {
-    const router = useRouter();
-    const [isPopupOpen, setIsPopupOpen] = useState(false);
-    const [notification, setNotification] = useState({ open: false, status: false, mes: '' });
-    const initialFormData = { name: '', color: '#00D097', rooms: [] };
-    const [formData, setFormData] = useState(initialFormData);
-    const [newRoom, setNewRoom] = useState('');
-    const [colorError, setColorError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [notification, setNotification] = useState({ open: false, status: false, mes: '' })
+  const [form, setForm] = useState({ name: '', color: '#00D097', rooms: [] })
+  const [newRoom, setNewRoom] = useState('')
+  const [colorError, setColorError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-    const validateHexColor = (hex) => { return /^#[0-9a-fA-F]{6}$/.test(hex) };
+  const validateHexColor = (hex) => /^#[0-9a-fA-F]{6}$/.test(hex)
 
-    const handleOpenPopup = () => { setFormData(initialFormData); setColorError(''); setIsPopupOpen(true); };
+  const openPopup = () => {
+    setForm({ name: '', color: '#00D097', rooms: [] })
+    setColorError('')
+    setNewRoom('')
+    setIsPopupOpen(true)
+  }
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (name === 'color') {
-            if (!validateHexColor(value)) {
-                setColorError('Định dạng màu không hợp lệ (ví dụ: #1A2B3C).');
-            } else {
-                setColorError('');
-            }
-        }
-    };
+  const addRoom = () => {
+    const trimmed = newRoom.trim()
+    if (trimmed && !form.rooms.includes(trimmed)) {
+      setForm(prev => ({ ...prev, rooms: [...prev.rooms, trimmed] }))
+      setNewRoom('')
+    }
+  }
 
-    const handleAddRoom = () => {
-        const trimmedRoom = newRoom.trim();
-        if (trimmedRoom && !formData.rooms.includes(trimmedRoom)) {
-            setFormData(prev => ({ ...prev, rooms: [...prev.rooms, trimmedRoom] }));
-            setNewRoom('');
-        }
-    };
+  const create = async () => {
+    if (!form.name.trim()) {
+      setNotification({ open: true, status: false, mes: 'Tên khu vực không được để trống.' })
+      return
+    }
+    if (colorError) {
+      setNotification({ open: true, status: false, mes: 'Vui lòng sửa định dạng màu sắc.' })
+      return
+    }
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/area', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const result = await res.json()
+      if (result.status) {
+        router.refresh()
+        setNotification({ open: true, status: true, mes: result.mes || 'Tạo khu vực thành công' })
+      } else {
+        setNotification({ open: true, status: false, mes: result.mes || 'Lỗi tạo khu vực' })
+      }
+      setIsPopupOpen(false)
+    } catch (error) {
+      setNotification({ open: true, status: false, mes: error.message })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    const handleRemoveRoom = (roomToRemove) => {
-        setFormData(prev => ({
-            ...prev,
-            rooms: prev.rooms.filter(room => room !== roomToRemove)
-        }));
-    };
+  return (
+    <>
+      <button
+        className="px-4 py-2 rounded-lg text-white text-sm font-medium border-none cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+        style={{ background: 'var(--main_d)' }}
+        onClick={openPopup}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={14} height={14} fill="white">
+          <path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>
+        </svg>
+        Thêm khu vực
+      </button>
 
-    const handleCreateArea = async () => {
-        if (!formData.name.trim()) {
-            setNotification({ open: true, status: false, mes: 'Tên khu vực không được để trống.' });
-            return;
-        }
-        if (colorError) {
-            setNotification({ open: true, status: false, mes: 'Vui lòng sửa định dạng màu sắc.' });
-            return;
-        }
-
-        setIsLoading(true);
-
-        try {
-            const response = await fetch(`/api/area`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            const result = await response.json();
-
-            if (result.status) {
-                router.refresh();
-                setNotification({ open: true, status: true, mes: result.mes });
-            } else {
-                setNotification({ open: true, status: false, mes: result.mes });
-            }
-            setIsPopupOpen(false)
-        } catch (error) {
-            setNotification({ open: true, status: false, mes: error.message });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const renderPopupContent = () => {
-        return (
-            <div style={{ padding: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    <p className='text-sm font-semibold text-[var(--text-primary)]'>Tên khu vực</p>
-                    <input
-                        type='text' name='name' className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
-                        placeholder='Nhập tên khu vực...' value={formData.name}
-                        onChange={handleInputChange}
-                    />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    <p className='text-sm font-semibold text-[var(--text-primary)]'>Màu hiển thị</p>
-                    <div className='flex items-center rounded-md p-[0_8px] gap-2.5 input'>
-                        <label
-                            htmlFor="color-picker-input-create"
-                            className='w-6 h-6 rounded-md cursor-pointer border border-[#e0e0e0]'
-                            style={{ backgroundColor: formData.color }}
-                        />
-                        <input
-                            id="color-picker-input-create" type="color" name="color"
-                            value={formData.color} onChange={handleInputChange}
-                            className='absolute opacity-0 w-0 h-0 border-none p-0'
-                        />
-                        <input
-                            type="text" name="color"
-                            value={formData.color.toUpperCase()} onChange={handleInputChange}
-                            className='flex-1 border-none outline-none p-[10px_0] text-sm bg-transparent text-[#1a202c]' placeholder="#FFFFFF"
-                        />
-                    </div>
-                    {colorError && <p style={{ color: 'var(--red)', fontSize: '12px', marginTop: 4 }}>{colorError}</p>}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    <p className='text-sm font-semibold text-[var(--text-primary)]'>Phòng học</p>
-                    <div className='flex flex-wrap gap-4 rounded'>
-                        {formData.rooms.map((room, index) => (
-                            <div key={index} className='flex items-center bg-[#e0e0e0] p-[6px_16px] rounded-lg gap-2'>
-                                <p className='text-sm font-normal text-[var(--text-primary)]'>{room}</p>
-                                <span className='cursor-pointer text-base' onClick={() => handleRemoveRoom(room)}>×</span>
-                            </div>
-                        ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        <input
-                            type='text' className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' placeholder='Thêm phòng mới...'
-                            value={newRoom} onChange={(e) => setNewRoom(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddRoom()} style={{ flex: 1 }}
-                        />
-                        <button className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' onClick={handleAddRoom} style={{ flexShrink: 0, margin: 0, borderRadius: 5, transform: 'none' }}>Thêm</button>
-                    </div>
-                </div>
-
-                <button
-                    className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'
-                    onClick={handleCreateArea}
-                    disabled={isLoading}
-                    style={{ width: '100%', justifyContent: 'center', borderRadius: 5, padding: 10, marginTop: 32, opacity: isLoading ? 0.6 : 1 }}
-                >
-                    {isLoading ? 'Đang tạo...' : 'Tạo khu vực'}
-                </button>
-            </div>
-        );
-    };
-
-    return (
-        <>
-            <div className='p-2.5 bg-[var(--main_d)] flex items-center gap-2 w-max rounded-md text-white text-sm font-medium cursor-pointer' onClick={handleOpenPopup}>
-                <Svg_Add w={16} h={16} c="white" />
-                <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Thêm khu vực</p>
-            </div>
-
-            <FlexiblePopup
-                open={isPopupOpen}
-                onClose={() => setIsPopupOpen(false)}
-                title={'Thêm khu vực'}
-                renderItemList={renderPopupContent}
+      <CenterPopup open={isPopupOpen} onClose={() => setIsPopupOpen(false)} title="Thêm khu vực mới" size="sm">
+        <div className="p-5 flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên khu vực</label>
+            <input
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
+              placeholder="VD: Khu A, Tầng 2..."
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
             />
-            {isLoading && <div className='loadingOverlay'>
-                <Loading content={<p style={{ color: 'white', }} className='text-sm font-normal text-[var(--text-primary)]'>Đang tạo khu vực mới...</p>} />
-            </div>}
-            <Noti
-                open={notification.open}
-                onClose={() => setNotification({ ...notification, open: false })}
-                status={notification.status}
-                mes={notification.mes}
-                button={
-                    <button
-                        className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'
-                        onClick={() => setNotification({ ...notification, open: false })}
-                        style={{ width: '100%', justifyContent: 'center', borderRadius: 5, transform: 'none' }}
-                    >
-                        Đóng
-                    </button>
-                }
-            />
-        </>
-    );
-};
+          </div>
 
-export default CreateArea;
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Màu hiển thị</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={form.color}
+                onChange={e => setForm({ ...form, color: e.target.value })}
+                className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+              />
+              <input
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
+                value={form.color.toUpperCase()}
+                onChange={e => {
+                  setForm({ ...form, color: e.target.value })
+                  setColorError(validateHexColor(e.target.value) ? '' : 'Mã màu HEX không hợp lệ.')
+                }}
+              />
+            </div>
+            {colorError && <p className="text-xs text-red-500">{colorError}</p>}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Phòng học</label>
+            <div className="flex flex-wrap gap-2 min-h-[32px]">
+              {form.rooms.map((room, index) => (
+                <span key={index} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  {room}
+                  <button onClick={() => setForm(prev => ({ ...prev, rooms: prev.rooms.filter(r => r !== room) }))} className="text-blue-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer p-0 text-sm leading-none">&times;</button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
+                placeholder="Nhập tên phòng..."
+                value={newRoom}
+                onChange={e => setNewRoom(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addRoom()}
+              />
+              <button
+                className="px-4 py-2 rounded-lg text-white text-sm font-medium border-none cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity"
+                style={{ background: 'var(--main_d)' }}
+                onClick={addRoom}
+              >
+                Thêm
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="w-full py-2.5 rounded-lg text-white text-sm font-medium border-none cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 mt-2"
+            style={{ background: 'var(--green)' }}
+            onClick={create}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Đang tạo...' : 'Tạo khu vực'}
+          </button>
+        </div>
+      </CenterPopup>
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/30 z-[9999] flex items-center justify-center">
+          <Loading content="Đang tạo khu vực..." />
+        </div>
+      )}
+
+      <Noti
+        open={notification.open}
+        onClose={() => setNotification({ ...notification, open: false })}
+        status={notification.status}
+        mes={notification.mes}
+        button={
+          <button
+            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+            style={{ background: 'var(--main_d)' }}
+            onClick={() => setNotification({ ...notification, open: false })}
+          >
+            Đóng
+          </button>
+        }
+      />
+    </>
+  )
+}
+
+export default CreateArea

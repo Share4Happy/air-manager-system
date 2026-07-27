@@ -64,7 +64,7 @@ export default function Main({ data }) {
         ID: stu.ID,
         Name: stu.Name,
         Image: stu.attendance?.Image ?? [],
-        Checkin: stu.attendance?.Checkin,
+        Checkin: String(stu.attendance?.Checkin ?? ''),
         originalComment: stu.attendance?.Cmt ?? [],
         Avt: stu.Avt ? `https://drive.google.com/thumbnail?id=${stu.Avt}&sz=w200` : 'https://drive.google.com/thumbnail?id=1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG&sz=w200'
     }));
@@ -173,7 +173,7 @@ export default function Main({ data }) {
     const saveAll = async () => {
         const payload = buildPayload();
         if (!payload.length) {
-            setNotiOK(false); setNotiMsg('Không có thay đổi nào để lưu!'); setNotiOpen(true);
+            setNotiOK(false); setNotiMsg('Không có gì thay đổi'); setNotiOpen(true);
             setSaving(false);
             return;
         }
