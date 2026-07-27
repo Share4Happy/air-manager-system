@@ -34,6 +34,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
 
     const [sortConfig, setSortConfig] = useState({ key: 'Name', direction: 'ascending' });
     const [showCompletePopup, setShowCompletePopup] = useState(false);
+    const [showForceConfirm, setShowForceConfirm] = useState(false);
     const [completeIssues, setCompleteIssues] = useState([]);
     const [activeLessonTab, setActiveLessonTab] = useState(null);
     const [showNotePopup, setShowNotePopup] = useState(false);
@@ -93,11 +94,13 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                 if (student.Learn && Array.isArray(student.Learn)) {
                     const relevantLearnHistory = student.Learn.filter(learnItem => lessonIds.has(learnItem.Lesson.toString()));
                     for (const learnItem of relevantLearnHistory) {
+                        const lesson = data.Detail.find(d => d._id.toString() === learnItem.Lesson.toString());
+                        const lessonDate = lesson ? formatDate(new Date(lesson.Day)) : 'không rõ ngày';
                         if (learnItem.Checkin === 0) {
-                            issues.push(`Học sinh ${student.Name || student.StudentId} chưa được điểm danh.`);
+                            issues.push(`Học sinh ${student.Name || student.StudentId} chưa được điểm danh (buổi ${lessonDate}).`);
                         }
                         if (learnItem.Checkin === 1 && (!learnItem.Cmt || learnItem.Cmt.length === 0)) {
-                            issues.push(`Học sinh ${student.Name || student.StudentId} thiếu nhận xét.`);
+                            issues.push(`Học sinh ${student.Name || student.StudentId} thiếu nhận xét (buổi ${lessonDate}).`);
                         }
                     }
                 }
@@ -597,13 +600,82 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                             <span>{issue}</span>
                         </div>
                     ))}
-                    <button
-                        className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer self-center mt-2"
-                        style={{ background: 'var(--main_d)' }}
-                        onClick={() => setShowCompletePopup(false)}
-                    >
-                        Đã hiểu
-                    </button>
+                    <div className="flex gap-3 justify-center mt-2">
+                        <button
+                            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+                            style={{ background: 'var(--green)' }}
+                            onClick={() => setShowForceConfirm(true)}
+                        >
+                            Đồng ý hoàn thành khóa
+                        </button>
+                        <button
+                            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+                            style={{ background: 'var(--main_d)' }}
+                            onClick={() => setShowCompletePopup(false)}
+                        >
+                            Đã hiểu
+                        </button>
+                    </div>
+                </div>
+            </CenterPopup>
+
+            <CenterPopup open={showForceConfirm} onClose={() => setShowForceConfirm(false)} title="Xác nhận hoàn thành khóa học" size="md">
+                <div className="p-4 flex flex-col gap-3">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">Khóa học vẫn còn những vấn đề sau:</p>
+                    <div className="max-h-[300px] overflow-y-auto flex flex-col gap-2">
+                        {completeIssues.map((issue, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="#ca8a04" className="mt-0.5 shrink-0">
+                                    <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .1 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.6-20.1s-7.2-27.6 0-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+                                </svg>
+                                <span>{issue}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)]">Bạn có chắc muốn hoàn thành khóa học bất chấp những vấn đề trên?</p>
+                    <div className="flex gap-3 justify-center mt-2">
+                        <button
+                            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+                            style={{ background: 'var(--red)' }}
+                            onClick={async () => {
+                                setShowForceConfirm(false);
+                                setShowCompletePopup(false);
+                                setLoading(true);
+                                try {
+                                    const response = await fetch(`/api/course/${data._id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ Status: true }),
+                                    });
+                                    const result = await response.json();
+                                    if (response.ok) {
+                                        setNotification({
+                                            open: true, status: true,
+                                            mes: result.mes || 'Xác nhận hoàn thành khóa học thành công!'
+                                        });
+                                        router.refresh();
+                                    } else {
+                                        throw new Error(result.mes || 'Có lỗi xảy ra, vui lòng thử lại.');
+                                    }
+                                } catch (error) {
+                                    setNotification({
+                                        open: true, status: false, mes: error.message
+                                    });
+                                } finally {
+                                    setLoading(false);
+                                }
+                            }}
+                        >
+                            Xác nhận
+                        </button>
+                        <button
+                            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+                            style={{ background: 'var(--text-secondary)' }}
+                            onClick={() => setShowForceConfirm(false)}
+                        >
+                            Hủy
+                        </button>
+                    </div>
                 </div>
             </CenterPopup>
 
