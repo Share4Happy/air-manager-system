@@ -89,7 +89,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                 }
             }
 
-            const lessonIds = new Set(data.Detail.map(d => d._id.toString()));
+            const lessonIds = new Set(data.Detail.filter(d => d.Type !== 'Báo nghỉ').map(d => d._id.toString()));
             for (const student of data.Student) {
                 if (student.Learn && Array.isArray(student.Learn)) {
                     const relevantLearnHistory = student.Learn.filter(learnItem => lessonIds.has(learnItem.Lesson.toString()));
