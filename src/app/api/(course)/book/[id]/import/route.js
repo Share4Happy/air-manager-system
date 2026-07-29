@@ -54,6 +54,10 @@ export async function POST(request, { params }) {
             return jsonRes(400, { status: false, mes: 'Vui lòng chọn file Excel.' })
         }
 
+        if (file.size > 3 * 1024 * 1024) {
+            return jsonRes(400, { status: false, mes: 'File quá lớn. Vui lòng chọn file dưới 3MB.' })
+        }
+
         const buf = Buffer.from(await file.arrayBuffer())
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(buf)
@@ -86,24 +90,24 @@ export async function POST(request, { params }) {
 
             const name = row.Name
             if (!name) {
-                results.errors.push({ row: rowNum, mes: 'Thiếu tên chủ đề (Name)' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu tên chủ đề (Name)', Name: '' })
                 continue
             }
 
             const slide = row.Slide
             if (!slide) {
-                results.errors.push({ row: rowNum, mes: 'Thiếu link Slide' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu link Slide', Name: name })
                 continue
             }
 
             let period = row.Period
             if (period === undefined || period === null || period === '') {
-                results.errors.push({ row: rowNum, mes: 'Thiếu số tiết (Period)' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu số tiết (Period)', Name: name })
                 continue
             }
             period = Number(period)
             if (isNaN(period) || period < 0) {
-                results.errors.push({ row: rowNum, mes: 'Số tiết không hợp lệ' })
+                results.errors.push({ row: rowNum, mes: 'Số tiết không hợp lệ', Name: name })
                 continue
             }
 

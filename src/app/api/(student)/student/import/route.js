@@ -56,6 +56,10 @@ export async function POST(request) {
             return jsonRes(400, { status: false, mes: 'Vui lòng chọn file Excel.' })
         }
 
+        if (file.size > 3 * 1024 * 1024) {
+            return jsonRes(400, { status: false, mes: 'File quá lớn. Vui lòng chọn file dưới 3MB.' })
+        }
+
         const buf = Buffer.from(await file.arrayBuffer())
         const workbook = new ExcelJS.Workbook()
         await workbook.xlsx.load(buf)
@@ -87,10 +91,17 @@ export async function POST(request) {
         const areas = await Area.find({}).select('name').lean()
         areas.forEach(a => { areaMap[a.name.toLowerCase().trim()] = a._id })
 
-        const results = { success: 0, errors: [] }
-        const studentsToInsert = []
+        const results = { inserted: 0, skipped: 0, skippedList: [], errors: [] }
+
         let lastStudent = await PostStudent.findOne({ ID: /^AI\d{4}$/ }).sort({ ID: -1 }).select('ID').lean()
         let nextIdNumber = lastStudent ? parseInt(lastStudent.ID.slice(2), 10) + 1 : 1
+
+        const allPhones = rows.map(r => r.Phone).filter(Boolean)
+        const existingStudents = await PostStudent.find({ Phone: { $in: allPhones } }).select('Phone Name BD School ParentName Email Address Area ID').lean()
+        const existingByPhone = {}
+        existingStudents.forEach(s => { existingByPhone[s.Phone] = s })
+
+        const studentsToInsert = []
 
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i]
@@ -98,19 +109,19 @@ export async function POST(request) {
 
             const name = row.Name
             if (!name) {
-                results.errors.push({ row: rowNum, mes: 'Thiếu họ tên (Name)' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu họ tên (Name)', Name: '' })
                 continue
             }
 
             const phone = row.Phone
             if (!phone) {
-                results.errors.push({ row: rowNum, mes: 'Thiếu số điện thoại (Phone)' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu số điện thoại (Phone)', Name: name })
                 continue
             }
 
             const parentName = row.ParentName
             if (!parentName) {
-                results.errors.push({ row: rowNum, mes: 'Thiếu tên phụ huynh (ParentName)' })
+                results.errors.push({ row: rowNum, mes: 'Thiếu tên phụ huynh (ParentName)', Name: name })
                 continue
             }
 
@@ -119,13 +130,10 @@ export async function POST(request) {
             if (areaName) {
                 areaId = areaMap[areaName.toLowerCase()]
                 if (!areaId) {
-                    results.errors.push({ row: rowNum, mes: `Khu vực "${areaName}" không tồn tại` })
+                    results.errors.push({ row: rowNum, mes: `Khu vực "${areaName}" không tồn tại`, Name: name })
                     continue
                 }
             }
-
-            const id = 'AI' + String(nextIdNumber).padStart(4, '0')
-            nextIdNumber++
 
             let bd = null
             if (row.BD) {
@@ -136,20 +144,27 @@ export async function POST(request) {
                 }
             }
 
-            studentsToInsert.push({
-                ID: id,
-                Name: name,
-                BD: bd,
-                School: row.School || undefined,
-                ParentName: parentName,
-                Phone: phone,
-                Email: row.Email || undefined,
-                Address: row.Address || undefined,
-                Area: areaId || undefined,
-                Profile: { Avatar: '', ImgPJ: [], ImgSkill: '', Intro: '', Present: [], Skill: {} },
-                Status: [statusStudent({})],
-            })
-            results.success++
+            if (existingByPhone[phone]) {
+                results.skippedList.push({ row: rowNum, Name: name, Phone: phone })
+                results.skipped++
+            } else {
+                const id = 'AI' + String(nextIdNumber).padStart(4, '0')
+                nextIdNumber++
+                studentsToInsert.push({
+                    ID: id,
+                    Name: name,
+                    BD: bd,
+                    School: row.School || undefined,
+                    ParentName: parentName,
+                    Phone: phone,
+                    Email: row.Email || undefined,
+                    Address: row.Address || undefined,
+                    Area: areaId || undefined,
+                    Profile: { Avatar: '', ImgPJ: [], ImgSkill: '', Intro: '', Present: [], Skill: {} },
+                    Status: [statusStudent({})],
+                })
+                results.inserted++
+            }
         }
 
         if (studentsToInsert.length > 0) {
@@ -158,10 +173,11 @@ export async function POST(request) {
 
         reloadStudent()
 
+        const mes = `Import: thêm ${results.inserted}, bỏ qua ${results.skipped} học sinh.`
         return jsonRes(200, {
             status: true,
-            mes: `Import thành công ${results.success} học sinh.`,
-            data: results.errors.length > 0 ? results : null
+            mes,
+            data: (results.errors.length > 0 || results.skippedList.length > 0) ? results : null
         })
     } catch (error) {
         return jsonRes(500, { status: false, mes: error.message })

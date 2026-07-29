@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right'
 import Noti from '@/components/(features)/(noti)/noti'
 import Loading from '@/components/(ui)/(loading)/loading'
@@ -40,7 +40,10 @@ export default function ImportStudent() {
             const json = await res.json()
             if (json.status) {
                 setNoti({ open: true, status: true, mes: json.mes })
-                if (json.data?.errors?.length) setErrors(json.data.errors)
+                const allErrors = []
+                if (json.data?.errors?.length) allErrors.push(...json.data.errors.map(e => ({ ...e, type: 'error' })))
+                if (json.data?.skippedList?.length) allErrors.push(...json.data.skippedList.map(e => ({ ...e, type: 'skipped' })))
+                setErrors(allErrors)
                 setFile(null)
             } else {
                 setNoti({ open: true, status: false, mes: json.mes })
@@ -51,6 +54,13 @@ export default function ImportStudent() {
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        if (noti.open) {
+            const t = setTimeout(() => setNoti(prev => ({ ...prev, open: false })), 30000)
+            return () => clearTimeout(t)
+        }
+    }, [noti.open])
 
     return (
         <>
@@ -117,13 +127,13 @@ export default function ImportStudent() {
                         </button>
 
                         {errors.length > 0 && (
-                            <div className="mt-2">
-                                <p className="text-sm font-medium text-[var(--red)] mb-1">Lỗi ({errors.length} dòng):</p>
-                                <div className="max-h-40 overflow-y-auto text-xs text-[var(--red)] space-y-0.5">
-                                    {errors.map((e, i) => (
-                                        <p key={i}>Dòng {e.row}: {e.mes}</p>
-                                    ))}
-                                </div>
+                            <div className="mt-2 text-xs space-y-0.5 max-h-40 overflow-y-auto">
+                                {errors.map((e, i) => (
+                                    <p key={i} className='text-[var(--red)]'>
+                                        {e.type === 'skipped' ? '↺ Bỏ qua' : '✕ Lỗi'} Dòng {e.row}
+                                        {e.Name ? ` (${e.Name})` : ''}: {e.mes}
+                                    </p>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -141,11 +151,6 @@ export default function ImportStudent() {
                 status={noti.status}
                 mes={noti.mes}
                 onClose={() => setNoti(prev => ({ ...prev, open: false }))}
-                button={
-                    <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none mt-2 justify-center whitespace-nowrap" style={{ width: 'calc(100% - 24px)', justifyContent: 'center' }} onClick={() => setNoti(prev => ({ ...prev, open: false }))}>
-                        <p className="text-sm text-white">Tắt thông báo</p>
-                    </div>
-                }
             />
         </>
     )

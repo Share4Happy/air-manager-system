@@ -291,6 +291,13 @@ const BookDetail = ({ data: initialData }) => {
         }
     }, [importFile, bookData._id, router])
 
+    useEffect(() => {
+        if (notiState.open) {
+            const t = setTimeout(handleCloseNoti, 30000)
+            return () => clearTimeout(t)
+        }
+    }, [notiState.open, handleCloseNoti])
+
     return (
         <>
             <div className={'flex w-[calc(100%-34px)] h-[calc(100%-34px)] border border-[var(--border-color)] rounded-lg overflow-hidden p-4 gap-4'}>
@@ -376,13 +383,13 @@ const BookDetail = ({ data: initialData }) => {
                             {importLoading ? 'Đang xử lý...' : 'Import'}
                         </button>
                         {importErrors.length > 0 && (
-                            <div className="mt-2">
-                                <p className="text-sm font-medium text-[var(--red)] mb-1">Lỗi ({importErrors.length} dòng):</p>
-                                <div className="max-h-40 overflow-y-auto text-xs text-[var(--red)] space-y-0.5">
-                                    {importErrors.map((e, i) => (
-                                        <p key={i}>Dòng {e.row}: {e.mes}</p>
-                                    ))}
-                                </div>
+                            <div className="mt-2 text-xs space-y-0.5 max-h-40 overflow-y-auto">
+                                {importErrors.map((e, i) => (
+                                    <p key={i} className="text-[var(--red)]">
+                                        ✕ Lỗi Dòng {e.row}
+                                        {e.Name ? ` (${e.Name})` : ''}: {e.mes}
+                                    </p>
+                                ))}
                             </div>
                         )}
                     </div>
