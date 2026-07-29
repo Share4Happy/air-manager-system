@@ -423,11 +423,12 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
             </div>
 
             <div className={'bg-white rounded flex justify-between border border-[var(--border-color)]'}>
-                <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                    <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', flexWrap: 'nowrap' }}>
                         <button
                             className="px-4 py-2.5 text-sm font-medium whitespace-nowrap"
                             style={{
+                                flex: '0 0 auto',
                                 border: 'none',
                                 background: 'none',
                                 cursor: 'pointer',
@@ -447,6 +448,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                                 key={lesson._id}
                                 className="px-4 py-2.5 text-sm font-medium whitespace-nowrap"
                                 style={{
+                                    flex: '0 0 auto',
                                     border: 'none',
                                     background: 'none',
                                     cursor: 'pointer',

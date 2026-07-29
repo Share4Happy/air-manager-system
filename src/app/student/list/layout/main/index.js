@@ -7,6 +7,7 @@ import Loading from '@/components/(ui)/(loading)/loading';
 import { Svg_Reload } from '@/components/(icon)/svg';
 import { reloadStudent } from '@/data/actions/reload';
 import Create from '../../ui/create';
+import ImportStudent from '../../ui/import';
 
 const STATUS_MAP = { "Đang học": 2, "Chờ lên khóa": 1, "Đã nghỉ": 0 };
 
@@ -90,6 +91,7 @@ export default function Main({ data_student, data_area }) {
                 <Svg_Reload w={16} h={16} c='white' />
                 <span className="hidden md:inline">Tải lại</span>
               </button>
+              <ImportStudent />
               <Create data_area={data_area} />
             </div>
           </div>

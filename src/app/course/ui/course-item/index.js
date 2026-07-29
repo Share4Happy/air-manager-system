@@ -103,21 +103,21 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
 
         <Link href={`/course/${data._id}`} className={'no-underline'}>
             <div>
-                <div className={'flex items-center mb-4'}>
-                    <div className={'w-11 h-11 rounded-md bg-[var(--main_d)] text-white flex items-center justify-center font-medium mr-3'}>
-                        {ID.length >= 5 ? ID.slice(2, 5) : ''}
-                    </div>
-                    <div className={'flex-1'}>
-                        <div className={'font-bold text-[var(--text-primary)] flex justify-between items-center text-xl'}>
-                            {ID}
-                            {Area && <span className={'text-xs font-normal text-white px-4 py-1 rounded-full'} style={{
-                                background: Area.color, borderRadius: 16,
-                                padding: '4px 16px', color: 'white'
-                            }}>{Area.name}</span>}
+                    <div className={'flex items-center mb-4'}>
+                        <div className={'w-11 h-11 rounded-md bg-[var(--main_d)] text-white flex items-center justify-center font-medium mr-3 shrink-0'}>
+                            {ID.length >= 5 ? ID.slice(2, 5) : ''}
                         </div>
-                        <p className={'text-[var(--text-secondary)] text-sm font-medium mt-1'}>{Book?.Name || '-'}</p>
+                        <div className={'flex-1 min-w-0'}>
+                            <div className={'font-bold text-[var(--text-primary)] flex justify-between items-center text-xl gap-1 pr-2'}>
+                                <span className="truncate">{ID}</span>
+                                {Area && <span className={'text-xs font-normal text-white px-4 py-1 rounded-full shrink-0'} style={{
+                                    background: Area.color, borderRadius: 16,
+                                    padding: '4px 12px', color: 'white'
+                                }}>{Area.name}</span>}
+                            </div>
+                            <p className={'text-[var(--text-secondary)] text-sm font-medium mt-1'}>{Book?.Name || '-'}</p>
+                        </div>
                     </div>
-                </div>
 
                 <div className={'flex gap-1 mb-1 text-sm'}>
                     <span className={'text-[var(--text-primary)]'}>Thời gian:</span>
@@ -142,11 +142,11 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
                         {uniqueTeachers.length > 0 ? uniqueTeachers.map(teacher => teacher.name).join(', ') : 'Chưa có giáo viên'}
                     </span>
                 </div>
-                <div className={'mb-1 text-sm'}>
-                    <h5 className={'text-[var(--text-primary)]'}>Giáo viên trợ giảng: <span className={'text-[var(--text-secondary)]'}>
+                <div className={'mb-1 text-sm leading-relaxed'}>
+                    <span className={'text-[var(--text-primary)]'}>Giáo viên trợ giảng: </span>
+                    <span className={'text-[var(--text-secondary)]'}>
                         {uniqueTeachingAs.length > 0 ? uniqueTeachingAs.map(ta => ta.name).join(', ') : 'Chưa có giáo viên'}
-                    </span></h5>
-
+                    </span>
                 </div>
             </div>
             <div>

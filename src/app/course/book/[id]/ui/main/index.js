@@ -96,16 +96,22 @@ const TopicItem = React.memo(({ topic, index, i, dragHandlers, actionHandlers })
 });
 TopicItem.displayName = 'TopicItem';
 
-const TopicsPanel = React.memo(({ topics, dragHandlers, actionHandlers, onAddTopic }) => {
+const TopicsPanel = React.memo(({ topics, dragHandlers, actionHandlers, onAddTopic, onImport }) => {
     let i = 0;
     return (
         <main className={'flex-[3] min-w-[400px] flex flex-col border-l border-[var(--border-color)] pl-4'} onDrop={dragHandlers.onDrop} onDragOver={(e) => e.preventDefault()}>
             <div className={'flex justify-between items-center pb-4 mb-2 border-b border-[var(--border-color)]'}>
                 <p className='text-xl font-semibold text-[var(--text-primary)]'>Danh sách chủ đề</p>
-                <button onClick={onAddTopic} className={`${'inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5'} ${'bg-[var(--main_b)] text-white hover:bg-[var(--main_d)]'}`}>
-                    <Svg_Add w={18} h={18} c='white' />
-                    <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Thêm chủ đề</p>
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={onImport} className={'inline-flex items-center justify-center gap-[0.6rem] px-4 py-2.5 rounded-md cursor-pointer border border-[var(--border-color)] transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-transparent text-[var(--text-primary)] hover:bg-[var(--border-color)]'}>
+                        <Svg_Add w={16} h={16} c='currentColor' />
+                        <p className='text-sm font-normal'>Import</p>
+                    </button>
+                    <button onClick={onAddTopic} className={'inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-[var(--main_b)] text-white hover:bg-[var(--main_d)]'}>
+                        <Svg_Add w={18} h={18} c='white' />
+                        <p className='text-sm font-normal' style={{ color: 'white' }}>Thêm chủ đề</p>
+                    </button>
+                </div>
             </div>
             <ul className={'flex-1 list-none p-0 m-0 overflow-y-auto pr-[10px]'}>
                 {topics.map((topic, index) => {
@@ -147,6 +153,10 @@ const BookDetail = ({ data: initialData }) => {
     const [alertConfig, setAlertConfig] = useState({ open: false, title: '', content: null, actions: null, type: 'info' });
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
+    const [importPopupOpen, setImportPopupOpen] = useState(false)
+    const [importFile, setImportFile] = useState(null)
+    const [importErrors, setImportErrors] = useState([])
+    const [importLoading, setImportLoading] = useState(false)
 
     const API_ENDPOINT = useMemo(() => `/api/book/${bookData._id}`, [bookData._id]);
     const formattedPrice = useMemo(() => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bookData.Price), [bookData.Price]);
@@ -243,6 +253,44 @@ const BookDetail = ({ data: initialData }) => {
         });
     }, [executeDelete, handleCloseAlert]);
 
+    const handleDownloadTemplate = useCallback(() => {
+        window.open(`/api/book/${bookData._id}/import`, '_blank')
+    }, [bookData._id])
+
+    const handleImportFile = useCallback((f) => {
+        if (!f) return
+        const ext = f.name.split('.').pop().toLowerCase()
+        if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+            setNotiState({ open: true, status: false, mes: 'Vui lòng chọn file .xlsx, .xls hoặc .csv' })
+            return
+        }
+        setImportFile(f)
+    }, [])
+
+    const handleImportUpload = useCallback(async () => {
+        if (!importFile) return
+        setImportLoading(true)
+        setImportErrors([])
+        try {
+            const fd = new FormData()
+            fd.append('file', importFile)
+            const res = await fetch(`/api/book/${bookData._id}/import`, { method: 'POST', body: fd })
+            const json = await res.json()
+            if (json.status) {
+                setNotiState({ open: true, status: true, mes: json.mes })
+                if (json.data?.errors?.length) setImportErrors(json.data.errors)
+                setImportFile(null)
+                router.refresh()
+            } else {
+                setNotiState({ open: true, status: false, mes: json.mes })
+            }
+        } catch {
+            setNotiState({ open: true, status: false, mes: 'Lỗi kết nối máy chủ' })
+        } finally {
+            setImportLoading(false)
+        }
+    }, [importFile, bookData._id, router])
+
     return (
         <>
             <div className={'flex w-[calc(100%-34px)] h-[calc(100%-34px)] border border-[var(--border-color)] rounded-lg overflow-hidden p-4 gap-4'}>
@@ -260,6 +308,7 @@ const BookDetail = ({ data: initialData }) => {
                     }}
                     actionHandlers={{ onEdit: handleOpenEditTopic, onDelete: handleDeleteTopic }}
                     onAddTopic={() => setPopups(prev => ({ ...prev, isAddTopicPopupOpen: true }))}
+                    onImport={() => { setImportFile(null); setImportErrors([]); setImportPopupOpen(true) }}
                 />
             </div>
             <ActionPopups
@@ -276,7 +325,72 @@ const BookDetail = ({ data: initialData }) => {
                 bookData={bookData}
                 currentEditingTopic={currentEditingTopic}
             />
+
+            <FlexiblePopup
+                open={importPopupOpen}
+                onClose={() => { setImportPopupOpen(false); setImportFile(null); setImportErrors([]) }}
+                title="Import chủ đề từ Excel"
+                width={550}
+                renderItemList={() => (
+                    <div className="p-4 flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-[var(--text-primary)]">Tải file mẫu:</span>
+                            <button
+                                className="px-3 py-1.5 text-sm rounded bg-[var(--main_d)] text-white cursor-pointer border-none hover:brightness-110"
+                                onClick={handleDownloadTemplate}
+                            >
+                                Tải mẫu Excel
+                            </button>
+                        </div>
+                        <p className="text-xs text-[var(--text-secondary)]">Cột mẫu: Name (bắt buộc) | Slide (bắt buộc) | Period (bắt buộc) | Content</p>
+                        <div
+                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors hover:border-[var(--main_d)] hover:bg-[var(--main_d)]/5"
+                            onClick={() => document.getElementById('import-file-input')?.click()}
+                        >
+                            <input id="import-file-input" type="file" accept=".xlsx,.xls,.csv" className="hidden"
+                                onChange={(e) => handleImportFile(e.target.files[0])} />
+                            {importFile ? (
+                                <div className="flex flex-col gap-2 items-center">
+                                    <span className="text-sm font-medium text-[var(--text-primary)]">{importFile.name}</span>
+                                    <span className="text-xs text-[var(--text-secondary)]">{(importFile.size / 1024).toFixed(1)} KB</span>
+                                    <button
+                                        className="px-3 py-1 text-xs rounded bg-[var(--red)] text-white cursor-pointer border-none hover:brightness-110"
+                                        onClick={(e) => { e.stopPropagation(); setImportFile(null) }}
+                                    >
+                                        Bỏ chọn
+                                    </button>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-[var(--text-secondary)]">Kéo thả file vào đây hoặc nhấn để chọn file</p>
+                            )}
+                        </div>
+                        <button
+                            className="px-4 py-2 rounded text-sm font-medium cursor-pointer border-none transition-colors whitespace-nowrap"
+                            style={{
+                                background: importFile ? 'var(--main_d)' : 'var(--border-color)',
+                                color: importFile ? 'white' : 'var(--text-secondary)',
+                            }}
+                            disabled={!importFile || importLoading}
+                            onClick={handleImportUpload}
+                        >
+                            {importLoading ? 'Đang xử lý...' : 'Import'}
+                        </button>
+                        {importErrors.length > 0 && (
+                            <div className="mt-2">
+                                <p className="text-sm font-medium text-[var(--red)] mb-1">Lỗi ({importErrors.length} dòng):</p>
+                                <div className="max-h-40 overflow-y-auto text-xs text-[var(--red)] space-y-0.5">
+                                    {importErrors.map((e, i) => (
+                                        <p key={i}>Dòng {e.row}: {e.mes}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            />
+
             {isLoading && <div className='loadingOverlay'><Loading content={<p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Đang xử lý...</p>} /></div>}
+            {importLoading && <div className='loadingOverlay'><Loading content={<p className='text-sm font-normal text-white'>Đang import...</p>} /></div>}
             <Noti open={notiState.open} onClose={handleCloseNoti} status={notiState.status} mes={notiState.mes} />
             <AlertPopup {...alertConfig} onClose={handleCloseAlert} />
         </>

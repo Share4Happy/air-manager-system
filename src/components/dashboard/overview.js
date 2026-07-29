@@ -351,8 +351,8 @@ export default function Overview() {
                                 </div>
                             </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
-                            <ChartCard title="Học sinh theo lớp">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+                            <ChartCard title="Sĩ số học sinh theo lớp">
                                 {data?.studentsByClass?.length ? (
                                     <div className="h-72">
                                         <Bar data={{
@@ -362,17 +362,7 @@ export default function Overview() {
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>
-                            <ChartCard title="Học sinh theo trạng thái">
-                                {data?.studentsByStatus?.length ? (
-                                    <div className="h-72">
-                                        <Bar data={{
-                                            labels: data.studentsByStatus.map(s => s.status),
-                                            datasets: [{ data: data.studentsByStatus.map(s => s.count), backgroundColor: data.studentsByStatus.map(s => s.status === 'Đang học' ? PASTEL_GREEN : s.status === 'Đang chờ xếp lớp' ? PASTEL_YELLOW : PASTEL_RED), borderRadius: 4 }]
-                                        }} options={chartHOpts()} />
-                                    </div>
-                                ) : <EmptyState />}
-                            </ChartCard>
-                            <ChartCard title="Học phí đã nhận">
+                            <ChartCard title="Thống kê học phí theo tháng">
                                 {data?.monthlyTuition?.length ? (
                                     <div className="h-72">
                                         <Bar data={{
@@ -384,24 +374,64 @@ export default function Overview() {
                             </ChartCard>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 mt-6">
-                            <ChartCard title="Học sinh mới">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
+                            <ChartCard title="Lớp bắt đầu / Lớp kết thúc">
+                                {data?.coursesByStatus?.length ? (
+                                    <div className="h-60">
+                                        <Bar data={{
+                                            labels: data.coursesByStatus.map(m => m.label),
+                                            datasets: [
+                                                { label: 'Bắt đầu', data: data.coursesByStatus.map(m => m.active), backgroundColor: PASTEL_GREEN, borderRadius: 4 },
+                                                { label: 'Kết thúc', data: data.coursesByStatus.map(m => m.completed), backgroundColor: PASTEL_RED, borderRadius: 4 },
+                                            ]
+                                        }} options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 11 } } },
+                                                tooltip: { callbacks: { label: function(ctx) { return String(ctx.raw) } } }
+                                            },
+                                            scales: {
+                                                x: { stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { autoSkip: false, maxRotation: 45 } },
+                                                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { precision: 0 } }
+                                            }
+                                        }} />
+                                    </div>
+                                ) : <EmptyState />}
+                            </ChartCard>
+                            <ChartCard title="Phân bố học sinh theo giai đoạn đào tạo">
                                 {data?.monthlyEnrollments?.length ? (
                                     <div className="h-60">
                                         <Bar data={{
                                             labels: data.monthlyEnrollments.map(m => m.label),
-                                            datasets: [{ data: data.monthlyEnrollments.map(m => m.count), backgroundColor: PASTEL_GREEN, borderRadius: 4 }]
-                                        }} options={chartOpts()} />
+                                            datasets: [
+                                                { label: 'Nhập học', data: data.monthlyEnrollments.map(m => m.count), backgroundColor: PASTEL_BLUE, borderRadius: 4 },
+                                                { label: 'Chờ lên khóa', data: (data.monthlyWaiting || []).map(m => m.count), backgroundColor: PASTEL_YELLOW, borderRadius: 4 },
+                                                { label: 'Lên khóa', data: (data.monthlyUpgrades || []).map(m => m.count), backgroundColor: PASTEL_GREEN, borderRadius: 4 },
+                                                { label: 'Kết thúc', data: (data.monthlyCompletions || []).map(m => m.count), backgroundColor: PASTEL_ORANGE, borderRadius: 4 },
+                                            ]
+                                        }} options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 16, font: { size: 11 } } },
+                                                tooltip: { callbacks: { label: function(ctx) { return String(ctx.raw) } } }
+                                            },
+                                            scales: {
+                                                x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { autoSkip: false, maxRotation: 45 } },
+                                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { precision: 0 } }
+                                            }
+                                        }} />
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>
-                            <ChartCard title="Học sinh hoàn thành">
-                                {data?.monthlyCompletions?.length ? (
+                            <ChartCard title="Học sinh theo trạng thái">
+                                {data?.studentsByStatus?.length ? (
                                     <div className="h-60">
                                         <Bar data={{
-                                            labels: data.monthlyCompletions.map(m => m.label),
-                                            datasets: [{ data: data.monthlyCompletions.map(m => m.count), backgroundColor: PASTEL_ORANGE, borderRadius: 4 }]
-                                        }} options={chartOpts()} />
+                                            labels: data.studentsByStatus.map(s => s.status),
+                                            datasets: [{ data: data.studentsByStatus.map(s => s.count), backgroundColor: data.studentsByStatus.map(s => s.status === 'Đang học' ? PASTEL_GREEN : s.status === 'Đang chờ xếp lớp' ? PASTEL_YELLOW : PASTEL_RED), borderRadius: 4 }]
+                                        }} options={chartHOpts()} />
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>

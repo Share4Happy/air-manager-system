@@ -209,8 +209,9 @@ function ToolsClient() {
                                                     type="button"
                                                     onClick={() => toggleSelectedLabel(l._id)}
                                                     className={`text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
-                                                        active ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]' : 'bg-white text-gray-600 border-gray-300 hover:border-[var(--main_d)]'
+                                                        active ? 'text-white' : 'bg-white text-gray-600 border-gray-300'
                                                     }`}
+                                                    style={active ? { background: l.color || '#6366f1', borderColor: l.color || '#6366f1' } : {}}
                                                 >
                                                     {l.name}
                                                 </button>
@@ -278,9 +279,13 @@ function ToolsClient() {
                             </div>
                             {toolLabels.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                    {toolLabels.map(lId => (
-                                        <span key={lId} className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--main_d)]/10 text-[var(--main_d)]">{getLabelName(lId)}</span>
-                                    ))}
+                                    {toolLabels.map(lId => {
+                                        const lbl = labels.find(l => l._id === lId)
+                                        const c = lbl?.color || '#e0e7ff'
+                                        return (
+                                            <span key={lId} className="text-[10px] px-2 py-0.5 rounded-full text-gray-700" style={{ background: c }}>{lbl?.name || ''}</span>
+                                        )
+                                    })}
                                 </div>
                             )}
                             <div className="border-t border-gray-100 my-3" />

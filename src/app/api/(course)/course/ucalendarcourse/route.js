@@ -7,7 +7,7 @@ import { Types, isValidObjectId } from 'mongoose';
 import { reloadCourse } from '@/data/actions/reload';
 import { getDriveClient, createDriveFolder } from '@/function/drive/folder';
 
-const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID || '1Ri-Cl-R7Exl7vP6Qy8tDHtoiSqMXVmhf';
+const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
 const CREATE_LESSON_REQUIRED = ['Day', 'Topic', 'Room', 'Time', 'Teacher'];
 
 // Helper: Tìm _id của phòng từ tên phòng
@@ -46,7 +46,26 @@ export async function POST(request) {
             let imageURL = '';
             try {
                 const drive = getDriveClient();
-                imageURL = await createDriveFolder(drive, data.Day, PARENT_FOLDER_ID);
+                const course = await PostCourse.findById(courseId).select('ID').lean();
+                let courseFolderId = '';
+                if (course?.ID) {
+                    const list = await drive.files.list({
+                        q: `name='${course.ID}' and '${PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                        fields: 'files(id)',
+                        supportsAllDrives: true,
+                        includeItemsFromAllDrives: true,
+                    });
+                    if (list.data.files?.length) {
+                        courseFolderId = list.data.files[0].id;
+                    } else {
+                        courseFolderId = await createDriveFolder(drive, course.ID, PARENT_FOLDER_ID);
+                    }
+                }
+                if (courseFolderId) {
+                    imageURL = await createDriveFolder(drive, new Date(data.Day).toISOString(), courseFolderId);
+                } else {
+                    imageURL = await createDriveFolder(drive, data.Day, PARENT_FOLDER_ID);
+                }
             } catch (err) {
                 console.error('[udetail] DRIVE_FOLDER_ERROR:', err);
             }

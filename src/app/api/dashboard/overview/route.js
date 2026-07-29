@@ -209,14 +209,35 @@ export async function GET(request) {
         const monthlyTuition = periods.map(p => ({ ...p, total: tuitionMap[p.key] || 0 }))
 
         const enrollmentMap = {}
+        const waitingMap = {}
+        const upgradeMap = {}
         students.forEach(s => {
             const createdDate = s._id ? new mongoose.Types.ObjectId(s._id).getTimestamp() : null
             if (createdDate && isDateInRange(createdDate, fromMonth, toMonth, fromQuarter, toQuarter, fromYear, toYear, period)) {
                 const key = getPeriodKey(createdDate, period)
                 enrollmentMap[key] = (enrollmentMap[key] || 0) + 1
             }
+            if (s.Status && s.Status.length > 0) {
+                s.Status.forEach((entry, idx) => {
+                    if (entry.date) {
+                        const dt = new Date(entry.date)
+                        if (isDateInRange(dt, fromMonth, toMonth, fromQuarter, toQuarter, fromYear, toYear, period)) {
+                            const key = getPeriodKey(dt, period)
+                            if (entry.status === 1) {
+                                if (idx > 0) waitingMap[key] = (waitingMap[key] || 0) + 1
+                            } else if (entry.status === 2) {
+                                if (createdDate && dt.getTime() - createdDate.getTime() > 3 * 24 * 60 * 60 * 1000) {
+                                    upgradeMap[key] = (upgradeMap[key] || 0) + 1
+                                }
+                            }
+                        }
+                    }
+                })
+            }
         })
         const monthlyEnrollments = periods.map(p => ({ ...p, count: enrollmentMap[p.key] || 0 }))
+        const monthlyWaiting = periods.map(p => ({ ...p, count: waitingMap[p.key] || 0 }))
+        const monthlyUpgrades = periods.map(p => ({ ...p, count: upgradeMap[p.key] || 0 }))
 
         const completionMap = {}
         students.forEach(s => {
@@ -232,6 +253,25 @@ export async function GET(request) {
             }
         })
         const monthlyCompletions = periods.map(p => ({ ...p, count: completionMap[p.key] || 0 }))
+
+        // --- Courses in-progress vs completed per period ---
+        const courseStatusMap = {}
+        courses.forEach(c => {
+            const dt = c._id.getTimestamp()
+            if (isDateInRange(dt, fromMonth, toMonth, fromQuarter, toQuarter, fromYear, toYear, period)) {
+                const key = getPeriodKey(dt, period)
+                if (!courseStatusMap[key]) courseStatusMap[key] = { active: 0, completed: 0 }
+                if (c.Status) courseStatusMap[key].completed++
+                else courseStatusMap[key].active++
+            }
+        })
+        const coursesByStatus = periods.map(p => ({
+            ...p,
+            active: courseStatusMap[p.key]?.active || 0,
+            completed: courseStatusMap[p.key]?.completed || 0,
+        }))
+        const activeCourses = courses.filter(c => !c.Status).length
+        const completedCourses = courses.filter(c => c.Status).length
 
         const classOptions = allCourses.map(c => ({ _id: c._id, name: c.ID || 'Unknown' }))
 
@@ -331,6 +371,8 @@ export async function GET(request) {
                     filteredAvgAge,
                     filteredTuition: growthTuition,
                     filteredClasses: growthClasses,
+                    activeCourses: courses.filter(c => !c.Status).length,
+                    completedCourses: courses.filter(c => c.Status).length,
                     growth,
                 },
                 studentsByClass,
@@ -338,7 +380,10 @@ export async function GET(request) {
                 studentsByRank,
                 monthlyTuition,
                 monthlyEnrollments,
+                monthlyWaiting,
+                monthlyUpgrades,
                 monthlyCompletions,
+                coursesByStatus,
                 classOptions,
                 areaOptions,
                 yearOptions,

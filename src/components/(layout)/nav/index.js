@@ -379,6 +379,7 @@ export default function Nav() {
               // { href: '/guide', icon: <Svg_Guide w={22} h={22} c={'var(--text-secondary)'} />, content: 'Hướng dẫn' },
               { href: '/info', icon: <Svg_Detail w={22} h={22} c={'var(--text-secondary)'} />, content: 'Thông tin' },
               { href: '/feedback', icon: <Svg_Feedback w={22} h={22} c={'var(--text-secondary)'} />, content: 'Feedback' },
+              { href: '/tools/drive-storage', icon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}><path d="M0 96C0 60.7 28.7 32 64 32l132.1 0c19 0 37.2 7.5 50.6 20.9L303.9 110c5.7 5.7 13.1 8.9 20.9 8.9L448 119c35.3 0 64 28.7 64 64l0 233c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"/></svg>, content: 'Drive' },
             ].map(({ href, icon, content }) => (
               <div key={href} className="relative group w-full">
                 <div

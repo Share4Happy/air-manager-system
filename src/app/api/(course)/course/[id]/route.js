@@ -9,6 +9,33 @@ import { NextResponse } from 'next/server';
 import authenticate from '@/utils/authenticate';
 import { reloadCourse, reloadStudent } from '@/data/actions/reload';
 import { course_data } from '@/data/actions/get';
+import { clearCacheByTag } from '@/lib/cache';
+import { revalidatePath } from 'next/cache';
+
+export async function POST(request, { params }) {
+    try {
+        const id = (await params).id;
+        const body = await request.json();
+        const { students } = body;
+
+        if (!id || !Array.isArray(students)) {
+            return NextResponse.json({ mes: 'Thiếu thông tin' }, { status: 400 });
+        }
+
+        await connectDB();
+        const newStudents = students.map(s => ({ ID: s.ID, Learn: [] }));
+        await PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudents } } });
+
+        clearCacheByTag('courses');
+        clearCacheByTag(`course:${id}`);
+        revalidatePath(`/course/${id}`);
+
+        return NextResponse.json({ mes: `Đã thêm ${students.length} học viên` }, { status: 200 });
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ mes: 'Lỗi: ' + error.message }, { status: 500 });
+    }
+}
 
 // Xác nhận hoàn thành khóa học
 export async function PATCH(request, { params }) {

@@ -11,7 +11,7 @@ import '@/models/users'
 import '@/models/book'
 
 const TRIAL_ID = new Types.ObjectId('6871bc14ada3650715efc786')
-const PARENT_ID = '1Ri-Cl-R7Exl7vP6Qy8tDHtoiSqMXVmhf'
+const PARENT_ID = process.env.DRIVE_COURSE_FOLDER_ID
 const TAG = 'data_coursetry'
 const driveScopes = ['https://www.googleapis.com/auth/drive']
 
@@ -27,21 +27,15 @@ async function getDrive() {
     return google.drive({ version: 'v3', auth })
 }
 
-async function createUniqueFolder(name) {
-    const drive = await getDrive()
-    const { data } = await drive.files.list({
-        q: `mimeType='application/vnd.google-apps.folder' and trashed=false and '${PARENT_ID}' in parents and name contains '${name}'`,
-        fields: 'files(id,name)'
-    })
-    const dupCount = data.files?.length ?? 0
-    const finalName = dupCount ? `${name}-${dupCount}` : name
+async function createDriveFolder(drive, name, parentId) {
     const res = await drive.files.create({
         requestBody: {
-            name: finalName,
+            name,
             mimeType: 'application/vnd.google-apps.folder',
-            parents: [PARENT_ID]
+            parents: [parentId],
         },
-        fields: 'id'
+        supportsAllDrives: true,
+        fields: 'id',
     })
     return res.data.id
 }
@@ -126,14 +120,22 @@ export async function POST(request) {
         if (!course)
             return jsonRes(404, { status: false, mes: 'TrialCourse không tồn tại.', data: null })
 
+        const drive = await getDrive()
+        let rootFolderId = course.rootFolderId
+        if (!rootFolderId) {
+            rootFolderId = await createDriveFolder(drive, course.name || 'Học thử', PARENT_ID)
+            await TrialCourse.updateOne({ _id: TRIAL_ID }, { $set: { rootFolderId } })
+        }
+
         const sessionId = new Types.ObjectId()
         const sessionDate = new Date(day);
+        const folderId = await createDriveFolder(drive, sessionDate.toISOString(), rootFolderId)
         const session = {
             _id: sessionId,
             day: sessionDate,
             time,
             room: new Types.ObjectId(room),
-            folderId: await createUniqueFolder(day),
+            folderId,
             book: new Types.ObjectId(book),
             topicId: new Types.ObjectId(topicId),
             students: studentIds.map(id => ({ studentId: id })),

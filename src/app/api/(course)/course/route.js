@@ -9,7 +9,7 @@ import authenticate from '@/utils/authenticate';
 import { reloadCourse } from '@/data/actions/reload';
 import { getDriveClient, createDriveFolder } from '@/function/drive/folder';
 
-const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID || '1Ri-Cl-R7Exl7vP6Qy8tDHtoiSqMXVmhf';
+const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
 
 export async function POST(request) {
     try { 
@@ -44,12 +44,20 @@ export async function POST(request) {
             newSequence = isNaN(lastSeq) ? 1 : lastSeq + 1;
         }
         const newCourseID = `${coursePrefix}${newSequence.toString().padStart(3, '0')}`;
+        let courseFolderId = '';
         let imageUrls = [];
         try {
             const drive = getDriveClient();
-            imageUrls = await Promise.all(
-                Detail.map(d => createDriveFolder(drive, d.Day || `Buổi ${d.Topic}`, PARENT_FOLDER_ID))
-            );
+            courseFolderId = await createDriveFolder(drive, newCourseID, PARENT_FOLDER_ID);
+            if (courseFolderId) {
+                imageUrls = await Promise.all(
+                    Detail.map(d => createDriveFolder(
+                        drive,
+                        d.Day ? new Date(d.Day).toISOString() : `Buổi ${d.Topic}`,
+                        courseFolderId
+                    ))
+                );
+            }
         } catch (driveError) {
             console.error('[DRIVE_FOLDER_ERROR]', driveError.message);
         }

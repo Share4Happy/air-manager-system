@@ -77,14 +77,12 @@ const PopupContent = React.memo(({ data, onStartInvoice, onDetailClick }) => {
                             <div key={index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
                                 <p>Khóa học: {course.ID}</p>
                                 <p>{formatCurrencyVN(course.Book?.Price || 0)}</p>
-                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice(course)} />
                             </div>
                         ))}
                         {debts.map((d, index) => (
                             <div key={'debt-' + index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
                                 <p>{d.courseName || 'Khoản nợ'} {d.note ? `(${d.note})` : ''}</p>
                                 <p>{formatCurrencyVN(d.amount || 0)}</p>
-                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice({ _id: d._id, ID: d.courseName || 'Khoản nợ', Book: { Price: d.amount || 0 }, tuition: null })} />
                             </div>
                         ))}
                     </>
