@@ -15,7 +15,7 @@ export default function Timeline({ data = [], props }) {
     }
 
     return (
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', flex: 1.6 }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%', flex: 1.6, minHeight: 0 }}>
 
             <div style={{
                 borderRadius: '8px', padding: 16, background: 'linear-gradient(90deg, rgba(32,97,165,1) 0%, rgba(18,57,98,1) 100%)',
@@ -28,7 +28,7 @@ export default function Timeline({ data = [], props }) {
             </div>
 
 
-            <div style={{ flex: 1, overflow: 'hidden', overflowY: 'scroll' }}>
+            <div style={{ flex: 1, overflow: 'hidden', overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
                 {data.Detail?.map((e, i) => {
                     let datalesson = e
                     datalesson.Student = data.Student.flatMap((s) => {

@@ -13,10 +13,10 @@ export default async function OverviewTab({ params }) {
     
     return (
         <div className="flex flex-col lg:flex-row" style={{ height: '100%', width: '100%', gap: 16 }}>
-            <div className="hidden lg:block" style={{ flex: '1.6 1.6 0%', minWidth: 0 }}>
+            <div className="hidden lg:block" style={{ flex: '1.6 1.6 0%', minWidth: 0, minHeight: 0 }}>
                 <Timeline data={data} props={id} />
             </div>
-            <div className="lg:flex-[4]">
+            <div className="lg:flex-[4] min-w-0">
                 <Detail data={data} params={id} studentsx={students} users={users}>
                     <Timeline data={data} props={id} />
                 </Detail>

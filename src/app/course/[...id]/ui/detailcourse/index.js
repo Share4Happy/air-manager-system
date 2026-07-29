@@ -264,8 +264,8 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     }
 
     return (
-        <div className={'p-4 flex flex-col gap-2 overflow-auto rounded-lg shadow-[var(--boxshaw2)] h-[calc(100%-32px)]'}>
-            <div className={'bg-white rounded flex flex-col lg:flex-row flex-wrap border border-[var(--border-color)]'} style={{ padding: 16, gap: 16 }}>
+        <div className={'p-4 flex flex-col gap-2 overflow-auto rounded-lg shadow-[var(--boxshaw2)] h-[calc(100%-32px)] w-full min-w-0'}>
+            <div className={'bg-white rounded flex flex-col lg:flex-row flex-wrap border border-[var(--border-color)] w-full min-w-0'} style={{ padding: 16, gap: 16 }}>
                 <div className={'hidden lg:block relative w-[100px] lg:w-[150px] aspect-[4/5] shrink-0'}>
                     {data.Book?.Image ? (
                         <Image priority={true} src={driveImage(data.Book.Image)} fill alt={data.Book.Name} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
@@ -422,11 +422,11 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                 </div>
             </div>
 
-            <div className={'bg-white rounded flex justify-between border border-[var(--border-color)]'}>
+            <div className={'bg-white rounded flex justify-between border border-[var(--border-color)] w-full min-w-0'}>
                     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', flexWrap: 'nowrap' }}>
                         <button
-                            className="px-4 py-2.5 text-sm font-medium whitespace-nowrap"
+                            className="px-3 py-2 text-sm font-medium whitespace-nowrap"
                             style={{
                                 flex: '0 0 auto',
                                 border: 'none',
@@ -446,7 +446,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                         {data.Detail.map((lesson, idx) => (
                             <button
                                 key={lesson._id}
-                                className="px-4 py-2.5 text-sm font-medium whitespace-nowrap"
+                                className="px-3 py-2 text-sm font-medium whitespace-nowrap"
                                 style={{
                                     flex: '0 0 auto',
                                     border: 'none',
@@ -465,8 +465,8 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                             </button>
                         ))}
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                        <div style={{ minWidth: 650 }}>
+                    <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+                        <div style={{ minWidth: 650, width: '100%' }}>
                         <div style={{ display: 'flex', background: 'var(--border-color)' }}>
                             {title.map((e, i) => {
                             if (activeLessonTab && e.data === 'b') return null;
