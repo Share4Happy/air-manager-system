@@ -1,10 +1,8 @@
 'use client';
 import React, { useState, useEffect, useMemo, startTransition, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Svg_Dark, Svg_Left, Svg_Logout, Svg_Menu, Svg_Mode, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile } from '../../(icon)/svg';
+import { Svg_Logout, Svg_Menu, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile } from '../../(icon)/svg';
 import Menu from '../../(ui)/(button)/menu';
-import Switch from "@/components/(ui)/(button)/swith";
-import WrapIcon from '../../(ui)/(button)/hoveIcon';
 import Loading from '@/components/(ui)/(loading)/loading';
 import NotificationBell from '@/components/(features)/(noti)/notificationBell';
 import Link from 'next/link';
@@ -155,9 +153,7 @@ export default function Nav() {
     }
   }, []);
 
-  const [activeMenu, setActiveMenu] = useState(1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [expandedParents, setExpandedParents] = useState({ '/academic': true });
 
   const toggleParent = (href) => {
@@ -167,24 +163,9 @@ export default function Nav() {
   useEffect(() => {
     const theme = localStorage.getItem('theme');
     if (theme === 'dark') {
-      setIsDark(true);
       document.documentElement.classList.add('dark');
     }
   }, []);
-
-  const toggleTheme = () => {
-    setIsDark((prev) => {
-      const newTheme = !prev;
-      if (newTheme) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-      return newTheme;
-    });
-  };
 
   const [load, setload] = useState(false);
   const logout = async () => {
@@ -215,35 +196,11 @@ export default function Nav() {
         <Link href={'/setting'} className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]">
           <Svg_Setting w={16} h={16} c={'var(--text-secondary)'} />Cấu hình
         </Link>
-        <p className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]" onClick={() => setActiveMenu(2)}>
-          <Svg_Mode w={16} h={16} c={'var(--text-secondary)'} />Giao diện
-        </p>
       </div>
       <div className="p-2 border-t border-[var(--border-color)]" onClick={logout}>
         <p className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal bg-[rgb(230,130,130)] text-white hover:bg-[rgb(233,146,146)]">
           <Svg_Logout w={16} h={16} c={'white'} />Đăng xuất
         </p>
-      </div>
-    </div>
-  );
-
-  const menuMode = (
-    <div className="list-none m-0 w-[210px] rounded-xl bg-[var(--bg-secondary)] shadow-[var(--boxshaw2)] mb-2">
-      <div className="p-2 border-b border-[var(--border-color)] flex items-center justify-start gap-2">
-        <div onClick={() => setActiveMenu(1)}>
-          <WrapIcon icon={<Svg_Left w={12} h={12} c={'var(--text-secondary)'} />} w={'32px'} />
-        </div>
-        <h5>Chế độ giao diện</h5>
-        <Svg_Mode w={16} h={16} c={'var(--text-secondary)'} />
-      </div>
-      <div className="p-2">
-        <div className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)] flex items-center justify-between" onClick={toggleTheme}>
-          <div className="flex items-center">
-            <Svg_Dark w={18} h={18} c={'var(--text-secondary)'} />
-            <h6 className="flex-1 ml-2">Giao diện Tối</h6>
-          </div>
-          <Switch checked={isDark} size="small" activeColor="#ffffff" inactiveColor="#ddd" />
-        </div>
       </div>
     </div>
   );
@@ -405,7 +362,7 @@ export default function Nav() {
           <div className="relative group w-full">
             <Menu
               isOpen={isMenuOpen}
-              menuItems={activeMenu === 1 ? menuItems : menuMode}
+              menuItems={menuItems}
               menuPosition={collapsed ? 'right' : 'top'}
               customButton={
                 <div className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)] w-full
@@ -416,10 +373,7 @@ export default function Nav() {
                 </div>
               }
               style="display: flex"
-              onOpenChange={(isOpen) => {
-                setIsMenuOpen(isOpen);
-                if (!isOpen) setActiveMenu(1);
-              }}
+              onOpenChange={setIsMenuOpen}
             />
             {collapsed && (
               <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-lg pointer-events-none pointer-events-none">

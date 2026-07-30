@@ -2,8 +2,9 @@ import { Schema, model, models } from 'mongoose';
 
 const ImageSchema = new Schema(
     {
-        id: { type: String, required: true, unique: true },
+        id: { type: String, required: true },
         type: { type: String },
+        size: { type: Number },
         created: { type: Date, default: Date.now },
     },
     { _id: false }

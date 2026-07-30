@@ -41,7 +41,7 @@ export async function POST(request) {
         if (BadgeFile && BadgeFile.size > 0) {
             badgeImageId = await uploadImageToDrive(BadgeFile, FOLDER_ID);
         }
-        const newBook = new PostBook({ ID: normalizedID, Name, Type, Price: Number(Price) || 0, Describe, Image: coverImageId, Badge: badgeImageId, Topics: TopicsStr ? JSON.parse(TopicsStr) : [] });
+        const newBook = new PostBook({ ID: normalizedID, Name, Type, Price: Number(Price) || 0, Describe, Image: coverImageId, ImageSize: ImageFile?.size, Badge: badgeImageId, BadgeSize: BadgeFile?.size, Topics: TopicsStr ? JSON.parse(TopicsStr) : [] });
         const savedBook = await newBook.save();
         reloadBook();
         return jsonRes(201, { status: true, mes: 'Thêm chương trình thành công.', data: savedBook });
@@ -93,8 +93,8 @@ export async function PUT(request) {
         bookToUpdate.Name = Name;
         bookToUpdate.Price = Number(Price) || 0;
         bookToUpdate.Describe = Describe;
-        if (newCoverImageId) bookToUpdate.Image = newCoverImageId;
-        if (newBadgeImageId) bookToUpdate.Badge = newBadgeImageId;
+        if (newCoverImageId) { bookToUpdate.Image = newCoverImageId; bookToUpdate.ImageSize = ImageFile.size; }
+        if (newBadgeImageId) { bookToUpdate.Badge = newBadgeImageId; bookToUpdate.BadgeSize = BadgeFile.size; }
 
         const updatedBook = await bookToUpdate.save();
         if (newCoverImageId && oldCoverImageId) {

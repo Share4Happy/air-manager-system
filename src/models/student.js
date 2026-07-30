@@ -81,6 +81,9 @@ const postSchema = new Schema({
   Avt: {
     type: String
   },
+  AvtSize: {
+    type: Number
+  },
   Status: {
     type: [Status],
     default: () => ([{

@@ -66,6 +66,7 @@ export async function POST(request) {
         const newMediaObject = {
             id: uploadedId,
             type: simplifiedType,
+            size: fileBuffer.length,
             create: new Date()
         };
 
@@ -197,15 +198,15 @@ export async function PUT(request) {
             throw new Error("Tải lên Google Drive thất bại, không nhận được ID file mới.");
         }
 
-        const newImageObject = { // This object represents the new image saved to DB
+        const newImageObject = {
             id: newUploadedId,
             type: newSimplifiedType,
+            size: fileBuffer.length,
             create: new Date(),
         };
 
         const updateOperations = [];
 
-        // Update in Detail.DetailImage if it was the affected part
         if (updatedInDetail) {
             updateOperations.push(
                 PostCourse.updateOne(
@@ -214,13 +215,14 @@ export async function PUT(request) {
                         $set: {
                             'Detail.$[detailElem].DetailImage.$[elem].id': newImageObject.id,
                             'Detail.$[detailElem].DetailImage.$[elem].type': newImageObject.type,
+                            'Detail.$[detailElem].DetailImage.$[elem].size': newImageObject.size,
                             'Detail.$[detailElem].DetailImage.$[elem].create': newImageObject.create,
                         }
                     },
                     { arrayFilters: [{ 'detailElem._id': affectedDetailObjectId }, { 'elem.id': oldImageId }] }
                 )
             );
-        } else { // If not Detail, then it must be Student.Learn.Image (update, but don't return its ID in data)
+        } else {
             updateOperations.push(
                 PostCourse.updateOne(
                     { '_id': affectedCourseId, 'Student.Learn.Image.id': oldImageId },
@@ -228,6 +230,7 @@ export async function PUT(request) {
                         $set: {
                             'Student.$.Learn.$[learnElem].Image.$[imageElem].id': newImageObject.id,
                             'Student.$.Learn.$[learnElem].Image.$[imageElem].type': newImageObject.type,
+                            'Student.$.Learn.$[learnElem].Image.$[imageElem].size': newImageObject.size,
                             'Student.$.Learn.$[learnElem].Image.$[imageElem].create': newImageObject.create,
                         }
                     },

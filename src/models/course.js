@@ -10,8 +10,9 @@ const DetailSchema = new Schema({
     Image: { type: String },
     DetailImage: {
         type: [{
-            id: { type: String, required: true, unique: true },
+            id: { type: String, required: true },
             type: { type: String },
+            size: { type: Number },
             create: { type: Date, default: Date.now }
         }],
         default: []
@@ -28,8 +29,9 @@ const LearnDetailSchema = new Schema({
     Lesson: { type: Schema.Types.ObjectId, required: true },
     Image: {
         type: [{
-            id: { type: String, required: true, unique: true },
+            id: { type: String, required: true },
             type: { type: String },
+            size: { type: Number },
             create: { type: Date, default: Date.now }
         }],
         default: []

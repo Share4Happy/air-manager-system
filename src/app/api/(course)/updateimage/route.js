@@ -62,7 +62,7 @@ export async function POST(request) {
         }
 
         // --- 2. Tạo đối tượng để lưu vào MongoDB ---
-        const newMediaObject = { id: uploadedId, type: fileType, create: new Date() };
+        const newMediaObject = { id: uploadedId, type: fileType, size: fileBuffer.length, create: new Date() };
 
         // --- 3. Cập nhật vào MongoDB ---
         let updateResult = await PostCourse.updateOne(
@@ -182,17 +182,17 @@ export async function PUT(request) {
             throw new Error("Tải lên Google Drive thất bại, không nhận được ID file mới.");
         }
 
-        // --- 3. Cập nhật ID mới vào MongoDB ---
+        // --- 3. Cập nhật ID mới + size vào MongoDB ---
         let updateResult = await PostCourse.updateOne(
             { 'Detail.DetailImage.id': oldImageId },
-            { $set: { 'Detail.$.DetailImage.$[elem].id': newImageId } },
+            { $set: { 'Detail.$.DetailImage.$[elem].id': newImageId, 'Detail.$.DetailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
         );
 
         if (updateResult.modifiedCount === 0) {
             updateResult = await TrialCourse.updateOne(
                 { 'sessions.images.id': oldImageId },
-                { $set: { 'sessions.$[ses].images.$[img].id': newImageId } },
+                { $set: { 'sessions.$[ses].images.$[img].id': newImageId, 'sessions.$[ses].images.$[img].size': fileBuffer.length } },
                 { arrayFilters: [{ 'ses.images.id': oldImageId }, { 'img.id': oldImageId }] }
             );
 

@@ -56,7 +56,7 @@ export default function StudentImageSelectionManager({ studentInfo, courseInfo, 
 
             const imagesToSave = allCourseImages
                 .filter(img => newSelectedIds.has(img.id))
-                .map(img => ({ id: img.id, type: img.type }));
+                .map(img => ({ id: img.id, type: img.type, size: img.size }));
 
             const response = await fetch('/api/updateimagestudent', {
                 method: 'POST',
@@ -156,7 +156,7 @@ export default function StudentImageSelectionManager({ studentInfo, courseInfo, 
 
             const imagesToSave = allCourseImages
                 .filter(img => newSelectedIds.has(img.id))
-                .map(img => ({ id: img.id, type: img.type }));
+                .map(img => ({ id: img.id, type: img.type, size: img.size }));
 
             const response = await fetch('/api/updateimagestudent', {
                 method: 'POST',

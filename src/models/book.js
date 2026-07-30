@@ -53,7 +53,9 @@ const BookSchema = new Schema({
         type: String,
         required: false,
     },
+    ImageSize: { type: Number },
     Badge: { type: String },
+    BadgeSize: { type: Number },
     Describe: {
         type: String,
         default: 'null',

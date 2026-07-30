@@ -23,12 +23,14 @@ export async function POST(request) {
         const formData = await request.formData();
         const avtFile = formData.get('Avt');
         let avt;
-        if (avtFile?.size > 0) { avt = await uploadImageToDrive(avtFile, process.env.DRIVE_AVT_FOLDER_ID); }
+        let avtSize;
+        if (avtFile?.size > 0) { avt = await uploadImageToDrive(avtFile, process.env.DRIVE_AVT_FOLDER_ID); avtSize = avtFile.size; }
         const lastStudent = await PostStudent.findOne({ ID: /^AI\d{4}$/ }).sort({ ID: -1 }).select('ID').lean();
         const nextIdNumber = lastStudent ? parseInt(lastStudent.ID.slice(2), 10) + 1 : 1;
         const newStudent = new PostStudent({
             ID: 'AI' + String(nextIdNumber).padStart(4, '0'),
             Avt: avt,
+            AvtSize: avtSize,
             Name: formData.get('Name'),
             BD: formData.get('BD'),
             School: formData.get('School'),

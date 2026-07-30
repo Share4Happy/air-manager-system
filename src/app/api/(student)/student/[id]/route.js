@@ -50,6 +50,7 @@ export async function PUT(request, { params }) {
             newUploadedFileId = await uploadImageToDrive(avtFile, process.env.DRIVE_AVT_FOLDER_ID);
             if (newUploadedFileId) {
                 updateData.Avt = newUploadedFileId;
+                updateData.AvtSize = avtFile.size;
             } else {
                 throw new Error("Tải ảnh đại diện lên Google Drive thất bại.");
             }
