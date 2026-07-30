@@ -264,7 +264,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     }
 
     return (
-        <div className={'p-4 flex flex-col gap-2 overflow-auto rounded-lg shadow-[var(--boxshaw2)] h-[calc(100%-32px)] w-full min-w-0'}>
+        <div className={'p-4 flex flex-col gap-2 overflow-auto rounded-lg shadow-[var(--boxshaw2)] lg:h-[calc(100%-32px)] w-full min-w-0'}>
             <div className={'bg-white rounded flex flex-col lg:flex-row flex-wrap border border-[var(--border-color)] w-full min-w-0'} style={{ padding: 16, gap: 16 }}>
                 <div className={'hidden lg:block relative w-[100px] lg:w-[150px] aspect-[4/5] shrink-0'}>
                     {data.Book?.Image ? (
@@ -415,7 +415,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                         </div>
                     </div>
                 </div>
-                <div className="w-full lg:w-[180px]" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', height: 150 }}>
+                <div className="w-full lg:w-[180px]" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><Student course={data} student={sortedStudents} /></div>
                     <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><Calendar course={data} student={sortedStudents} /></div>
                     <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><AnnounceStudent course={data} /></div>
@@ -466,7 +466,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                         ))}
                     </div>
                     <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
-                        <div style={{ minWidth: 650, width: '100%' }}>
+                        <div style={{ minWidth: 650 }}>
                         <div style={{ display: 'flex', background: 'var(--border-color)' }}>
                             {title.map((e, i) => {
                             if (activeLessonTab && e.data === 'b') return null;

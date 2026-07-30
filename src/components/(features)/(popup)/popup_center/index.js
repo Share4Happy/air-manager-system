@@ -5,14 +5,15 @@ export default function CenterPopup({
     onClose,
     title = '',
     children,
-    size = 'md'
+    size = 'md',
+    globalZIndex = 1000
 }) {
     if (!open) return null;
 
     const sizeClass = size === 'sm' ? 'max-w-[300px]' : size === 'lg' ? 'max-w-[1100px]' : 'max-w-[500px]';
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center" onMouseDown={onClose}>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center" style={{ zIndex: globalZIndex }} onMouseDown={onClose}>
             <div className="absolute inset-0 bg-black/50" />
             <div
                 className={`relative bg-[var(--bg-primary)] rounded-lg shadow-lg flex flex-col max-h-[90vh] w-[90%] ${sizeClass}`}

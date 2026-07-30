@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, memo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, memo, useRef } from 'react';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
 import Loading from '@/components/(ui)/(loading)/loading';
@@ -18,6 +18,13 @@ const formatForDateInput = (dayString) => {
     if (!dayString || !dayString.includes('/')) return '';
     const [dd, mm, yyyy] = dayString.split('/');
     return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+};
+
+const toDisplayDate = (dateStr) => {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    if (!y || !m || !d) return dateStr;
+    return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
 };
 
 const renderList = (arr, onPick) => (
@@ -70,7 +77,16 @@ const SingleForm = memo(({ initialData, onSave, programObj, areaObj, teachersLis
             <p className="text-sm font-normal text-[var(--text-primary)]" style={{ marginBottom: 4 }}>Giáo viên</p>
             <Menu menuItems={singleTeacherMenu} menuPosition="bottom" isOpen={openMenus.teacher} onOpenChange={(v) => setOpenMenus(p => ({ ...p, teacher: v }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, teacher: !p.teacher }))} className={'flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer'}>{localTeacher}</div>} />
             <p className="text-sm font-normal text-[var(--text-primary)]" style={{ marginBottom: 4 }}>Ngày học</p>
-            <input type="date" value={day} onChange={(e) => setDay(e.target.value)} required />
+            <input type="text" value={toDisplayDate(day)} placeholder="DD/MM/YYYY"
+                onChange={(e) => {
+                    let val = e.target.value.replace(/[^0-9]/g, '');
+                    if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                    if (val.length > 5) val = val.slice(0, 5) + '/' + val.slice(5);
+                    if (val.length > 10) val = val.slice(0, 10);
+                    const parts = val.split('/');
+                    const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
+                    setDay(iso);
+                }} />
             <p className="text-sm font-normal text-[var(--text-primary)]" style={{ marginBottom: 4 }}>Thời gian bắt đầu</p>
             <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
             <p className="text-sm font-normal text-[var(--text-primary)]" style={{ marginBottom: 4 }}>Số tiết</p>
@@ -83,15 +99,98 @@ const SingleForm = memo(({ initialData, onSave, programObj, areaObj, teachersLis
 });
 SingleForm.displayName = 'SingleForm';
 
+const DAY_OPTIONS = [
+    { label: 'T2', value: 1 },
+    { label: 'T3', value: 2 },
+    { label: 'T4', value: 3 },
+    { label: 'T5', value: 4 },
+    { label: 'T6', value: 5 },
+    { label: 'T7', value: 6 },
+    { label: 'CN', value: 0 },
+];
+
 const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany, closeSecondary }) => {
     const allTopics = useMemo(() => programObj ? programObj.Topics.map(topic => ({ id: topic._id, name: topic.Name, lesson: topic.Period })) : [], [programObj]);
-    const [rows, setRows] = useState(() => allTopics.map(topic => ({ ...topic, day: '', start: '08:00', room: '', teacher: mainTeacher, openRoom: false, openTeacher: false })));
+    const sessionCount = allTopics.length;
+    const [selectedDays, setSelectedDays] = useState([1]);
+    const [dayTimes, setDayTimes] = useState({ 1: '08:00' });
+    const [startDate, setStartDate] = useState('');
+    const [batchLessons, setBatchLessons] = useState(allTopics[0]?.lesson || 4);
+    const [batchRoom, setBatchRoom] = useState('');
+    const [batchTeacher, setBatchTeacher] = useState(mainTeacher);
+    const [rows, setRows] = useState([]);
     const [invalidRows, setInvalidRows] = useState(new Set());
     const [errorBulk, setErrorBulk] = useState('');
-    const [isFirstRoomSet, setIsFirstRoomSet] = useState(true);
+    const [generated, setGenerated] = useState(false);
+    const [openMenus, setOpenMenus] = useState({ room: false });
+    const [configErrors, setConfigErrors] = useState({ startDate: false, days: false, room: false, lessons: false });
+    const dateInputRef = useRef(null);
 
     const roomList = useMemo(() => areaObj?.rooms?.map(r => r.name) || [], [areaObj]);
     const teacherNames = useMemo(() => (teachersList || []).map(u => u.name), [teachersList]);
+
+    const toggleDay = (day) => {
+        setConfigErrors(p => ({ ...p, days: false }));
+        setSelectedDays(prev => {
+            if (prev.includes(day)) {
+                const next = prev.filter(d => d !== day);
+                return next;
+            }
+            return [...prev, day];
+        });
+        setDayTimes(prev => {
+            if (prev[day]) return prev;
+            return { ...prev, [day]: '08:00' };
+        });
+    };
+
+    const updateDayTime = (day, time) => {
+        setDayTimes(prev => ({ ...prev, [day]: time }));
+    };
+
+    const generateRows = () => {
+        const errors = {
+            startDate: !startDate || startDate.length < 10,
+            days: selectedDays.length === 0,
+            room: !batchRoom,
+            lessons: !batchLessons || batchLessons < 1,
+        };
+        setConfigErrors(errors);
+        if (errors.startDate || errors.days || errors.room || errors.lessons) {
+            setErrorBulk('Vui lòng điền đầy đủ thông tin cấu hình.');
+            return;
+        }
+        if (allTopics.length === 0) { setErrorBulk('Chương trình chưa có chủ đề nào'); return; }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const generated = [];
+        const start = new Date(startDate + 'T00:00:00');
+        let current = new Date(start < today ? today : start);
+
+        while (generated.length < sessionCount) {
+            const dayOfWeek = current.getDay();
+            if (selectedDays.includes(dayOfWeek)) {
+                const topic = allTopics[generated.length % allTopics.length];
+                generated.push({
+                    ...topic,
+                    day: `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`,
+                    start: dayTimes[dayOfWeek] || '08:00',
+                    lesson: batchLessons,
+                    room: batchRoom,
+                    teacher: batchTeacher,
+                    openRoom: false,
+                    openTeacher: false,
+                });
+            }
+            current.setDate(current.getDate() + 1);
+        }
+
+        setRows(generated);
+        setInvalidRows(new Set());
+        setGenerated(true);
+        setErrorBulk('');
+    };
 
     const updateRow = useCallback((idx, field, value) => {
         setRows(prev => prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
@@ -101,29 +200,8 @@ const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany
         if (errorBulk) setErrorBulk('');
     }, [invalidRows, errorBulk]);
 
-    const handleRoomPick = (idx, roomValue) => {
-        if (isFirstRoomSet) {
-            setRows(prev => prev.map(row => ({ ...row, room: roomValue, openRoom: false })));
-            setIsFirstRoomSet(false);
-        } else {
-            updateRow(idx, 'room', roomValue);
-            updateRow(idx, 'openRoom', false);
-        }
-    };
-
-    const handleFirstDayChange = (e) => {
-        const firstDateValue = e.target.value;
-        if (!firstDateValue) return;
-        const firstDate = new Date(firstDateValue);
-        setRows(prev => prev.map((row, index) => {
-            if (index === 0) return { ...row, day: firstDateValue };
-            const nextDate = new Date(firstDate);
-            nextDate.setDate(nextDate.getDate() + index * 7);
-            return { ...row, day: nextDate.toISOString().slice(0, 10) };
-        }));
-    };
-
     const handleSave = () => {
+        if (rows.length === 0) { setErrorBulk('Chưa có buổi học nào. Hãy tạo lịch trước.'); return; }
         const missing = new Set(rows.reduce((acc, r, i) => (!r.day || !r.room || !r.teacher ? [...acc, i] : acc), []));
         if (missing.size > 0) {
             setInvalidRows(missing);
@@ -144,23 +222,120 @@ const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany
     return (
         <div className={'flex flex-col gap-4 p-4'}>
             {errorBulk && <p className={'text-[var(--red)] text-xs italic'} style={{ marginBottom: 8 }}>{errorBulk}</p>}
-            {rows.length === 0 ? (
-                <p className="text-sm text-[var(--text-secondary)] italic">Chương trình này chưa có chủ đề nào.</p>
-            ) : (<>{rows.map((r, i) => (
-                <div key={i} className={`border border-[var(--border-color)] rounded-lg p-3 bg-[var(--bg-primary)] flex flex-col gap-2 ${invalidRows.has(i) ? 'border-[var(--red)]' : ''}`}>
-                    <div className={'flex gap-2 flex-wrap items-center'}><span className={'font-semibold text-sm mr-1'}>{i + 1}.</span><span className={'text-sm font-medium flex-1'}>{r.name}</span></div>
-                    <div className={'flex gap-2 flex-wrap items-center'}>
-                        <input type="date" value={r.day} onChange={i === 0 ? handleFirstDayChange : (e) => updateRow(i, 'day', e.target.value)} className={'flex-1 min-w-[120px] max-w-[180px] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none'} />
-                        <input type="time" value={r.start} onChange={(e) => updateRow(i, 'start', e.target.value)} className={'flex-1 min-w-[120px] max-w-[180px] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none'} />
-                        <input type="number" min="1" value={r.lesson} readOnly className={'w-15 min-w-15 p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none'} />
+
+            <div className={'border border-[var(--border-color)] rounded-lg p-4 bg-[var(--bg-primary)] flex flex-col gap-3'}>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">Cấu hình tạo hàng loạt</p>
+                <div className={'flex gap-3 flex-wrap items-center'}>
+                    <div className={'flex flex-col gap-1 flex-1 min-w-[100px]'}>
+                        <label className="text-xs text-[var(--text-secondary)]">Ngày bắt đầu</label>
+                        <div className={'relative'}>
+                            <input type="text" value={startDate ? toDisplayDate(startDate) : ''}
+                                placeholder="DD/MM/YYYY"
+                                onChange={(e) => {
+                                    setConfigErrors(p => ({ ...p, startDate: false }));
+                                    let val = e.target.value.replace(/[^0-9]/g, '');
+                                    if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                                    if (val.length > 5) val = val.slice(0, 5) + '/' + val.slice(5);
+                                    if (val.length > 10) val = val.slice(0, 10);
+                                    const parts = val.split('/');
+                                    const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
+                                    setStartDate(iso);
+                                }}
+                                className={`w-full p-2 pr-8 text-sm bg-white border rounded-lg outline-none ${configErrors.startDate ? 'border-[var(--red)]' : 'border-[#e2e8f0]'}`} />
+                            <input ref={dateInputRef} type="date" value={startDate}
+                                onChange={(e) => { setStartDate(e.target.value); setConfigErrors(p => ({ ...p, startDate: false })); }}
+                                className={'absolute right-0 top-0 w-9 h-full opacity-0 cursor-pointer'} />
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={16} height={16}
+                                fill="var(--text-secondary)"
+                                className={'absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'}>
+                                <path d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 48L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-256 0-48 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM384 192l0 256c0 17.7-14.3 32-32 32L96 480c-17.7 0-32-14.3-32-32l0-256 320 0z"/>
+                            </svg>
+                        </div>
                     </div>
-                    <div className={'flex gap-2 flex-wrap items-center'}>
-                        <Menu menuItems={getMenu(roomList, (val) => handleRoomPick(i, val), 'Chưa có phòng')} menuPosition="bottom" isOpen={r.openRoom} onOpenChange={(val) => updateRow(i, 'openRoom', val)} customButton={<div onClick={() => updateRow(i, 'openRoom', !r.openRoom)} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${!r.room ? 'border-[#ffd264]' : ''}`}>{r.room || 'Chọn phòng'}</div>} />
-                        <Menu menuItems={getMenu(teacherNames, (val) => { updateRow(i, 'teacher', val); updateRow(i, 'openTeacher', false); }, 'Chưa có giáo viên')} menuPosition="bottom" isOpen={r.openTeacher} onOpenChange={(val) => updateRow(i, 'openTeacher', val)} customButton={<div onClick={() => updateRow(i, 'openTeacher', !r.openTeacher)} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${!r.teacher ? 'border-[#ffd264]' : ''}`}>{r.teacher || 'Chọn giáo viên'}</div>} />
+                    <div className={'flex flex-col gap-1 flex-1 min-w-[80px]'}>
+                        <label className="text-xs text-[var(--text-secondary)]">Số tiết</label>
+                        <input type="number" min="1" value={batchLessons}
+                            onChange={(e) => { setBatchLessons(Math.max(1, parseInt(e.target.value) || 1)); setConfigErrors(p => ({ ...p, lessons: false })); }}
+                            className={`p-2 text-sm bg-white border rounded-lg outline-none ${configErrors.lessons ? 'border-[var(--red)]' : 'border-[#e2e8f0]'}`} />
                     </div>
                 </div>
-            ))}</>)}
-            <div className={'flex justify-start mt-2 gap-4'}><button type="button" className={'self-end px-5 py-2 bg-[var(--main_d)] text-white border-none rounded-md cursor-pointer font-semibold'} onClick={handleSave}>Lưu tất cả</button></div>
+                <div className={'flex flex-col gap-1'}>
+                    <label className="text-xs text-[var(--text-secondary)]">Thứ trong tuần</label>
+                    <div className={`flex gap-1.5 flex-wrap p-1.5 rounded ${configErrors.days ? 'border border-[var(--red)]' : ''}`}>
+                        {DAY_OPTIONS.map(d => {
+                            const isSelected = selectedDays.includes(d.value);
+                            return (
+                                <div key={d.value} className={'flex items-center gap-1'}>
+                                    <button type="button"
+                                        onClick={() => toggleDay(d.value)}
+                                        className={`px-2.5 py-1.5 text-sm rounded-md border cursor-pointer transition-colors ${
+                                            isSelected
+                                                ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                                : 'bg-white text-[var(--text-primary)] border-[#e2e8f0]'
+                                        }`}>
+                                        {d.label}
+                                    </button>
+                                    {isSelected && (
+                                        <input type="time" value={dayTimes[d.value] || '08:00'}
+                                            onChange={(e) => updateDayTime(d.value, e.target.value)}
+                                            className={'w-[90px] p-1.5 text-xs bg-white border border-[#e2e8f0] rounded outline-none'} />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+                <div className={'flex gap-3 flex-wrap items-center'}>
+                    <Menu menuItems={getMenu(roomList, (val) => { setBatchRoom(val); setConfigErrors(p => ({ ...p, room: false })); setOpenMenus(p => ({ ...p, room: false })); }, 'Chưa có phòng')} menuPosition="bottom" isOpen={openMenus.room} onOpenChange={(val) => setOpenMenus(p => ({ ...p, room: val }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, room: !p.room }))} className={`flex-1 min-w-[120px] p-2.5 text-sm bg-white border rounded-lg cursor-pointer ${configErrors.room ? 'border-[var(--red)]' : 'border-[#e2e8f0]'} ${!batchRoom ? 'text-[var(--text-secondary)]' : ''}`}>{batchRoom || 'Phòng học'}</div>} />
+                    <button type="button" className={'px-4 py-2 bg-[var(--main_d)] text-white border-none rounded-md cursor-pointer font-semibold whitespace-nowrap'} onClick={generateRows}>Tạo lịch</button>
+                </div>
+            </div>
+
+            {rows.length > 0 && (
+                <div className={'border border-[var(--border-color)] rounded-lg p-3 bg-[var(--bg-primary)]'}>
+                    <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">Chi tiết buổi học ({rows.length} buổi)</p>
+                    <div className={'flex flex-col gap-2 max-h-[400px] overflow-y-auto'}>
+                        {rows.map((r, i) => (
+                            <div key={i} className={`border border-[var(--border-color)] rounded-lg p-2 flex flex-col gap-1.5 ${invalidRows.has(i) ? 'border-[var(--red)]' : ''}`}>
+                                <div className={'flex gap-2 flex-wrap items-center'}>
+                                    <span className={'font-semibold text-sm mr-1'}>{i + 1}.</span>
+                                    <span className={'text-sm flex-1'}>{r.name}</span>
+                                </div>
+                                <div className={'flex gap-2 flex-wrap items-center'}>
+                                    <span className={'text-xs font-semibold text-[var(--text-secondary)] w-[28px] text-center shrink-0'}>
+                                        {(() => {
+                                            if (!r.day) return '';
+                                            const d = new Date(r.day + 'T00:00:00');
+                                            const dayOpt = DAY_OPTIONS.find(o => o.value === d.getDay());
+                                            return dayOpt ? dayOpt.label : '';
+                                        })()}
+                                    </span>
+                                    <input type="text" value={toDisplayDate(r.day)}
+                                        placeholder="DD/MM/YYYY"
+                                        onChange={(e) => {
+                                            let val = e.target.value.replace(/[^0-9]/g, '');
+                                            if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                                            if (val.length > 5) val = val.slice(0, 5) + '/' + val.slice(5);
+                                            if (val.length > 10) val = val.slice(0, 10);
+                                            const parts = val.split('/');
+                                            const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
+                                            updateRow(i, 'day', iso);
+                                        }}
+                                        className={'flex-1 min-w-[110px] max-w-[160px] p-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg outline-none'} />
+                                    <input type="time" value={r.start} onChange={(e) => updateRow(i, 'start', e.target.value)} className={'flex-1 min-w-[100px] max-w-[140px] p-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg outline-none'} />
+                                    <input type="number" min="1" value={r.lesson} readOnly className={'w-14 p-1.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg outline-none'} />
+                                    <Menu menuItems={getMenu(roomList, (val) => { updateRow(i, 'room', val); updateRow(i, 'openRoom', false); }, 'Chưa có phòng')} menuPosition="bottom" isOpen={r.openRoom} onOpenChange={(val) => updateRow(i, 'openRoom', val)} customButton={<div onClick={() => updateRow(i, 'openRoom', !r.openRoom)} className={`p-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg cursor-pointer min-w-[80px] ${!r.room ? 'text-[var(--text-secondary)]' : ''}`}>{r.room || 'Phòng'}</div>} />
+                                    <Menu menuItems={getMenu(teacherNames, (val) => { updateRow(i, 'teacher', val); updateRow(i, 'openTeacher', false); }, 'Chưa có giáo viên')} menuPosition="bottom" isOpen={r.openTeacher} onOpenChange={(val) => updateRow(i, 'openTeacher', val)} customButton={<div onClick={() => updateRow(i, 'openTeacher', !r.openTeacher)} className={`p-1.5 text-sm bg-white border border-[#e2e8f0] rounded-lg cursor-pointer min-w-[80px] ${!r.teacher ? 'text-[var(--text-secondary)]' : ''}`}>{r.teacher || 'GV'}</div>} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className={'flex justify-start mt-2 gap-4'}>
+                <button type="button" className={'self-end px-5 py-2 bg-[var(--main_d)] text-white border-none rounded-md cursor-pointer font-semibold'} onClick={handleSave}>Lưu tất cả</button>
+            </div>
         </div>
     );
 });

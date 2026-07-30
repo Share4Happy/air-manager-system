@@ -28,7 +28,7 @@ export default function Timeline({ data = [], props }) {
             </div>
 
 
-            <div style={{ flex: 1, overflow: 'hidden', overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
+            <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
                 {data.Detail?.map((e, i) => {
                     let datalesson = e
                     datalesson.Student = data.Student.flatMap((s) => {

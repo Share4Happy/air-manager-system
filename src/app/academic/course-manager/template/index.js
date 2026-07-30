@@ -36,6 +36,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
     const [timeRange, setTimeRange] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [showFilters, setShowFilters] = useState(true);
 
     useEffect(() => {
         const now = new Date();
@@ -174,17 +175,26 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                     ))}
                 </div>
 
-                <div className={'flex items-center gap-3 p-4 mt-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
-                    <div className='flex items-center gap-4 flex-1 flex-wrap'>
+                <div className={'flex items-center gap-3 p-3 mt-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
+                    <button className={'lg:hidden p-1.5 border border-[var(--border-color)] rounded cursor-pointer bg-transparent shrink-0'}
+                        onClick={() => setShowFilters(p => !p)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={16} height={16}
+                            fill="var(--text-primary)"
+                            style={{ transform: showFilters ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+                            <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z"/>
+                        </svg>
+                    </button>
+
+                    <div className={`flex items-center gap-3 flex-1 flex-wrap ${showFilters ? 'flex' : 'hidden lg:flex'}`}>
                         <input
-                            className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none resize-none text-[var(--text-primary)] w-[300px]`}
+                            className={`px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none resize-none text-[var(--text-primary)] w-full sm:w-[250px] lg:w-[300px]`}
                             placeholder="Nhập ID khóa học hoặc tên GVCN"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
 
                         <select
-                            className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)]'
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] min-w-[130px]'
                             value={area}
                             onChange={(e) => setArea(e.target.value)}
                         >
@@ -199,7 +209,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                         </select>
 
                         <select
-                            className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none min-w-[130px]'
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value)}
                         >
@@ -214,25 +224,24 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
 
                         <input
                             type="date"
-                            className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
                             value={startDate}
                             onChange={(e) => { setStartDate(e.target.value); setTimeRange('') }}
                         />
 
                         <input
                             type="date"
-                            className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
                             value={endDate}
                             onChange={(e) => { setEndDate(e.target.value); setTimeRange('') }}
                         />
-                    </div>
-                    <div className='flex gap-2'>
+
                         <button
-                            className={`px-4 py-2.5 rounded-lg font-medium cursor-pointer flex items-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0]`}
+                            className={`px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-sm whitespace-nowrap`}
                             onClick={reloadData}
                             disabled={isReloading}
                         >
-                            {isReloading ? 'Đang tải...' : 'Làm mới dữ liệu'}
+                            {isReloading ? 'Đang tải...' : 'Làm mới'}
                         </button>
                         {(user.role.includes('Admin') || user.role.includes('Acadamic')) && <Create teachers={teacher} books={book} areas={areas} />}
                     </div>
