@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Report from '@/app/teacher/ui/report'
 import AttendanceTab from './attendance-tab'
-import TestTab from './test-tab'
 import SlaTab from './sla-tab'
 
 export default function ReportClient({ initialReports }) {
@@ -30,12 +29,7 @@ export default function ReportClient({ initialReports }) {
                 >
                     SLA
                 </button>
-                <button
-                    className={`px-4 py-2 text-sm font-medium transition-colors ${tab === 'test' ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                    onClick={() => setTab('test')}
-                >
-                    Test
-                </button>
+
             </div>
 
             {tab === 'report' ? (
@@ -44,10 +38,8 @@ export default function ReportClient({ initialReports }) {
                 </div>
             ) : tab === 'attendance' ? (
                 <AttendanceTab />
-            ) : tab === 'sla' ? (
-                <SlaTab />
             ) : (
-                <TestTab />
+                <SlaTab />
             )}
         </div>
     )

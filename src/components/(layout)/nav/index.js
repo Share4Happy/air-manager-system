@@ -272,21 +272,22 @@ export default function Nav() {
                     className={`flex items-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-[var(--hover)]
                       ${collapsed ? 'h-11 justify-center' : 'h-10 gap-3 px-3'}
                       ${anyActive ? 'bg-[var(--border-color)]' : ''}`}
-                    onClick={() => handleNavItemClick(href)}
+                    onClick={() => {
+                      if (hasChildren) {
+                        toggleParent(href);
+                      } else {
+                        handleNavItemClick(href);
+                      }
+                    }}
                   >
                     <div className="shrink-0">{icon}</div>
                     {!collapsed && (
                       <span className="text-sm font-medium text-[var(--text-primary)] truncate flex-1">{content}</span>
                     )}
                     {hasChildren && !collapsed && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleParent(href); }}
-                        className="shrink-0 p-1 rounded hover:bg-[var(--hover)] transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height={10} width={10} fill={'var(--text-secondary)'} style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>
-                          <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/>
-                        </svg>
-                      </button>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height={10} width={10} fill={'var(--text-secondary)'} className="shrink-0" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .2s' }}>
+                        <path d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/>
+                      </svg>
                     )}
                   </div>
                   {hasChildren && !collapsed && isExpanded && (
@@ -335,7 +336,6 @@ export default function Nav() {
             {[
               // { href: '/guide', icon: <Svg_Guide w={22} h={22} c={'var(--text-secondary)'} />, content: 'Hướng dẫn' },
               { href: '/info', icon: <Svg_Detail w={22} h={22} c={'var(--text-secondary)'} />, content: 'Thông tin' },
-              { href: '/feedback', icon: <Svg_Feedback w={22} h={22} c={'var(--text-secondary)'} />, content: 'Feedback' },
               { href: '/tools/drive-storage', icon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}><path d="M0 96C0 60.7 28.7 32 64 32l132.1 0c19 0 37.2 7.5 50.6 20.9L303.9 110c5.7 5.7 13.1 8.9 20.9 8.9L448 119c35.3 0 64 28.7 64 64l0 233c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96z"/></svg>, content: 'Drive' },
             ].map(({ href, icon, content }) => (
               <div key={href} className="relative group w-full">

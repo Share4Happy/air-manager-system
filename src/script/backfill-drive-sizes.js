@@ -3,6 +3,7 @@ import PostCourse from '@/models/course';
 import PostStudent from '@/models/student';
 import PostBook from '@/models/book';
 import TrialCourse from '@/models/coursetry';
+import DriveFileSize from '@/models/driveFileSize';
 import { google } from 'googleapis';
 
 async function getDriveClient() {
@@ -35,119 +36,95 @@ async function backfill() {
     await connectDB();
     const drive = await getDriveClient();
 
-    // 1. Backfill Course DetailImage
-    console.log('Backfilling Course DetailImage...');
+    const allFileIds = new Set();
+
+    // 1. Collect all file IDs from Course DetailImage
+    console.log('Scanning Course DetailImage...');
     const courses = await PostCourse.find({ 'Detail.DetailImage': { $exists: true } }).lean();
     for (const course of courses) {
         for (const detail of course.Detail || []) {
             for (const img of detail.DetailImage || []) {
-                if (!img.size) {
-                    const size = await getFileSize(drive, img.id);
-                    if (size > 0) {
-                        await PostCourse.updateOne(
-                            { _id: course._id, 'Detail.DetailImage.id': img.id },
-                            { $set: { 'Detail.$.DetailImage.$[elem].size': size } },
-                            { arrayFilters: [{ 'elem.id': img.id }] }
-                        );
-                        console.log(`  Updated DetailImage ${img.id}: ${size} bytes`);
-                    }
-                }
+                if (img.id) allFileIds.add(img.id);
             }
         }
-    }
-
-    // 2. Backfill Course Learn.Image
-    console.log('Backfilling Course Learn.Image...');
-    for (const course of courses) {
         for (const student of course.Student || []) {
             for (const learn of student.Learn || []) {
                 for (const img of learn.Image || []) {
-                    if (!img.size) {
-                        const size = await getFileSize(drive, img.id);
-                        if (size > 0) {
-                            await PostCourse.updateOne(
-                                { _id: course._id, 'Student.Learn.Image.id': img.id },
-                                { $set: { 'Student.$[].Learn.$[learnElem].Image.$[imgElem].size': size } },
-                                { arrayFilters: [{ 'learnElem.Lesson': learn.Lesson }, { 'imgElem.id': img.id }] }
-                            );
-                            console.log(`  Updated Learn.Image ${img.id}: ${size} bytes`);
-                        }
-                    }
+                    if (img.id) allFileIds.add(img.id);
                 }
             }
         }
     }
 
-    // 3. Backfill TrialCourse images
-    console.log('Backfilling TrialCourse...');
+    // 2. Collect all file IDs from TrialCourse
+    console.log('Scanning TrialCourse...');
     const trials = await TrialCourse.find({ 'sessions.images': { $exists: true } }).lean();
     for (const trial of trials) {
         for (const session of trial.sessions || []) {
-            for (const img of session.images || []) {
-                if (!img.size) {
-                    const size = await getFileSize(drive, img.id);
-                    if (size > 0) {
-                        await TrialCourse.updateOne(
-                            { _id: trial._id, 'sessions.images.id': img.id },
-                            { $set: { 'sessions.$[].images.$[imgElem].size': size } },
-                            { arrayFilters: [{ 'imgElem.id': img.id }] }
-                        );
-                        console.log(`  Updated Trial.Image ${img.id}: ${size} bytes`);
-                    }
-                }
-            }
+            if (session.images?.id) allFileIds.add(session.images.id);
             for (const student of session.students || []) {
                 for (const img of student.images || []) {
-                    if (!img.size) {
-                        const size = await getFileSize(drive, img.id);
-                        if (size > 0) {
-                            await TrialCourse.updateOne(
-                                { _id: trial._id, 'sessions.students.images.id': img.id },
-                                { $set: { 'sessions.$[].students.$[].images.$[imgElem].size': size } },
-                                { arrayFilters: [{ 'imgElem.id': img.id }] }
-                            );
-                            console.log(`  Updated Trial.Student.Image ${img.id}: ${size} bytes`);
-                        }
-                    }
+                    if (img.id) allFileIds.add(img.id);
                 }
             }
         }
     }
 
-    // 4. Backfill Student avatars
-    console.log('Backfilling Student avatars...');
-    const students = await PostStudent.find({ Avt: { $exists: true, $ne: '' }, AvtSize: { $exists: false } }).lean();
+    // 3. Collect all file IDs from Student avatars
+    console.log('Scanning Student avatars...');
+    const students = await PostStudent.find({ Avt: { $exists: true, $ne: '' } }).lean();
     for (const student of students) {
-        const size = await getFileSize(drive, student.Avt);
-        if (size > 0) {
-            await PostStudent.updateOne({ _id: student._id }, { $set: { AvtSize: size } });
-            console.log(`  Updated Avt ${student.Avt}: ${size} bytes`);
-        }
+        if (student.Avt) allFileIds.add(student.Avt);
     }
 
-    // 5. Backfill Book images
-    console.log('Backfilling Book images...');
+    // 4. Collect all file IDs from Book images
+    console.log('Scanning Book images...');
     const books = await PostBook.find({
         $or: [
-            { Image: { $exists: true, $ne: '' }, ImageSize: { $exists: false } },
-            { Badge: { $exists: true, $ne: '' }, BadgeSize: { $exists: false } }
+            { Image: { $exists: true, $ne: '' } },
+            { Badge: { $exists: true, $ne: '' } }
         ]
     }).lean();
     for (const book of books) {
-        if (book.Image && !book.ImageSize) {
-            const size = await getFileSize(drive, book.Image);
-            if (size > 0) {
-                await PostBook.updateOne({ _id: book._id }, { $set: { ImageSize: size } });
-                console.log(`  Updated Book.Image ${book.Image}: ${size} bytes`);
+        if (book.Image) allFileIds.add(book.Image);
+        if (book.Badge) allFileIds.add(book.Badge);
+    }
+
+    // 5. Filter out already-known sizes
+    const known = await DriveFileSize.find({ fileId: { $in: [...allFileIds] } }).lean();
+    const knownSet = new Set(known.map(d => d.fileId));
+    const unknownIds = [...allFileIds].filter(id => !knownSet.has(id));
+
+    console.log(`Total files: ${allFileIds.size}, already known: ${known.length}, need fetching: ${unknownIds.length}`);
+
+    // 6. Fetch sizes from Drive
+    const sizeMap = {};
+    const concurrency = 15;
+    for (let i = 0; i < unknownIds.length; i += concurrency) {
+        const batch = unknownIds.slice(i, i + concurrency);
+        const results = await Promise.allSettled(batch.map(id => getFileSize(drive, id)));
+        results.forEach((r, j) => {
+            if (r.status === 'fulfilled' && r.value > 0) {
+                sizeMap[batch[j]] = r.value;
             }
+        });
+        if (batch.length > 0) {
+            console.log(`  Progress: ${Math.min(i + concurrency, unknownIds.length)}/${unknownIds.length}`);
         }
-        if (book.Badge && !book.BadgeSize) {
-            const size = await getFileSize(drive, book.Badge);
-            if (size > 0) {
-                await PostBook.updateOne({ _id: book._id }, { $set: { BadgeSize: size } });
-                console.log(`  Updated Book.Badge ${book.Badge}: ${size} bytes`);
-            }
+    }
+
+    // 7. Save to DriveFileSize collection
+    const ops = Object.entries(sizeMap).map(([fileId, size]) => ({
+        updateOne: {
+            filter: { fileId },
+            update: { $set: { fileId, size, updatedAt: new Date() } },
+            upsert: true,
         }
+    }));
+
+    if (ops.length > 0) {
+        await DriveFileSize.bulkWrite(ops);
+        console.log(`Saved ${ops.length} file sizes to DriveFileSize collection.`);
     }
 
     console.log('Backfill complete!');

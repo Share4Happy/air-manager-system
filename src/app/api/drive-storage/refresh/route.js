@@ -4,6 +4,7 @@ import PostCourse from '@/models/course';
 import PostStudent from '@/models/student';
 import PostBook from '@/models/book';
 import TrialCourse from '@/models/coursetry';
+import DriveFileSize from '@/models/driveFileSize';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -85,51 +86,37 @@ export async function POST() {
                     send({ type: 'progress', current: processed, total, label: `Đang lấy kích thước từ Drive (${processed}/${total})...` });
                 }
 
-                send({ type: 'progress', current: total, total, label: 'Đang cập nhật vào MongoDB...' });
+                send({ type: 'progress', current: total, total, label: 'Đang lưu vào MongoDB...' });
 
-                let updatedCount = 0;
-                for (const [fileId, size] of Object.entries(sizeMap)) {
-                    if (size === 0) continue;
-                    updatedCount++;
-                    const results = await Promise.allSettled([
-                        PostCourse.updateMany(
-                            { 'Detail.DetailImage.id': fileId },
-                            { $set: { 'Detail.$[detail].DetailImage.$[img].size': size } },
-                            { arrayFilters: [{ 'detail.DetailImage.id': fileId }, { 'img.id': fileId }] }
-                        ),
-                        PostCourse.updateMany(
-                            { 'Student.Learn.Image.id': fileId },
-                            { $set: { 'Student.$[student].Learn.$[learn].Image.$[img].size': size } },
-                            { arrayFilters: [{ 'student.Learn.Image.id': fileId }, { 'learn.Image.id': fileId }, { 'img.id': fileId }] }
-                        ),
-                        TrialCourse.updateMany(
-                            { 'sessions.images.id': fileId },
-                            { $set: { 'sessions.$[session].images.$[img].size': size } },
-                            { arrayFilters: [{ 'session.images.id': fileId }, { 'img.id': fileId }] }
-                        ),
-                        TrialCourse.updateMany(
-                            { 'sessions.students.images.id': fileId },
-                            { $set: { 'sessions.$[session].students.$[student].images.$[img].size': size } },
-                            { arrayFilters: [{ 'session.students.images.id': fileId }, { 'student.images.id': fileId }, { 'img.id': fileId }] }
-                        ),
-                        PostStudent.updateMany({ Avt: fileId }, { $set: { AvtSize: size } }),
-                        PostBook.updateMany({ Image: fileId }, { $set: { ImageSize: size } }),
-                        PostBook.updateMany({ Badge: fileId }, { $set: { BadgeSize: size } }),
-                    ]);
-                    const matched = results.filter(r => r.status === 'fulfilled' && r.value?.modifiedCount > 0).length;
-                    if (matched === 0 && fileId.length > 10) {
-                        console.warn(`[Refresh] No update for ${fileId.substring(0, 10)}...`);
-                    }
+                // Batch upsert into DriveFileSize collection
+                const ops = Object.entries(sizeMap)
+                    .filter(([_, size]) => size > 0)
+                    .map(([fileId, size]) => ({
+                        updateOne: {
+                            filter: { fileId },
+                            update: { $set: { fileId, size, updatedAt: new Date() } },
+                            upsert: true,
+                        }
+                    }));
+
+                if (ops.length > 0) {
+                    await DriveFileSize.bulkWrite(ops);
                 }
 
                 send({ type: 'progress', current: total, total, label: 'Đang tổng hợp dữ liệu...' });
+
+                const mongoSizeMap = {};
+                const sizeDocs = await DriveFileSize.find({}).lean();
+                for (const doc of sizeDocs) {
+                    mongoSizeMap[doc.fileId] = doc.size;
+                }
 
                 const courseList = [];
                 let courseSize = 0, courseFiles = 0, courseImgSize = 0, courseImgFiles = 0, courseVidSize = 0, courseVidFiles = 0;
                 for (const c of courses) {
                     const stats = { totalSize: 0, totalFiles: 0, imageSize: 0, imageFiles: 0, videoSize: 0, videoFiles: 0 };
-                    for (const d of c.Detail || []) for (const img of d.DetailImage || []) addFile(stats, img.size || sizeMap[img.id] || 0, img.type);
-                    for (const s of c.Student || []) for (const l of s.Learn || []) for (const img of l.Image || []) addFile(stats, img.size || sizeMap[img.id] || 0, img.type);
+                    for (const d of c.Detail || []) for (const img of d.DetailImage || []) addFile(stats, mongoSizeMap[img.id] || img.size || 0, img.type);
+                    for (const s of c.Student || []) for (const l of s.Learn || []) for (const img of l.Image || []) addFile(stats, mongoSizeMap[img.id] || img.size || 0, img.type);
                     courseSize += stats.totalSize; courseFiles += stats.totalFiles;
                     courseImgSize += stats.imageSize; courseImgFiles += stats.imageFiles;
                     courseVidSize += stats.videoSize; courseVidFiles += stats.videoFiles;
@@ -190,15 +177,19 @@ export async function POST() {
                 const mergedCourseVidFiles = mergedList.reduce((s, c) => s + c.videoFiles, 0);
 
                 let avatarSize = 0, avatarFiles = 0;
-                for (const s of students) { const sz = safeSize(sizeMap[s.Avt]); avatarSize += sz; if (sz > 0) avatarFiles++; }
+                for (const s of students) { const sz = safeSize(mongoSizeMap[s.Avt] || sizeMap[s.Avt]); avatarSize += sz; if (sz > 0) avatarFiles++; }
 
                 let bookSize = 0, bookFiles = 0;
-                for (const b of books) { const is = safeSize(sizeMap[b.Image]); const bs = safeSize(sizeMap[b.Badge]); bookSize += is + bs; if (is > 0) bookFiles++; if (bs > 0) bookFiles++; }
+                for (const b of books) {
+                    const is = safeSize(mongoSizeMap[b.Image] || sizeMap[b.Image]);
+                    const bs = safeSize(mongoSizeMap[b.Badge] || sizeMap[b.Badge]);
+                    bookSize += is + bs; if (is > 0) bookFiles++; if (bs > 0) bookFiles++;
+                }
 
                 let trialStats = { totalSize: 0, totalFiles: 0, imageSize: 0, imageFiles: 0, videoSize: 0, videoFiles: 0 };
                 for (const t of trials) for (const ses of t.sessions || []) {
-                    if (ses.images?.id) addFile(trialStats, sizeMap[ses.images.id] || ses.images.size || 0, ses.images.type);
-                    for (const stu of ses.students || []) for (const img of stu.images || []) addFile(trialStats, sizeMap[img.id] || img.size || 0, img.type);
+                    if (ses.images?.id) addFile(trialStats, mongoSizeMap[ses.images.id] || sizeMap[ses.images.id] || ses.images.size || 0, ses.images.type);
+                    for (const stu of ses.students || []) for (const img of stu.images || []) addFile(trialStats, mongoSizeMap[img.id] || sizeMap[img.id] || img.size || 0, img.type);
                 }
 
                 const totalSize = mergedCourseSize + avatarSize + bookSize + trialStats.totalSize;
@@ -219,7 +210,7 @@ export async function POST() {
                             bookSize, bookFiles,
                         },
                         courses: mergedList,
-                        updated: updatedCount,
+                        updated: ops.length,
                         lastUpdated: new Date().toISOString(),
                     }
                 });
