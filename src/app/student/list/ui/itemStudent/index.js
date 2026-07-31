@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { srcImage } from "@/function";
+import { srcImage, defaultAvatarUrl } from "@/function";
 import Update from "../update";
 import Pay from "../pay";
 import Out from "../out";
@@ -12,7 +12,7 @@ import { Svg_Profile } from "@/components/(icon)/svg";
 import { getEportfolioUrl } from '@/utils/env'
 
 export function Li_l({ data, dataArea, ReLoadData }) {
-    const initialSrc = data.Avt ? srcImage(data.Avt) : 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG';
+    const initialSrc = data.Avt ? srcImage(data.Avt) : defaultAvatarUrl();
     const status = data.Status[data.Status.length - 1].status;
     const hasPaid = data.hasPaid ?? false;
 

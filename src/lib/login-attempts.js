@@ -2,7 +2,7 @@ const loginAttempts = new Map();
 
 const FIFTEEN_MIN = 15 * 60 * 1000;
 const TWENTY_FOUR_H = 24 * 60 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
+export const MAX_ATTEMPTS = 5;
 
 export function getAttempts(key) {
   const entry = loginAttempts.get(key);

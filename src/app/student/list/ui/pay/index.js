@@ -211,6 +211,16 @@ export default function Pay({ _id, courseId = null, status = false }) {
     const handlePayQr = useCallback(async () => {
         if (!studentData || !selectedCourse) return;
         try {
+            const bankRes = await fetch('/api/bank');
+            const bankJson = await bankRes.json();
+            const bankList = bankJson.status ? (bankJson.data || []) : [];
+            if (bankList.length === 0) {
+                setNoti({ open: true, status: false, mes: 'Chưa có tài khoản ngân hàng nào. Vui lòng thêm tài khoản ngân hàng trước.' });
+                return;
+            }
+            setBanks(bankList);
+            const defaultBank = bankList.find(b => b.isDefault) || bankList[0];
+            setSelectedBankId(defaultBank?._id || null);
             const response = await fetch('/api/pay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -238,12 +248,6 @@ export default function Pay({ _id, courseId = null, status = false }) {
                     courseBook: selectedCourse.Book?.Name || '',
                     invoiceId: invoice?._id || '',
                 });
-                const bankRes = await fetch('/api/bank');
-                const bankJson = await bankRes.json();
-                const bankList = bankJson.status ? (bankJson.data || []) : [];
-                setBanks(bankList);
-                const defaultBank = bankList.find(b => b.isDefault) || bankList[0];
-                setSelectedBankId(defaultBank?._id || null);
                 handleCloseConfirm();
                 handleClosePopup();
                 setQrOpen(true);

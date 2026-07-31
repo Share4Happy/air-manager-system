@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
+import { driveFolderUrl } from '@/function';
 
 
 const fetchStudentCommentsAPI = async (cmtArray) => {
@@ -63,7 +64,7 @@ export default function SendCmt({ data, lesson }) {
             nextTopic = `📘 Giới thiệu nội dung buổi học tiếp theo: \n${nextLessonInList.LessonDetails.Name}\n${nextLessonInList.LessonDetails.Content}`;
         }
 
-        return `Báo cáo học tập sau buổi học - Khóa AI Robotic\nTiết học: ${foundItem.LessonDetails.Name}\nHọc sinh: {namestudent}\n📌 Nội dung buổi học hôm nay:\n${foundItem.LessonDetails.Content} \n🎯 Nhận xét về quá trình học của bé {namestudent} qua tiết học:\n{detailcomment} \nLink hình ảnh buổi học: https://drive.google.com/drive/folders/${foundItem.Image}\n${nextTopic}`;
+        return `Báo cáo học tập sau buổi học - Khóa AI Robotic\nTiết học: ${foundItem.LessonDetails.Name}\nHọc sinh: {namestudent}\n📌 Nội dung buổi học hôm nay:\n${foundItem.LessonDetails.Content} \n🎯 Nhận xét về quá trình học của bé {namestudent} qua tiết học:\n{detailcomment} \nLink hình ảnh buổi học: ${driveFolderUrl(foundItem.Image)}\n${nextTopic}`;
     }, [data, lesson]);
 
     useEffect(() => {

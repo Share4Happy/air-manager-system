@@ -9,6 +9,7 @@ import Title from '@/components/(features)/(popup)/title';
 import Menu from '@/components/(ui)/(button)/menu';
 import { Svg_Add, Svg_Delete } from '@/components/(icon)/svg';
 import Image from 'next/image';
+import { defaultAvatarUrl } from '@/function';
 
 function SubmitBtn({ text = 'Lưu' }) {
     const { pending } = useFormStatus();
@@ -68,7 +69,7 @@ function RoleManager({ zaloAccount, allUsers, formAction, onClose }) {
                 {assignedUsers.length > 0 ? assignedUsers.map(user => (
                     <div key={user._id} className='flex justify-between items-center p-2 bg-[var(--bg-secondary)] rounded'>
                         <div className='flex items-center gap-2.5'>
-                            <Image src={user.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'} alt={user.name} width={36} height={36} className='w-9 h-9 rounded-full object-cover' />
+                            <Image src={user.avt || defaultAvatarUrl()} alt={user.name} width={36} height={36} className='w-9 h-9 rounded-full object-cover' />
                             <div>
                                 <h5 className='text-sm font-medium'>{user.name}</h5>
                                 <p className='text-xs text-[var(--text-secondary)]'>{user.phone || 'Chưa có SĐT'}</p>

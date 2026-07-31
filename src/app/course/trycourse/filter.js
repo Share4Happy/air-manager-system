@@ -103,7 +103,7 @@ export default function CourseTryFilter({ data, student, teacher = [], area = []
                 />
             )}
 
-            <div className={'flex gap-3 my-2 p-2 rounded-md border border-[var(--border-color)]'}>
+            <div className={'bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg p-2 shadow-[var(--boxshaw)] flex gap-3 mt-3'}>
                 <Select value={statusText[statusFilter]} menu={statusMenu} />
                 <Select
                     value={
@@ -115,7 +115,11 @@ export default function CourseTryFilter({ data, student, teacher = [], area = []
                 />
             </div>
 
-            <div className={'flex-1 overflow-y-auto flex flex-col gap-2'}>
+            <div className={'flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 mt-3'}>
+                <div className={'bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg px-3 py-2 shadow-[var(--boxshaw)] flex justify-between items-center'}>
+                    <p className='text-sm font-semibold text-[var(--text-primary)]'>Danh sách buổi học</p>
+                    <span className={'p-[4px_10px] rounded text-white text-xs flex items-center'} style={{ background: 'var(--main_b)' }}>{sessionsSorted.length}</span>
+                </div>
                 {sessionsSorted.length === 0 ? (
                     <TextNoti
                         title='Không có buổi học phù hợp'
@@ -124,12 +128,16 @@ export default function CourseTryFilter({ data, student, teacher = [], area = []
                     />
                 ) : (
                     sessionsSorted.map(s => (
-                        <div key={s._id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setActiveSessionId(s._id)}>
-                            <div className={`${'inline-block px-[10px] py-1 rounded-md text-xs font-medium w-max'} ${s._st.color}`}>{s._st.label}</div>
-                            <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Chủ đề:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.topic?.Name || '---'}</span></div>
-                            <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Số lượng học sinh:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.students.length}</span></div>
-                            <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Thời gian:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{formatDate(new Date(s.day))} – {s.time} – {s.room?.name && !/^[0-9a-fA-F]{24}$/.test(s.room.name) ? s.room.name : '---'}</span></div>
-                            <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Giáo viên:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.teacher?.name || '---'}</span></div>
+                        <div key={s._id} className={'bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg p-3 shadow-[var(--boxshaw)] cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5'} onClick={() => setActiveSessionId(s._id)}>
+                            <div className={'flex justify-between items-start'}>
+                                <div className={`${'inline-block px-[10px] py-1 rounded-md text-xs font-medium w-max'} ${s._st.color}`}>{s._st.label}</div>
+                            </div>
+                            <div className={'flex flex-col gap-1 mt-2'}>
+                                <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Chủ đề:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.topic?.Name || '---'}</span></div>
+                                <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Số lượng học sinh:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.students.length}</span></div>
+                                <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Thời gian:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{formatDate(new Date(s.day))} – {s.time} – {s.room?.name && !/^[0-9a-fA-F]{24}$/.test(s.room.name) ? s.room.name : '---'}</span></div>
+                                <div className={'flex gap-2'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Giáo viên:</p><span className='text-sm font-normal text-[var(--text-primary)]'>{s.teacher?.name || '---'}</span></div>
+                            </div>
                         </div>
                     ))
                 )}

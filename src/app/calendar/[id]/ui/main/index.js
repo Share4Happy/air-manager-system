@@ -13,6 +13,7 @@ import ImageUploader from '../formimage';
 import StudentCourseImageManager from '../formimages';
 import { Svg_Detail, Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
+import { driveThumbnailUrl, driveFolderUrl } from '@/function';
 
 const updateAttendance = async (courseId, sessionId, attendanceData) => {
     const r = await fetch('/api/checkin', {
@@ -66,7 +67,7 @@ export default function Main({ data }) {
         Image: stu.attendance?.Image ?? [],
         Checkin: String(stu.attendance?.Checkin ?? ''),
         originalComment: stu.attendance?.Cmt ?? [],
-        Avt: stu.Avt ? `https://drive.google.com/thumbnail?id=${stu.Avt}&sz=w200` : 'https://drive.google.com/thumbnail?id=1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG&sz=w200'
+        Avt: stu.Avt ? driveThumbnailUrl(stu.Avt, 200) : driveThumbnailUrl('1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG', 200)
     }));
 
     const cur = s => (att[s.ID] !== undefined ? att[s.ID] : s.Checkin);
@@ -266,7 +267,7 @@ export default function Main({ data }) {
                     {mobileDocsOpen && (
                         <div className="px-4 pb-3 flex flex-row gap-3">
                             <div className="flex-1 min-w-0">
-                                {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
+                                {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={driveFolderUrl(session.Image)} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
                             </div>
                             {session.Topic?.Slide && (
                                 <div className="flex-1 min-w-0">
@@ -281,7 +282,7 @@ export default function Main({ data }) {
                     {/* Desktop: Sidebar */}
                     <aside className="hidden md:flex w-[240px] p-6 bg-[var(--bg-primary)] border-r border-[var(--border-color)] overflow-y-auto flex-col gap-4 shrink-0">
                         <p className="text-base font-semibold text-[var(--text-primary)]">Tài liệu buổi học</p>
-                        {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={`https://drive.google.com/drive/folders/${session.Image}`} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
+                        {course.Version === 0 ? (<BoxFile type="Image" name="Hình ảnh buổi học" href={driveFolderUrl(session.Image)} />) : <ImageUploader session={session} courseId={course.ID} onUploadSuccess={handleImageUploadSuccess} />}
                         {session.Topic?.Slide && <BoxFile type="Ppt" name="Slide giảng dạy" href={session.Topic.Slide} />}
                     </aside>
 

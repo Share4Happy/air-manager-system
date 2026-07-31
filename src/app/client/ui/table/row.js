@@ -2,7 +2,7 @@
 import { useState, useEffect, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { truncateString } from '@/function';
+import { truncateString, defaultAvatarUrl } from '@/function';
 import { updateCustomerInfo, addCareNoteAction, convertToStudentAction, updateCustomerStatusAction, revalidateData } from '@/app/actions/customer.actions';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import CenterPopup from '@/components/(features)/(popup)/popup_center';
@@ -32,7 +32,7 @@ function HistoryLogItem({ log }) {
     return (
         <div className='flex gap-3 py-3 px-4 border-b border-gray-100 items-start'>
             <Image
-                src={log.zalo?.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'}
+                src={log.zalo?.avt || defaultAvatarUrl()}
                 alt={log.zalo?.name || 'Zalo'}
                 width={40} height={40}
                 className='object-cover rounded-full'
@@ -386,7 +386,7 @@ export default function CustomerRow({ customer, index, isSelected, onSelect, vis
                                             {customer.uid.length > 0 ?
                                                 customer.zaloname &&
                                                 <div className='flex gap-2'>
-                                                    <div className='w-10 h-10 object-cover rounded-full' style={{ backgroundImage: `url(${customer.zaloavt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'})` }} />
+                                                    <div className='w-10 h-10 object-cover rounded-full' style={{ backgroundImage: `url(${customer.zaloavt || defaultAvatarUrl()})` }} />
                                                     <div className='flex flex-col gap-1'>
                                                         <h5 >{customer.zaloname || 'Chưa rõ'}</h5>
                                                         <h6>{customer.phone}</h6>
@@ -419,7 +419,7 @@ export default function CustomerRow({ customer, index, isSelected, onSelect, vis
                                     <div className='scroll flex flex-col gap-3 max-h-60 overflow-y-auto p-4'>
                                         {customer.care?.slice().reverse().map((note, index) => (
                                             <div key={index} className='flex gap-3 p-3 border-b border-gray-100'>
-                                                <Image src={note.createBy?.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'} alt={note.createBy?.name || 'Chưa rõ'} width={40} height={40} className='object-cover rounded-full' />
+                                                <Image src={note.createBy?.avt || defaultAvatarUrl()} alt={note.createBy?.name || 'Chưa rõ'} width={40} height={40} className='object-cover rounded-full' />
                                                 <div className='flex-1 flex flex-col gap-1'>
                                                     <h5 className='leading-[1.3]'>{note.createBy?.name || 'Chưa rõ'}<small className='ml-2 font-normal'>{new Date(note.createAt).toLocaleString('vi-VN')}</small></h5>
                                                     <h5 className='font-normal mt-2 leading-[1.3]'>{note.content}</h5>
@@ -433,7 +433,7 @@ export default function CustomerRow({ customer, index, isSelected, onSelect, vis
                                         )}
                                     </div>
                                     <form action={addNoteAction} ref={noteFormRef} className='flex items-start gap-3 p-4 border-t border-gray-200'>
-                                        <Image src={user.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'} alt={user.name || 'Chưa rõ'} width={40} height={40} className='object-cover rounded-full' />
+                                        <Image src={user.avt || defaultAvatarUrl()} alt={user.name || 'Chưa rõ'} width={40} height={40} className='object-cover rounded-full' />
                                         <input type="hidden" name="customerId" value={customer._id} />
                                         <textarea name="content" placeholder="Viết bình luận chăm sóc..." className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full' value={comment} onChange={(e) => setComment(e.target.value)} rows={3} disabled={isAnyActionPending} />
                                         <MiniSubmitButton text={'Gửi'} pending={isAnyActionPending} />

@@ -3,9 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
-import { driveImage } from '@/function';
+import { driveImage, srcImage } from '@/function';
 
-const buildUrl = (id) => id ? `https://lh3.googleusercontent.com/d/${id}` : '';
+const buildUrl = (id) => id ? srcImage(id) : '';
 
 const ArrowIcon = ({ isOpen }) => (
     <svg className={`text-[#6c757d] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

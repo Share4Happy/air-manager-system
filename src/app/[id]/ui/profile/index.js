@@ -9,12 +9,13 @@ import CourseAndImageSelection from '../pickimage';
 import { useRouter } from 'next/navigation';
 import { reloadStudent } from '@/data/actions/reload';
 import { getEportfolioUrl } from '@/utils/env'
+import { srcImage, defaultAvatarUrl, driveThumbnailUrl } from '@/function'
 
 const CloseIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
 const ArrowIcon = ({ isOpen }) => (<svg style={{ transform: isOpen ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>);
 
 const extractId = (urlOrId) => { if (!urlOrId || typeof urlOrId !== 'string') return ''; const match = urlOrId.match(/id=([^&]+)/) || urlOrId.match(/\/d\/([^/]+)/); return match ? match[1] : urlOrId; };
-const buildUrl = (id) => id ? `https://lh3.googleusercontent.com/d/${id}` : 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG';
+const buildUrl = (id) => id ? srcImage(id) : defaultAvatarUrl();
 
 const defaultProfile = { Intro: '', Avatar: '', ImgSkill: '', ImgPJ: [], Skill: { "Sự tiến bộ và Phát triển": "50", "Kỹ năng giao tiếp": "50", "Diễn giải vấn đề": "50", "Tự tin năng động": "50", "Đổi mới sáng tạo": "50", "Giao lưu hợp tác": "50" }, Present: [] };
 
@@ -135,7 +136,7 @@ export default function Profile({ data, onSave }) {
                                         <div className="grid grid-cols-[1fr_2fr] gap-6 max-md:grid-cols-1">
                                             <div className="flex flex-col gap-4">
                                                 <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentVideo', bookId: p.bookId })}>
-                                                    {p.Video ? <Image src={`https://drive.google.com/thumbnail?id=${p.Video}`} fill alt="Thumbnail" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#8d949e] text-sm">Chưa có video</div>}
+                                                    {p.Video ? <Image src={driveThumbnailUrl(p.Video)} fill alt="Thumbnail" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#8d949e] text-sm">Chưa có video</div>}
                                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Svg_Pen w={18} h={18} c="white" /></div>
                                                 </div>
                                                 <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentImg', bookId: p.bookId })}>

@@ -7,6 +7,7 @@ import { Re_lesson } from '@/data/course';
 import Noti from '@/components/(features)/(noti)/noti';
 import { Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
+import { driveThumbnailUrl, drivePreviewUrl, driveFolderUrl } from '@/function';
 
 function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +22,9 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
 
     let fileUrl = '';
     if (mediaItem.type === 'image') {
-        fileUrl = `https://drive.google.com/thumbnail?id=${mediaItem.id}&sz=w1200`;
+        fileUrl = driveThumbnailUrl(mediaItem.id, 1200);
     } else if (mediaItem.type === 'video') {
-        fileUrl = `https://drive.google.com/file/d/${mediaItem.id}/preview`;
+        fileUrl = drivePreviewUrl(mediaItem.id);
     }
 
     const handleFileChange = async (event) => {
@@ -193,7 +194,7 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
 }
 
 function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMode, selectedIds, onToggleSelect, onStartSelect, onCancelSelect, onDeleteSelected, deleting }) {
-    const getDriveImageUrl = (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+    const getDriveImageUrl = (id) => driveThumbnailUrl(id, 400);
 
     return (
         <div className="flex flex-col gap-4 h-full">
@@ -208,7 +209,7 @@ function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMod
                                 Chọn nhiều
                             </button>
                             <div className="flex gap-2 w-full sm:flex-1">
-                                <Link href={`https://drive.google.com/drive/folders/${session.Image}`} className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-sm font-medium cursor-pointer border-none no-underline whitespace-nowrap hover:bg-[var(--main_d)]' target="_blank" rel="noopener noreferrer" style={{ color: 'white' }}>
+                                <Link href={driveFolderUrl(session.Image)} className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-sm font-medium cursor-pointer border-none no-underline whitespace-nowrap hover:bg-[var(--main_d)]' target="_blank" rel="noopener noreferrer" style={{ color: 'white' }}>
                                     Đi tới Drive
                                 </Link>
                                 <button className={'flex-1 px-3 py-2 bg-[var(--main_b)] rounded text-sm font-medium whitespace-nowrap cursor-pointer border-none hover:bg-[var(--main_d)]'} onClick={onAdd} style={{ color: 'white' }}>

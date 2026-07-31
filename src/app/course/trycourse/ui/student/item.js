@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
-import { formatDate } from '@/function';
+import { formatDate, srcImage } from '@/function';
 import Loading from '@/components/(ui)/(loading)/loading';
 import Noti from '@/components/(features)/(noti)/noti';
 import { IconSuccess, IconFailure } from '@/components/(features)/(noti)/noti';
@@ -120,7 +120,7 @@ export default function CareSessionPopup({ open, onClose, session }) {
                     {s.images && s.images.length > 0 ? (
                         <div className={'grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2'}>
                             {s.images.map(img => (
-                                <img key={img.id} src={`https://lh3.googleusercontent.com/d/${img.id}`} alt='Ảnh buổi học' />
+                                <img key={img.id} src={srcImage(img.id)} alt='Ảnh buổi học' />
                             ))}
                         </div>
                     ) : (

@@ -6,6 +6,7 @@ import CenterPopup from '@/components/(features)/(popup)/popup_center';
 import Loading from '@/components/(ui)/(loading)/loading';
 import Title from '@/components/(features)/(popup)/title';
 import BoxFile from '@/components/(ui)/(box)/file';
+import { driveFolderUrl } from '@/function';
 
 export default function Lesson_m({ time, topic, courseID, room, id, type, d }) {
     const [open, setOpen] = useState(false);
@@ -99,7 +100,7 @@ export default function Lesson_m({ time, topic, courseID, room, id, type, d }) {
                             <p className='text-base font-semibold text-[var(--text-primary)]' style={{ padding: '8px 0' }}>Tài nguyên buổi học</p>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 {detail.session.image &&
-                                    <BoxFile type={'Image'} name='Hình ảnh' href={`https://drive.google.com/drive/folders/${detail.session.image}`} />
+                                    <BoxFile type={'Image'} name='Hình ảnh' href={driveFolderUrl(detail.session.image)} />
                                 }
                                 {detail.session.Topic?.Slide &&
                                     <div style={{ width: 150 }}>

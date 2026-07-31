@@ -8,7 +8,7 @@ import Loading from '@/components/(ui)/(loading)/loading';
 import Noti from '@/components/(features)/(noti)/noti';
 import WrapIcon from '@/components/(ui)/(button)/hoveIcon';
 import { Svg_Canlendar, Svg_Course, Svg_Profile } from '@/components/(icon)/svg';
-import { formatDate } from '@/function';
+import { formatDate, srcImage } from '@/function';
 import Link from 'next/link';
 
 const toArr = (v) =>
@@ -389,7 +389,7 @@ export default function DetailStudent({ data: student, course, c, users, student
                     {imagePop.imageId
                         ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {imagePop.imageId.map((img, i) => (
-                                <img key={i} src={`https://lh3.googleusercontent.com/d/${img.id}`} alt={`Hình ảnh buổi học ${i + 1}`} style={{ width: 'calc(25% - 3/4*8px)', aspectRatio: 1, objectFit: 'cover' }} />
+                                <img key={i} src={srcImage(img.id)} alt={`Hình ảnh buổi học ${i + 1}`} style={{ width: 'calc(25% - 3/4*8px)', aspectRatio: 1, objectFit: 'cover' }} />
                             ))}
                         </div>
                         : <p className="text-sm font-normal text-[var(--text-primary)]">Chưa có hình ảnh</p>}

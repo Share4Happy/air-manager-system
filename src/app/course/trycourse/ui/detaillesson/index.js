@@ -8,7 +8,7 @@ import Loading from '@/components/(ui)/(loading)/loading'
 import Menu from '@/components/(ui)/(button)/menu'
 import WrapIcon from '@/components/(ui)/(button)/hoveIcon'
 import { Svg_Add, Svg_Course, Svg_Delete, Svg_Pen, Svg_Profile, Svg_Student } from '@/components/(icon)/svg'
-import { formatDate, truncateString } from '@/function'
+import { formatDate, truncateString, driveFolderUrl } from '@/function'
 import { attendInfo } from '../student'
 import ResponsiveGrid from '@/components/(ui)/grid'
 import ImageComponent from '@/components/(ui)/(image)'
@@ -43,6 +43,11 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
     const [loading, setLoading] = useState(false);
     const [noti, setNoti] = useState({ open: false, ok: false, msg: '' });
 
+    const students = Array.isArray(student) ? student : [];
+    const teachers = Array.isArray(teacher) ? teacher : [];
+    const books = Array.isArray(book) ? book : [];
+    const areas = Array.isArray(area) ? area : [];
+
     const isPastSession = useMemo(() => statusOf(session).weight === 2, [session]);
     const timeLabel = useMemo(() => `${formatDate(new Date(session.day))} – ${session.time} – ${session.room?.name && !/^[0-9a-fA-F]{24}$/.test(session.room.name) ? session.room.name : '–––'}`, [session])
     const images = useMemo(() => session.students.flatMap(st => st.images || []), [session])
@@ -60,6 +65,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
                 body: JSON.stringify({ sessionId: session._id, ...payload })
             }).then(r => r.json());
             setNoti({ open: true, ok: res.status, msg: res.message || (res.status ? 'Cập nhật thành công!' : 'Thao tác thất bại.') });
+            if (res.status) setTimeout(() => window.location.reload(), 600);
         } catch (error) {
             setNoti({ open: true, ok: false, msg: 'Lỗi kết nối hoặc máy chủ.' });
         } finally {
@@ -83,8 +89,8 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
                     <Row icon={<Svg_Student w={18} h={18} c='var(--text-primary)' />} label='Số học sinh' val={session.students.length} />
                     <Row icon={<Svg_Course w={16} h={16} c='var(--text-primary)' />} label='Thời gian' val={timeLabel} />
                     <div style={{ display: 'flex', gap: 16 }}>
-                        <Row icon={<Svg_Course w={16} h={16} c='var(--text-primary)' />} label='Link drive' val={truncateString(`https://drive.google.com/drive/folders/${session.folderId}`, 20, 1) || 'Không có'} />
-                        <Link target='_blank' className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' style={{ padding: '5px 16px' }} href={`https://drive.google.com/drive/folders/${session.folderId}` || '#'}>Đi đến</Link>
+                        <Row icon={<Svg_Course w={16} h={16} c='var(--text-primary)' />} label='Link drive' val={truncateString(driveFolderUrl(session.folderId), 20, 1) || 'Không có'} />
+                        <Link target='_blank' className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' style={{ padding: '5px 16px' }} href={driveFolderUrl(session.folderId) || '#'}>Đi đến</Link>
                     </div>
                 </div>
                 <div style={{ flex: 0.5, display: 'flex', gap: 8, height: '100%', justifyContent: 'end' }}>
@@ -148,7 +154,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
         const hasChange = useMemo(() => { if (isPast) return false; if (pick.size !== original.size) return true; for (const id of pick) if (!original.has(id)) return true; return false; }, [pick, original, isPast]);
         const toggle = id => setPick(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
         const addStu = id => setPick(prev => new Set(prev).add(id));
-        const candidates = useMemo(() => student.filter(st => !pick.has(st._id) && st.Name.toLowerCase().includes(filter.toLowerCase().trim())), [student, pick, filter]);
+        const candidates = useMemo(() => students.filter(st => !pick.has(st._id) && (st.Name ? st.Name.toLowerCase().includes(filter.toLowerCase().trim()) : false)), [students, pick, filter]);
         const save = () => { if (hasChange) onSave({ students: [...pick] }); };
 
         return (
@@ -163,7 +169,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
                 <p className="text-base font-semibold text-[var(--text-primary)]" style={{ margin: '16px 0' }}>Danh sách học sinh tham gia buổi học</p>
                 <div className={'max-h-[200px] overflow-y-auto'}>
                     {[...pick].map(id => {
-                        const info = student.find(s => s._id === id) || {};
+                        const info = students.find(s => s._id === id) || {};
                         return (<div key={id} className={'p-[6px_16px] rounded-md border border-[var(--border-color)] flex justify-between mb-1 items-center'}><span className="text-sm font-normal text-[var(--text-primary)]">{info.ID} – {info.Name}</span><WrapIcon icon={<Svg_Delete w={16} h={16} c="white" />} click={() => !(loading || isPast) && toggle(id)} content="Bỏ khỏi danh sách" placement="left" style={{ padding: 8, background: 'var(--red)', cursor: 'pointer' }} /></div>);
                     })}
                     {pick.size === 0 && <p className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: 8 }}>Chưa chọn học sinh.</p>}
@@ -174,9 +180,9 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
     };
 
     const EditInfo = ({ onSave, loading, isPast }) => {
-        const roomList = useMemo(() => { const m = new Map(); area.forEach(a => (a.rooms || []).forEach(r => m.set(r._id, r.name))); return [...m].map(([id, name]) => ({ id, name })); }, [area]);
-        const bookMap = useMemo(() => Object.fromEntries(book.map(b => [b._id, b])), [book]);
-        const teacherRaw = useMemo(() => teacher.filter(t => t.role.includes('Teacher')), [teacher]);
+        const roomList = useMemo(() => { const m = new Map(); areas.forEach(a => (a.rooms || []).forEach(r => r._id && r.name && m.set(r._id, r.name))); return [...m].map(([id, name]) => ({ id, name })); }, [areas]);
+        const bookMap = useMemo(() => Object.fromEntries(books.map(b => [b._id, b])), [books]);
+        const teacherRaw = useMemo(() => teachers.filter(t => Array.isArray(t.role) && t.role.includes('Teacher')), [teachers]);
         const [form, setForm] = useState(() => ({ day: session.day.slice(0, 10), time: session.time || '08:00-10:00', room: session.room?._id || '', book: session.book?._id || '', topicId: session.topic?._id || '', teacher: session.teacher?._id || '', teachingAs: session.teachingAs?._id || '', note: session.note || '' }));
         const topics = useMemo(() => bookMap[form.book]?.Topics ?? [], [form.book, bookMap]);
         const normalizeTime = useCallback((v) => { const m = v.match(/^(\d{1,2})(?::?(\d{0,2}))?-(\d{1,2})(?::?(\d{0,2}))?$/); if (!m) return form.time; const pad = (x, lim) => String(Math.min(lim, +x)).padStart(2, '0'); const s = `${pad(m[1], 23)}:${pad(m[2] || 0, 59)}`; const e = `${pad(m[3], 23)}:${pad(m[4] || 0, 59)}`; return s < e ? `${s}-${e}` : `${s}-${e}`; }, [form.time]);
@@ -188,7 +194,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
             </div>
         );
         const wrap = arr => <div className={'bg-[var(--bg-primary)] p-2 shadow-[var(--boxshaw2)] mt-[5px] rounded-md max-h-[200px] overflow-y-auto'}>{arr}</div>;
-        const bookM = wrap(book.map(b => <p key={b._id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setForm({ ...form, book: b._id, topicId: '' })}>{b.Name}</p>));
+        const bookM = wrap(books.map(b => <p key={b._id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setForm({ ...form, book: b._id, topicId: '' })}>{b.Name}</p>));
         const topicM = wrap(topics.map(t => <p key={t._id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setForm({ ...form, topicId: t._id })}>{t.Name}</p>));
         const roomM = wrap(roomList.map(r => <p key={r.id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setForm({ ...form, room: r.id })}>{r.name}</p>));
         const teachM = wrap(teacherRaw.map(t => <p key={t._id} className={'p-2 rounded cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setForm({ ...form, teacher: t._id })}>{t.name}</p>));
@@ -202,8 +208,8 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
                 <Select label='Chương trình' value={bookMap[form.book]?.Name} menu={bookM} />
                 <Select label='Chủ đề' value={topics.find(t => t._id === form.topicId)?.Name} menu={topicM} />
                 <Select label='Phòng' value={roomList.find(r => r.id === form.room)?.name} menu={roomM} />
-                <Select label='Giáo viên' value={teacher.find(t => t._id === form.teacher)?.name} menu={teachM} />
-                <Select label='Trợ giảng' value={teacher.find(t => t._id === form.teachingAs)?.name} menu={asstM} />
+                <Select label='Giáo viên' value={teachers.find(t => t._id === form.teacher)?.name} menu={teachM} />
+                <Select label='Trợ giảng' value={teachers.find(t => t._id === form.teachingAs)?.name} menu={asstM} />
                 <div className={'flex flex-col gap-2 mb-3'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Ghi chú:</p><textarea rows={3} className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} disabled={loading || isPast} /></div>
                 <button className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ width: '100%', marginTop: 16, borderRadius: 5, justifyContent: 'center', cursor: isPast ? 'not-allowed' : 'pointer' }} onClick={save} disabled={loading || isPast}>
                     {isPast ? 'Buổi học đã kết thúc' : (loading ? 'Đang lưu...' : 'Lưu thay đổi')}

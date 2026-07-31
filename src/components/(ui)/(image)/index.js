@@ -8,6 +8,7 @@ import Noti from '@/components/(features)/(noti)/noti';
 import AlertPopup from '@/components/(features)/(noti)/alert';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
 import { Re_lesson } from '@/data/course';
+import { srcImage, driveThumbnailUrl, drivePreviewUrl, driveDownloadUrl } from '@/function';
 
 const FileUploadModal = ({ isOpen, onClose, onFileSelect, imageId }) => {
     const fileInputRef = useRef(null);
@@ -43,9 +44,9 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, imageId }) => {
 };
 
 const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
-    const imageSrc = `https://lh3.googleusercontent.com/d/${imageInfo.id}`;
-    const videoThumbSrc = `https://drive.google.com/thumbnail?id=${imageInfo.id}`;
-    const videoEmbedSrc = `https://drive.google.com/file/d/${imageInfo.id}/preview`;
+    const imageSrc = srcImage(imageInfo.id);
+    const videoThumbSrc = driveThumbnailUrl(imageInfo.id);
+    const videoEmbedSrc = drivePreviewUrl(imageInfo.id);
 
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -172,7 +173,7 @@ const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
     }, [imageInfo.id, refreshData, showAlertPopup, showLoading, hideLoading, showNoti, handleClosePopup]);
 
     const handleDownload = useCallback(() => {
-        const downloadUrl = `https://drive.google.com/uc?export=download&id=${imageInfo.id}`;
+        const downloadUrl = driveDownloadUrl(imageInfo.id);
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = `file_${imageInfo.id}.${imageInfo.type === 'image' ? 'png' : imageInfo.type === 'video' ? 'mp4' : 'bin'}`;

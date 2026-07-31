@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import connectDB from '@/config/connectDB';
 import users from '@/models/users';
-import { getAttempts, recordFail, recordSuccess } from '@/lib/login-attempts';
+import { getAttempts, recordFail, recordSuccess, MAX_ATTEMPTS } from '@/lib/login-attempts';
 
 export async function POST(req) {
   try {

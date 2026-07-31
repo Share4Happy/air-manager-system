@@ -6,9 +6,10 @@ import Loading from '@/components/(ui)/(loading)/loading';
 import Noti from '@/components/(features)/(noti)/noti';
 import { Re_lesson } from '@/data/course';        
 import { reloadCourse } from '@/data/actions/reload';
+import { driveThumbnailUrl } from '@/function';
 
 
-const getDriveImageUrl = (id, size = 200) => `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`;
+const getDriveImageUrl = (id, size = 200) => driveThumbnailUrl(id, size);
 
 export default function StudentImageSelectionManager({ studentInfo, courseInfo, course }) {
 

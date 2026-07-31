@@ -139,7 +139,7 @@ export default function Student({ data, student, teacher = [], area = [], book =
                     </div>
                 </div>
 
-                <div className={'flex flex-col gap-2 mt-[6px] max-h-[calc(100vh-280px)] overflow-auto'}>
+                <div className={'flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 mt-[6px]'}>
                     {rows.map(r => (
                         <div key={r.id} className={'flex gap-1.5'}>
                             <div

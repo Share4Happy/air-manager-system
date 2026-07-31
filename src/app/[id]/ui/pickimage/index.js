@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, memo } from 'react';
 import Image from 'next/image';
+import { srcImage, driveThumbnailUrl } from '@/function';
 
 // Helper để lấy thông tin trạng thái khóa học
 const getStatusInfo = (status) => {
@@ -64,7 +65,7 @@ const CourseAccordionItem = memo(function CourseAccordionItem({ course, onMediaC
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3 max-h-[500px] overflow-y-auto p-1">
                         {mediaItems.length > 0 ? (
                             mediaItems.map((media) => {
-                                const mediaUrl = media.type === 'video' ? `https://drive.google.com/thumbnail?id=${media.id}` : `https://lh3.googleusercontent.com/d/${media.id}`;
+                                const mediaUrl = media.type === 'video' ? driveThumbnailUrl(media.id) : srcImage(media.id);
                                 const isSelected = selectionMode === 'single' ? selectedMedia === media.id : Array.isArray(selectedMedia) && selectedMedia.includes(media.id);
                                 
                                 return (

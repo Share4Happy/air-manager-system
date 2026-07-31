@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Noti from '@/components/(features)/(noti)/noti'
+import { defaultAvatarUrl } from '@/function'
 
 function ZaloTab({ zaloAccounts, users }) {
   const router = useRouter()
@@ -79,10 +80,10 @@ function ZaloTab({ zaloAccounts, users }) {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <img
-                      src={account.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'}
+                      src={account.avt || defaultAvatarUrl()}
                       alt=""
                       className="w-10 h-10 rounded-full object-cover shrink-0"
-                      onError={e => { e.target.onerror = null; e.target.src = 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG' }}
+                      onError={e => { e.target.onerror = null; e.target.src = defaultAvatarUrl() }}
                     />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[var(--text-primary)]">{account.name}</p>

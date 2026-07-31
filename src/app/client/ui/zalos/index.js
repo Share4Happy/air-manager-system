@@ -11,6 +11,7 @@ import Menu from '@/components/(ui)/(button)/menu';
 import Title from '@/components/(features)/(popup)/title';
 import { Svg_Add, Svg_Delete, Svg_Mode } from '@/components/(icon)/svg';
 import Image from 'next/image';
+import { defaultAvatarUrl } from '@/function';
 function RoleSubmitButton({ text = 'Lưu thay đổi' }) {
     const { pending } = useFormStatus();
     return (<button type="submit" disabled={pending} className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5'><h5>{pending ? 'Đang lưu...' : text}</h5></button>);
@@ -59,7 +60,7 @@ function RoleManager({ zaloAccount, allUsers, formAction, onClose }) {
                     assignedUsers.map(user => (
                         <div key={user._id} className={'flex justify-between items-center p-2 bg-[var(--bg-secondary)] rounded'}>
                             <div className={'flex items-center gap-2.5'}>
-                                <Image src={user.avt || 'https://lh3.googleusercontent.com/d/1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG'} alt={user.name} width={40} height={40} className='w-10 h-10 rounded-full object-cover' />
+                                <Image src={user.avt || defaultAvatarUrl()} alt={user.name} width={40} height={40} className='w-10 h-10 rounded-full object-cover' />
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     <h5>{user.name}</h5>
                                     <h6 className="text-xs">{user.phone || 'Chưa có SĐT'}</h6>

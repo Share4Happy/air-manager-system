@@ -35,8 +35,17 @@ export function calculatePastLessons(courseData) {
     return pastLessonsCount;
 }
 
+import {
+    getDriveImageBase,
+    getDriveFolderBase,
+    getDriveThumbnailBase,
+    getDrivePreviewBase,
+    getDriveDownloadBase,
+    getDefaultAvatarId,
+} from '@/utils/env'
+
 export function srcImage(id) {
-    return `https://lh3.googleusercontent.com/d/${id}`
+    return `${getDriveImageBase()}${id}`
 }
 
 export function formatCurrencyVN(number) {
@@ -50,7 +59,12 @@ export function formatCurrencyVN(number) {
 export const truncateString = (str, start, end) => !str ? "" : str.length > start + end ? `${str.slice(0, start)}...${str.slice(-end)}` : str;
 export const driveImage = (id) => {
     if (!id) return null;
-    if (id.startsWith('https://lh3.googleusercontent.com/d/')) return id;
-    return `https://lh3.googleusercontent.com/d/${id}`;
+    if (id.startsWith(getDriveImageBase())) return id;
+    return `${getDriveImageBase()}${id}`;
 }
+export const driveFolderUrl = (id) => `${getDriveFolderBase()}${id}`
+export const driveThumbnailUrl = (id, size = 200) => `${getDriveThumbnailBase()}${id}&sz=w${size}`
+export const drivePreviewUrl = (id) => `${getDrivePreviewBase()}${id}/preview`
+export const driveDownloadUrl = (id) => `${getDriveDownloadBase()}${id}`
+export const defaultAvatarUrl = () => `${getDriveImageBase()}${getDefaultAvatarId()}`
 

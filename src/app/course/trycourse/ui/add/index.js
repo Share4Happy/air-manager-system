@@ -11,19 +11,24 @@ import WrapIcon from '@/components/(ui)/(button)/hoveIcon';
 
 export default function Add({ book = [], student = [], teacher = [], area = [], onCreate }) {
     const router = useRouter();
+    const students = Array.isArray(student) ? student : [];
+    const teachers = Array.isArray(teacher) ? teacher : [];
+    const books = Array.isArray(book) ? book : [];
+    const areas = Array.isArray(area) ? area : [];
+
     const roomList = useMemo(() => {
         const m = new Map();
-        area.forEach(a => (a.rooms || []).forEach(r => m.set(r._id, r.name)));
+        areas.forEach(a => (a.rooms || []).forEach(r => r._id && r.name && m.set(r._id, r.name)));
         return [...m].map(([id, name]) => ({ id, name }));
-    }, [area]);
+    }, [areas]);
 
-    const bookMap = useMemo(() => Object.fromEntries(book.map(b => [b._id, b])), [book]);
-    const teacherRaw = useMemo(() => teacher.filter(t => t.role.includes('Teacher')), [teacher]);
+    const bookMap = useMemo(() => Object.fromEntries(books.map(b => [b._id, b])), [books]);
+    const teacherRaw = useMemo(() => teachers.filter(t => Array.isArray(t.role) && t.role.includes('Teacher')), [teachers]);
 
     /* ---------- default selections ---------- */
-    const defaultBook = useMemo(() => book.find(b => b._id === '685633c413427722b24c3892') || book[0], [book]);
+    const defaultBook = useMemo(() => books.find(b => b._id === '685633c413427722b24c3892') || books[0], [books]);
     const defaultTopic = useMemo(() => defaultBook?.Topics?.find(t => t._id === '68565eaf13427722b24c3f50') || defaultBook?.Topics?.[0], [defaultBook]);
-    const defaultTeacher = useMemo(() => teacher.find(t => /khắc\s*hoàng/i.test(t.name.toLowerCase())) || teacherRaw[0], [teacher, teacherRaw]);
+    const defaultTeacher = useMemo(() => teachers.find(t => t.name && /khắc\s*hoàng/i.test(t.name.toLowerCase())) || teacherRaw[0], [teachers, teacherRaw]);
     const defaultRoom = useMemo(() => roomList.find(r => r.name === 'B304') || roomList[0], [roomList]);
 
     /* ---------- state ---------- */
@@ -48,8 +53,8 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
 
     const selectedStudents = useMemo(() => {
         const selectedIds = new Set(form.studentIds);
-        return student.filter(s => selectedIds.has(s._id));
-    }, [form.studentIds, student]);
+        return students.filter(s => selectedIds.has(s._id));
+    }, [form.studentIds, students]);
 
     /* ---------- utils ---------- */
     const normalizeTime = useCallback(v => {
@@ -70,6 +75,10 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
 
     /* ---------- submit ---------- */
     const save = async () => {
+        if (form.studentIds.length === 0) {
+            setNoti({ open: true, status: false, mes: 'Vui lòng chọn ít nhất một học sinh.' });
+            return;
+        }
         setLoading(true);
         try {
             const res = await fetch('/api/coursetry', {
@@ -84,6 +93,7 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
                 setNoti({ open: true, status: true, mes: 'Thêm buổi học thử thành công!' });
                 setOpen(false);
                 onCreate && onCreate(res.data);
+                setTimeout(() => window.location.reload(), 600);
             }
         } catch (e) {
             setNoti({ open: true, status: false, mes: 'Lỗi mạng hoặc máy chủ' });
@@ -104,21 +114,27 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
     /* ---------- students popup ---------- */
     const filteredStu = useMemo(() => {
         const q = search.toLowerCase();
-        return student.filter(s => s.Name.toLowerCase().includes(q) || s.ID.toLowerCase().includes(q));
-    }, [search, student]);
+        return students.filter(s =>
+            (s.Name && s.Name.toLowerCase().includes(q)) ||
+            (s.ID && s.ID.toLowerCase().includes(q))
+        );
+    }, [search, students]);
 
     const stuList = (
-        <div className={'flex flex-col gap-2.5 p-4 h-[calc(100%-32px)]'}>
-            <input className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' placeholder='Tìm tên/ID …' value={search} onChange={e => setSearch(e.target.value)} />
-            <div className={'overflow-y-auto border border-[#e0e0e0] rounded p-1.5 flex flex-col flex-1'}>
+        <div className={'flex flex-col gap-2.5 p-4 flex-1 min-h-0'}>
+            <input className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none shrink-0' placeholder='Tìm tên/ID …' value={search} onChange={e => setSearch(e.target.value)} />
+            <div className={'overflow-y-auto border border-[#e0e0e0] rounded p-1.5 flex flex-col flex-1 min-h-0'}>
                 {filteredStu.map(s => (
                     <label key={s._id} className={'flex gap-2 items-center text-sm cursor-pointer p-2 hover:bg-[#f5f5f5] hover:rounded'}>
                         <input type='checkbox' checked={form.studentIds.includes(s._id)} onChange={() => toggleStudent(s._id)} />
                         <span>{s.ID} – {s.Name}</span>
                     </label>
                 ))}
+                {filteredStu.length === 0 && (
+                    <p className={'text-center p-4 text-[var(--text-secondary)] italic text-sm'}>Không có học sinh</p>
+                )}
             </div>
-            <button className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ width: '100%', marginTop: 12, justifyContent: 'center', borderRadius: 5 }} onClick={() => setShowStu(false)}>Xong</button>
+            <button className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5 shrink-0' style={{ width: '100%', marginTop: 12, justifyContent: 'center', borderRadius: 5 }} onClick={() => setShowStu(false)}>Xong</button>
         </div>
     );
 
@@ -138,13 +154,13 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
             <Select label='Chương trình' value={bookMap[form.book]?.Name} menu={bookM} />
             <Select label='Chủ đề' value={topics.find(t => t._id === form.topicId)?.Name} menu={topicM} />
             <Select label='Phòng' value={roomList.find(r => r.id === form.room)?.name} menu={roomM} />
-            <Select label='Giáo viên' value={teacher.find(t => t._id === form.teacher)?.name} menu={teachM} />
-            <Select label='Trợ giảng' value={teacher.find(t => t._id === form.teachingAs)?.name} menu={asstM} />
+            <Select label='Giáo viên' value={teachers.find(t => t._id === form.teacher)?.name} menu={teachM} />
+            <Select label='Trợ giảng' value={teachers.find(t => t._id === form.teachingAs)?.name} menu={asstM} />
 
             <div className={'flex flex-col gap-2 mb-3'}>
                 <div className={'flex justify-between items-center w-full mb-2'}>
                     <p className='text-sm font-semibold text-[var(--text-primary)]'>Học sinh đã chọn ({selectedStudents.length})</p>
-                    <button className={'flex items-center gap-1.5 bg-transparent border border-[var(--border-color)] p-[4px_10px] rounded-md cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => setShowStu(true)}>
+                    <button className={'flex items-center gap-1.5 bg-transparent border border-[var(--border-color)] p-[4px_10px] rounded-md cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => { setSearch(''); setShowStu(true); }}>
                         <Svg_Add w={14} h={14} c="var(--main_b)" />
                         <span>Thêm</span>
                     </button>
@@ -183,13 +199,21 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
                 onClose={() => setOpen(false)}
                 title='Tạo buổi học thử'
                 renderItemList={() => body}
-                secondaryOpen={showStu}
-                onCloseSecondary={() => setShowStu(false)}
-                renderSecondaryList={() => stuList}
-                secondaryTitle='Danh sách học sinh'
                 width={480}
                 globalZIndex={1200}
             />
+
+            {showStu && (
+                <div className={'fixed inset-0 bg-black/50 flex items-center justify-center z-[1300]'} onMouseDown={() => setShowStu(false)}>
+                    <div className={'bg-[var(--bg-primary)] rounded-xl shadow-2xl flex flex-col w-[480px] max-w-[calc(100vw-32px)] h-[70vh]'} onMouseDown={e => e.stopPropagation()}>
+                        <div className={'flex justify-between items-center px-4 py-3 h-12 border-b border-[var(--border-color)] shrink-0'}>
+                            <h4 className={'font-normal text-[var(--text-primary)]'}>Danh sách học sinh</h4>
+                            <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={() => setShowStu(false)}>&times;</button>
+                        </div>
+                        {stuList}
+                    </div>
+                </div>
+            )}
             {loading && (
                 <div className={'fixed inset-0 bg-black/60 flex justify-center items-center z-[9999] backdrop-blur-[4px]'}>
                     <Loading content={<p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Đang thực thi...</p>} />
