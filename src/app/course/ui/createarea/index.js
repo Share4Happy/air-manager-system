@@ -76,7 +76,7 @@ const CreateArea = () => {
         Thêm khu vực
       </button>
 
-      <CenterPopup open={isPopupOpen} onClose={() => setIsPopupOpen(false)} title="Thêm khu vực mới" size="sm">
+      <CenterPopup open={isPopupOpen} onClose={() => setIsPopupOpen(false)} title="Thêm khu vực mới" size="md">
         <div className="p-5 flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên khu vực</label>
@@ -90,15 +90,16 @@ const CreateArea = () => {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Màu hiển thị</label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <input
                 type="color"
                 value={form.color}
                 onChange={e => setForm({ ...form, color: e.target.value })}
-                className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                className="shrink-0 rounded-lg border border-gray-200 cursor-pointer"
+                style={{ width: 38, height: 38, padding: 2 }}
               />
               <input
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
+                className="flex-1 w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
                 value={form.color.toUpperCase()}
                 onChange={e => {
                   setForm({ ...form, color: e.target.value })
@@ -119,16 +120,16 @@ const CreateArea = () => {
                 </span>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
+                className="flex-1 w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 focus:border-[var(--main_d)] transition-colors"
                 placeholder="Nhập tên phòng..."
                 value={newRoom}
                 onChange={e => setNewRoom(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addRoom()}
               />
               <button
-                className="px-4 py-2 rounded-lg text-white text-sm font-medium border-none cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg text-white text-sm font-medium border-none cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity"
                 style={{ background: 'var(--main_d)' }}
                 onClick={addRoom}
               >
@@ -160,13 +161,15 @@ const CreateArea = () => {
         status={notification.status}
         mes={notification.mes}
         button={
-          <button
-            className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
-            style={{ background: 'var(--main_d)' }}
-            onClick={() => setNotification({ ...notification, open: false })}
-          >
-            Đóng
-          </button>
+          !notification.status ? (
+            <button
+              className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer"
+              style={{ background: 'var(--main_d)' }}
+              onClick={() => setNotification({ ...notification, open: false })}
+            >
+              Đóng
+            </button>
+          ) : null
         }
       />
     </>

@@ -148,8 +148,9 @@ export default function AttendanceTab() {
                                 <tbody>
                                     {pageItems.map((l, i) => {
                                         const hasUnchecked = l.unchecked > 0
+                                        const uniqueKey = `${l._id}-${l.type}-${l.date}`
                                         return (
-                                            <tr key={l._id} className="border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors">
+                                            <tr key={uniqueKey} className="border-b border-[var(--border-color)] hover:bg-blue-50 transition-colors">
                                                 <td className="p-2 text-center text-[var(--text-secondary)]">{startIdx + i + 1}</td>
                                                 <td className="p-2 font-medium">
                                                     <div className="flex items-center gap-1">
@@ -188,8 +189,9 @@ export default function AttendanceTab() {
                     <div className="md:hidden flex flex-col gap-2">
                         {pageItems.map((l, i) => {
                             const hasUnchecked = l.unchecked > 0
+                            const uniqueKey = `${l._id}-${l.type}-${l.date}`
                             return (
-                                <div key={l._id} className="bg-white border border-[var(--border-color)] rounded-lg p-3">
+                                <div key={uniqueKey} className="bg-white border border-[var(--border-color)] rounded-lg p-3">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             <span className="text-xs text-[var(--text-secondary)] shrink-0">#{startIdx + i + 1}</span>

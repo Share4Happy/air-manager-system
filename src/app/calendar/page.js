@@ -58,24 +58,31 @@ function DayLessons({ lessons }) {
   if (lessons.length === 0) return <div className="text-xs text-[var(--text-secondary)] italic p-1">—</div>
   return (
     <div className="flex flex-col gap-1">
-      {lessons.map((item, idx) => (
-        <Link key={item._id || idx} href={`/calendar/${item._id}`}
-          className="block p-2 rounded text-sm leading-snug hover:opacity-90 transition-all border shadow-sm text-gray-800"
-          style={{
-            background: item.type === 'Học bù' ? '#fff3e0' : '#dbeafe',
-            borderColor: item.type === 'Học bù' ? '#fdba74' : '#93c5fd'
-          }}>
-          <div className="font-semibold truncate flex items-center gap-1">
-            <span>{safeRoom(item)}</span>
-            {item.room?.area && <span className="opacity-50 font-normal">· {item.room.area}</span>}
-          </div>
-          <div className="truncate text-xs flex sm:flex-col items-baseline gap-x-1">
-            <span>{item.courseId}</span>
-            {item.teacher?.name ? <span><span className="sm:hidden">— </span>{item.teacher.name}</span> : null}
-          </div>
-          {item.time && <div className="text-xs opacity-60">{item.time}</div>}
-        </Link>
-      ))}
+      {lessons.map((item, idx) => {
+        const isCancelled = item.type === 'Báo nghỉ'
+        return (
+          <Link key={item._id || idx} href={`/calendar/${item._id}`}
+            className="block p-2 rounded text-sm leading-snug hover:opacity-90 transition-all border shadow-sm text-gray-800"
+            style={{
+              opacity: isCancelled ? 0.6 : 1,
+              background: isCancelled ? '#fef2f2' : item.type === 'Học bù' ? '#fff3e0' : '#dbeafe',
+              borderColor: isCancelled ? '#fca5a5' : item.type === 'Học bù' ? '#fdba74' : '#93c5fd'
+            }}>
+            <div className="font-semibold truncate flex items-center gap-1">
+              <span>{safeRoom(item)}</span>
+              {item.room?.area && <span className="opacity-50 font-normal">· {item.room.area}</span>}
+              {isCancelled && (
+                <span className="shrink-0 px-1.5 py-0.5 rounded bg-red-100 text-red-600 text-xs font-medium">Báo nghỉ</span>
+              )}
+            </div>
+            <div className="truncate text-xs flex sm:flex-col items-baseline gap-x-1">
+              <span>{item.courseId}</span>
+              {item.teacher?.name ? <span><span className="sm:hidden">— </span>{item.teacher.name}</span> : null}
+            </div>
+            {item.time && <div className="text-xs opacity-60">{item.time}</div>}
+          </Link>
+        )
+      })}
       
     </div>
   )
@@ -121,13 +128,15 @@ function MonthList({ data }) {
             </div>
             {lessons.map(item => {
               const makeup = item.type === 'Học bù'
+              const cancelled = item.type === 'Báo nghỉ'
               return (
                 <Link key={item._id} href={`/calendar/${item._id}`}
-                  className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--hover)] transition-colors border-b border-[var(--border-color)] last:border-b-0">
+                  className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--hover)] transition-colors border-b border-[var(--border-color)] last:border-b-0"
+                  style={{ opacity: cancelled ? 0.6 : 1 }}>
                   <div className="w-14 shrink-0 text-[var(--text-secondary)] font-medium">{item.time || '—'}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: makeup ? '#e65100' : 'var(--main)' }}></span>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: cancelled ? '#dc2626' : makeup ? '#e65100' : 'var(--main)' }}></span>
                       <span className="font-semibold text-[var(--text-primary)] truncate">{item.courseId}</span>
                       {item.room?.name && !isObjId(item.room.name) && <span className="text-[var(--text-secondary)] truncate">— {item.room.name}</span>}
                     </div>
@@ -136,6 +145,7 @@ function MonthList({ data }) {
                       {item.teacher?.name && <span>{item.teacher.name}</span>}
                     </div>
                   </div>
+                  {cancelled && <span className="shrink-0 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-600 font-medium">Nghỉ</span>}
                   {makeup && <span className="shrink-0 px-1.5 py-0.5 text-xs rounded bg-orange-100 text-orange-600 font-medium">Bù</span>}
                 </Link>
               )

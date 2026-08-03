@@ -1,16 +1,12 @@
 'use client';
 import React, { useState } from 'react';
 import { Svg_Save } from '@/components/(icon)/svg';
+import { truncateString } from '@/function';
 
 const getFileName = (file) => {
     if (file instanceof File) return file.name;
     if (typeof file === 'string' && file) return file.substring(file.lastIndexOf('/') + 1);
     return null;
-};
-
-const truncateString = (str, start, end) => {
-    if (!str) return null;
-    return str.length > start + end ? `${str.slice(0, start)}...${str.slice(-end)}` : str;
 };
 
 const EditBookForm = ({ initialData, onSave, onCancel, isLoading }) => {

@@ -1,44 +1,58 @@
-'user sever';
+'user server';
 
 import React from 'react';
 import Link from 'next/link';
 import { truncateString } from '@/function';
 
 const CalendarCourse = ({ data = {} }) => {
-    if (data.type === "Báo nghỉ") return null;
+    if (!data || !data._id) return null;
+
+    const isCancelled = data.type === "Báo nghỉ";
+
     let statusLesson = [1, 1, 1];
     let num = 0
-    data.students.forEach(element => {
-        if (element.Checkin == 0) { statusLesson[0] = 0 }
-        if (element.Checkin == 1) {
-            num++;
-            if (element.Cmt.length == 0) {
-                statusLesson[1] = 0;
+    if (data.students && !isCancelled) {
+        data.students.forEach(element => {
+            if (element.Checkin == 0) { statusLesson[0] = 0 }
+            if (element.Checkin == 1) {
+                num++;
+                if (element.Cmt.length == 0) {
+                    statusLesson[1] = 0;
+                }
+                if (element.Image.length == 0) {
+                    statusLesson[2] = 0;
+                }
             }
-            if (element.Image.length == 0) {
-                statusLesson[2] = 0;
-            }
+        });
+        if (num == 0) {
+            statusLesson = [0, 0, 0];
         }
-    });
-    if (num == 0) {
+    } else if (isCancelled) {
         statusLesson = [0, 0, 0];
     }
 
     return (
         <Link href={`/calendar/${data._id}`} className="group flex justify-between relative mx-4 my-2 cursor-pointer no-underline" >
-            <div className="h-full w-[3px] bg-[var(--main_b)] absolute top-0 left-0 transition-all duration-200 group-hover:w-full group-hover:rounded-r-lg group-hover:z-0" style={{ background: data.type == "trial" ? 'var(--yellow)' : 'var(--main_b)' }} />
-            <div className="px-4 py-3 pl-6 z-[1] transition-all duration-100 w-full group-hover:text-white group-hover:mr-4">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[0] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[0] == 1 ? 'var(--green)' : 'var(--red)' }}>
-                        Điểm danh
-                    </p>
-                    <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[1] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[1] == 1 ? 'var(--green)' : 'var(--red)' }}>
-                        Nhận xét
-                    </p>
-                    <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[2] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[2] == 1 ? 'var(--green)' : 'var(--red)' }}>
-                        Minh chứng
-                    </p>
-                </div>
+            <div className="h-full w-[3px] bg-[var(--main_b)] absolute top-0 left-0 transition-all duration-200 group-hover:w-full group-hover:rounded-r-lg group-hover:z-0" style={{ background: data.type == "trial" ? 'var(--yellow)' : data.type == "Báo nghỉ" ? '#dc2626' : 'var(--main_b)' }} />
+            <div className="px-4 py-3 pl-6 z-[1] transition-all duration-100 w-full group-hover:text-white group-hover:mr-4" style={{ opacity: isCancelled ? 0.6 : 1 }}>
+                {isCancelled && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span className="px-2 py-1 rounded bg-red-100 text-red-600 text-xs font-medium">Báo nghỉ</span>
+                    </div>
+                )}
+                {!isCancelled && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[0] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[0] == 1 ? 'var(--green)' : 'var(--red)' }}>
+                            Điểm danh
+                        </p>
+                        <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[1] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[1] == 1 ? 'var(--green)' : 'var(--red)' }}>
+                            Nhận xét
+                        </p>
+                        <p className={`transition-all duration-200 text-white px-2.5 py-1 rounded-full w-max text-xs ${statusLesson[2] == 1 ? 'border border-[var(--green)] group-hover:bg-white group-hover:text-[var(--green)]' : 'border border-[var(--red)] group-hover:bg-white group-hover:text-[var(--red)]'}`} style={{ background: statusLesson[2] == 1 ? 'var(--green)' : 'var(--red)' }}>
+                            Minh chứng
+                        </p>
+                    </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <h5 style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }} className="m-0 group-hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={16} height={16} fill="var(--text-primary)" className="transition-all duration-300 group-hover:fill-white">
@@ -50,11 +64,11 @@ const CalendarCourse = ({ data = {} }) => {
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width={16} height={16} fill="var(--text-primary)" className="transition-all duration-300 group-hover:fill-white">
                             <path d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z" />
                         </svg>
-                        {data.room.name}
+                        {data.room?.name ? data.room.name : '-'}
                     </h5>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}><h5 className="m-0 group-hover:text-white" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>Chủ đề: {truncateString(data.topic.Name, 30, 5)} {data.type == "trial" && '- Học thử'}</h5> </div>
-                <div style={{ display: 'flex', gap: 8 }}><h5 className="m-0 group-hover:text-white">Giáo viên: {data.teacher.name}</h5> </div>
+                <div style={{ display: 'flex', gap: 8 }}><h5 className="m-0 group-hover:text-white" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>Chủ đề: {data.topic?.Name ? truncateString(data.topic.Name, 30, 5) : '-'} {data.type == "trial" && '- Học thử'}</h5> </div>
+                <div style={{ display: 'flex', gap: 8 }}><h5 className="m-0 group-hover:text-white">Giáo viên: {data.teacher?.name ? data.teacher.name : '-'}</h5> </div>
                 <div style={{ display: 'flex', gap: 8 }}><h5 className="m-0 group-hover:text-white">Trợ giảng: {data.teachingAs?.name ? data.teachingAs.name : '-'}</h5> </div>
             </div>
 

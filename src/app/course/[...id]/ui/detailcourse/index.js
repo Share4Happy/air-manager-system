@@ -9,7 +9,7 @@ import AnnounceStudent from '../bell';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/(ui)/(loading)/loading';
 import CommentPopup from '../cmt';
-import { driveImage, formatDate } from '@/function';
+import { formatDate, srcImage } from '@/function';
 import ImageComponent from '@/components/(ui)/(image)';
 import BoxFile from '@/components/(ui)/(box)/file';
 import Noti from '@/components/(features)/(noti)/noti';
@@ -268,7 +268,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
             <div className={'bg-white rounded flex flex-col lg:flex-row flex-wrap border border-[var(--border-color)] w-full min-w-0'} style={{ padding: 16, gap: 16 }}>
                 <div className={'hidden lg:block relative w-[100px] lg:w-[150px] aspect-[4/5] shrink-0'}>
                     {data.Book?.Image ? (
-                        <Image priority={true} src={driveImage(data.Book.Image)} fill alt={data.Book.Name} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+                        <Image priority={true} src={srcImage(data.Book.Image)} fill alt={data.Book.Name} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-secondary)] bg-gray-100 rounded">No image</div>
                     )}
@@ -415,11 +415,12 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                         </div>
                     </div>
                 </div>
-                <div className="w-full lg:w-[180px]" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><Student course={data} student={sortedStudents} /></div>
-                    <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><Calendar course={data} student={sortedStudents} /></div>
-                    <div className={'w-[calc(33%-5px)] lg:w-[calc(50%-4px)] aspect-square'}><AnnounceStudent course={data} /></div>
-                </div>
+                <div className="w-full lg:w-[220px]">
+                    <div className="grid grid-cols-3 lg:grid-cols-2 gap-2 lg:gap-3">
+                        <div className="aspect-square"><Student course={data} student={sortedStudents} /></div>
+                        <div className="aspect-square"><AnnounceStudent course={data} /></div>
+                        <div className="aspect-square"><Calendar course={data} student={sortedStudents} /></div>
+                    </div></div>
             </div>
 
             <div className={'bg-white rounded flex justify-between border border-[var(--border-color)] w-full min-w-0'}>

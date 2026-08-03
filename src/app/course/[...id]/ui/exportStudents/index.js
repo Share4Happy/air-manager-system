@@ -54,7 +54,30 @@ export default function Export() {
 
     // Hàm xử lý xuất Excel mới
     const handleExportExcel = async () => {
-        setToast({ open: true, status: false, mes: 'Tính năng đang bảo trì', link: '' });
+        if (!apiState.data) return
+        try {
+            const res = await fetch('/api/exportx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseId: apiState.data.ID }),
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.mes || 'Xuất Excel thất bại')
+            }
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Danh_sach_hoc_sinh_${apiState.data.ID}.xlsx`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+            setToast({ open: true, status: true, mes: 'Tải file thành công!', link: '' })
+        } catch (err) {
+            setToast({ open: true, status: false, mes: err.message, link: '' })
+        }
     };
 
     return (

@@ -11,7 +11,6 @@ import SettingVariant from './ui/variant';
 import SettingZaloRoles from './ui/zalos';
 import ActionHistory from './ui/hisotry';
 import ZaloConfig from './ui/zalo-config';
-import BotLogs from './ui/bot-logs';
 
 function TableSkeleton() {
     return <div style={{ height: '500px', background: '#f8f9fa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang tải dữ liệu...</div>;
@@ -55,12 +54,6 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                     onClick={() => setActiveTab('zalo-config')}
                 >
                     Cấu hình Zalo
-                </button>
-                <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'bot-logs' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
-                    onClick={() => setActiveTab('bot-logs')}
-                >
-                    Logs Bot
                 </button>
             </div>
 
@@ -114,10 +107,8 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                         </Suspense>
                     </div>
                 </>
-            ) : activeTab === 'zalo-config' ? (
-                <ZaloConfig zaloData={zaloData} allUsers={users} />
             ) : (
-                <BotLogs zaloData={zaloData} />
+                <ZaloConfig zaloData={zaloData} allUsers={users} />
             )}
         </div>
     );

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
-import { driveImage, srcImage } from '@/function';
+import { srcImage } from '@/function';
 
 const buildUrl = (id) => id ? srcImage(id) : '';
 
@@ -92,7 +92,7 @@ export default function CourseListDisplay({ courses }) {
                         <div key={course._id} className="bg-white rounded-lg border border-[var(--border-color)] overflow-hidden transition-shadow duration-300">
                             <button className="grid grid-cols-[3fr_2fr_auto] items-center gap-4 w-full px-5 py-4 bg-none border-none cursor-pointer text-left max-md:grid-cols-[1fr_auto]" onClick={() => setExpandedCourseId(isExpanded ? null : course._id)}>
                                 <div className="flex items-center gap-4">
-                                    <Image src={driveImage(course.Book?.Image)} width={60} height={60} alt={course.Book?.Name} className="rounded-lg object-cover" />
+                                    <Image src={srcImage(course.Book?.Image)} width={60} height={60} alt={course.Book?.Name} className="rounded-lg object-cover" />
                                     <div style={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
                                         <p className='text-sm font-semibold text-[var(--text-primary)]'>{course.Book?.Name}</p>
                                         <p className='text-sm font-semibold text-[var(--text-primary)]'>Khóa: <span style={{ fontWeight: 400 }}>{course.ID}</span></p>

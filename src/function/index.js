@@ -45,6 +45,8 @@ import {
 } from '@/utils/env'
 
 export function srcImage(id) {
+    if (!id) return null;
+    if (id.startsWith(getDriveImageBase())) return id;
     return `${getDriveImageBase()}${id}`
 }
 
@@ -57,11 +59,6 @@ export function formatCurrencyVN(number) {
 }
 
 export const truncateString = (str, start, end) => !str ? "" : str.length > start + end ? `${str.slice(0, start)}...${str.slice(-end)}` : str;
-export const driveImage = (id) => {
-    if (!id) return null;
-    if (id.startsWith(getDriveImageBase())) return id;
-    return `${getDriveImageBase()}${id}`;
-}
 export const driveFolderUrl = (id) => `${getDriveFolderBase()}${id}`
 export const driveThumbnailUrl = (id, size = 200) => `${getDriveThumbnailBase()}${id}&sz=w${size}`
 export const drivePreviewUrl = (id) => `${getDrivePreviewBase()}${id}/preview`

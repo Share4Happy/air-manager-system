@@ -4,8 +4,11 @@ import Student from '@/models/student'
 import Course from '@/models/course'
 import Invoice from '@/models/invoices'
 import Area from '@/models/area'
+import TrialCourse from '@/models/coursetry'
 import mongoose from 'mongoose'
 import { getStudentRank } from '@/data/database/student'
+
+const TRIAL_ID = '6871bc14ada3650715efc786'
 
 function getLastStatus(student) {
     if (!student.Status || student.Status.length === 0) return null
@@ -198,6 +201,49 @@ export async function GET(request) {
 
         const periods = buildPeriods()
 
+        // --- Trial course metrics ---
+        const trialCourse = await TrialCourse.findById(TRIAL_ID).lean().catch(() => null)
+        const trialSessions = Array.isArray(trialCourse?.sessions) ? trialCourse.sessions : []
+
+        const trialStudentsByMonth = {}
+        const trialParticipantIds = new Set()
+        trialSessions.forEach(s => {
+            if (!s.day) return
+            const dt = new Date(s.day)
+            if (isNaN(dt.getTime())) return
+            if (!isDateInRange(dt, fromMonth, toMonth, fromQuarter, toQuarter, fromYear, toYear, period)) return
+            const key = getPeriodKey(dt, period)
+            if (!trialStudentsByMonth[key]) trialStudentsByMonth[key] = new Set()
+            ;(s.students || []).forEach(st => {
+                if (st.studentId && mongoose.Types.ObjectId.isValid(st.studentId)) {
+                    trialStudentsByMonth[key].add(String(st.studentId))
+                    trialParticipantIds.add(String(st.studentId))
+                }
+            })
+        })
+        const trialStudentsByPeriod = periods.map(p => ({
+            ...p,
+            count: trialStudentsByMonth[p.key] ? trialStudentsByMonth[p.key].size : 0,
+        }))
+
+        const trialStudents = trialParticipantIds.size > 0
+            ? await Student.find(
+                { _id: { $in: [...trialParticipantIds].map(id => new mongoose.Types.ObjectId(id)) } },
+                { Trial: 1 }
+            ).lean()
+            : []
+
+        let trialEnrolled = 0
+        let trialNotEnrolled = 0
+        trialStudents.forEach(st => {
+            const entries = Array.isArray(st.Trial) ? st.Trial : []
+            if (!entries.length) return
+            const latest = entries[entries.length - 1]
+            if (latest?.status === 2) trialEnrolled++
+            else trialNotEnrolled++
+        })
+        const trialEnrollment = { enrolled: trialEnrolled, notEnrolled: trialNotEnrolled }
+
         const tuitionMap = {}
         allInvoices.forEach(inv => {
             const dt = inv.createdAt || inv._id.getTimestamp()
@@ -384,6 +430,8 @@ export async function GET(request) {
                 monthlyUpgrades,
                 monthlyCompletions,
                 coursesByStatus,
+                trialStudentsByPeriod,
+                trialEnrollment,
                 classOptions,
                 areaOptions,
                 yearOptions,

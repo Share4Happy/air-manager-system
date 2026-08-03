@@ -11,7 +11,7 @@ import AddTopicForm from '../AddTopicForm';
 import EditTopicForm from '../EditTopicForm';
 import AlertPopup from '@/components/(features)/(noti)/alert';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
-import { driveImage } from '@/function';
+import { srcImage } from '@/function';
 
 const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
@@ -26,7 +26,7 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
     <aside className={'flex-1 min-w-[300px] flex flex-col'}>
         <div className={'w-full rounded-md overflow-hidden mb-6 shadow-[var(--boxshaw2)] flex gap-2'}>
             {bookData.Image && <Image
-                src={driveImage(bookData.Image)}
+                src={srcImage(bookData.Image)}
                 alt={bookData.Name}
                 width={400}
                 height={533}
@@ -36,7 +36,7 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
                 style={{ width: bookData.Badge ? 'calc(50% - 4px)' : '100%' }}
             />}
             {bookData.Badge && <Image
-                src={driveImage(bookData.Badge)}
+                src={srcImage(bookData.Badge)}
                 alt={bookData.Name}
                 width={400}
                 height={533}

@@ -1,25 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
-import { Bar } from 'react-chartjs-2'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, DoughnutController } from 'chart.js'
+import { Bar, Doughnut } from 'react-chartjs-2'
 import StatCard from './statCard'
 import ChartCard from './chartCard'
 import EmptyState from './emptyState'
 import { KPISkeleton } from './loadingSkeleton'
 import { Svg_Student, Svg_User, Svg_Tuition, Svg_Graduation, Svg_Close } from '@/components/(icon)/svg'
+import { formatCurrencyVN } from '@/function'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
-
-function formatCurrency(n) {
-    if (!n || isNaN(n)) return '0 VNĐ'
-    return n.toLocaleString('vi-VN') + ' VNĐ'
-}
-
-function formatNumber(n) {
-    if (n === undefined || n === null) return '0'
-    return n.toLocaleString('vi-VN')
-}
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, DoughnutController)
 
 function formatAge(n) {
     if (n === null || n === undefined) return '—'
@@ -27,6 +18,11 @@ function formatAge(n) {
     const hi = Math.ceil(n)
     if (lo === hi) return lo + ' tuổi'
     return lo + '-' + hi + ' tuổi'
+}
+
+function formatNumber(n) {
+    if (n === undefined || n === null) return '0'
+    return n.toLocaleString('vi-VN')
 }
 
 // const statusOptions = [
@@ -173,7 +169,7 @@ export default function Overview() {
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                tooltip: { callbacks: { label: function(ctx) { return isCurrency ? formatCurrency(ctx.raw) : String(ctx.raw) } } }
+                tooltip: { callbacks: { label: function(ctx) { return isCurrency ? formatCurrencyVN(ctx.raw) : String(ctx.raw) } } }
             },
             scales: {
                 x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { autoSkip: false, maxRotation: 45 } },
@@ -317,7 +313,7 @@ export default function Overview() {
                                         icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
                                 </div>
                                 <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
-                                    <StatCard label="Học phí đã nhận" value={formatCurrency(summary?.totalTuition)}
+                                    <StatCard label="Học phí đã nhận" value={formatCurrencyVN(summary?.totalTuition)}
                                         icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
                                 </div>
                                 <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
@@ -342,7 +338,7 @@ export default function Overview() {
                                         icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
                                 </div>
                                 <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
-                                    <StatCard label="Học phí" value={formatCurrency(summary?.filteredTuition)}
+                                    <StatCard label="Học phí" value={formatCurrencyVN(summary?.filteredTuition)}
                                         icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
                                 </div>
                                 <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
@@ -432,6 +428,66 @@ export default function Overview() {
                                             labels: data.studentsByStatus.map(s => s.status),
                                             datasets: [{ data: data.studentsByStatus.map(s => s.count), backgroundColor: data.studentsByStatus.map(s => s.status === 'Đang học' ? PASTEL_GREEN : s.status === 'Đang chờ xếp lớp' ? PASTEL_YELLOW : PASTEL_RED), borderRadius: 4 }]
                                         }} options={chartHOpts()} />
+                                    </div>
+                                ) : <EmptyState />}
+                            </ChartCard>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-6 mb-3">
+                            <div className="h-px flex-1 bg-[var(--border-color)]"></div>
+                            <span className="text-xs font-medium text-[var(--text-secondary)] shrink-0">Học thử</span>
+                            <div className="h-px flex-1 bg-[var(--border-color)]"></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+                            <ChartCard title="Học sinh học thử theo tháng">
+                                {data?.trialStudentsByPeriod?.length ? (
+                                    <div className="h-60">
+                                        <Bar data={{
+                                            labels: data.trialStudentsByPeriod.map(m => m.label),
+                                            datasets: [{ data: data.trialStudentsByPeriod.map(m => m.count), backgroundColor: PASTEL_ORANGE, borderRadius: 4 }]
+                                        }} options={chartOpts()} />
+                                    </div>
+                                ) : <EmptyState />}
+                            </ChartCard>
+                            <ChartCard title="Tỉ lệ nhập học sau học thử">
+                                {data?.trialEnrollment && (data.trialEnrollment.enrolled + data.trialEnrollment.notEnrolled) > 0 ? (
+                                    <div className="h-60 flex items-center justify-center gap-6">
+                                        <div className="h-44 w-44 shrink-0">
+                                            <Doughnut data={{
+                                                labels: ['Nhập học', 'Không nhập học'],
+                                                datasets: [{
+                                                    data: [data.trialEnrollment.enrolled, data.trialEnrollment.notEnrolled],
+                                                    backgroundColor: [PASTEL_GREEN, PASTEL_RED],
+                                                    borderWidth: 0,
+                                                    hoverOffset: 6
+                                                }]
+                                            }} options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                cutout: '62%',
+                                                plugins: {
+                                                    legend: { display: false },
+                                                    tooltip: { callbacks: { label: function(ctx) {
+                                                        const total = ctx.dataset.data[0] + ctx.dataset.data[1]
+                                                        const pct = total > 0 ? Math.round(ctx.raw / total * 1000) / 10 : 0
+                                                        return ` ${ctx.label}: ${ctx.raw} (${pct}%)`
+                                                    } } }
+                                                }
+                                            }} />
+                                        </div>
+                                        <div className="flex flex-col gap-2.5 shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-3 h-3 rounded-full" style={{ background: PASTEL_GREEN }}></span>
+                                                <p className="text-sm text-[var(--text-primary)]">Nhập học</p>
+                                                <p className="text-sm font-semibold text-[var(--text-primary)]">{data.trialEnrollment.enrolled}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-3 h-3 rounded-full" style={{ background: PASTEL_RED }}></span>
+                                                <p className="text-sm text-[var(--text-primary)]">Không nhập học</p>
+                                                <p className="text-sm font-semibold text-[var(--text-primary)]">{data.trialEnrollment.notEnrolled}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>

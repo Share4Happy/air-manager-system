@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { driveImage } from '@/function';
+import { srcImage } from '@/function';
 
 const formatPrice = (price) => {
     if (typeof price !== 'number') return 'N/A';
@@ -9,7 +9,7 @@ const formatPrice = (price) => {
 
 const ProgramCard = ({ program }) => {
     const topicCount = Object.keys(program.Topics || {}).length
-    const url = program.Image ? (program.Image.split('/').length == 5 ? program.Image : driveImage(program.Image)) : '/placeholder.png';
+    const url = program.Image ? (program.Image.split('/').length == 5 ? program.Image : srcImage(program.Image)) : '/placeholder.png';
 
     return (
         <Link href={`/course/book/${program._id}`} className={'flex flex-row bg-white rounded-lg shadow-[var(--boxshaw2)] overflow-hidden transition-all duration-300 w-[calc(25%-12px)] cursor-pointer aspect-[6/3] hover:-translate-y-1 hover:shadow-[var(--boxshaw)]'}>

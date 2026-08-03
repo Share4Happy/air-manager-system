@@ -141,7 +141,34 @@ export default function DetailStudent({ data: student, course, c, users, student
 
     /* ───────── EXPORT EXCEL ───────── */
     const handleExport = async () => {
-        setToast({ open: true, status: false, mes: 'Tính năng đang bảo trì', link: '' });
+        setLoading(true)
+        try {
+            const courseId = course.ID || course._id
+            if (!courseId) throw new Error('Không tìm thấy ID khóa học')
+            const res = await fetch('/api/exportx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseId }),
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.mes || 'Xuất Excel thất bại')
+            }
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Danh_sach_hoc_sinh_${courseId}.xlsx`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+            setToast({ open: true, status: true, mes: 'Tải file thành công!', link: '' })
+        } catch (err) {
+            setToast({ open: true, status: false, mes: err.message, link: '' })
+        } finally {
+            setLoading(false)
+        }
     };
 
     /* ───────── CELL UI ───────── */
