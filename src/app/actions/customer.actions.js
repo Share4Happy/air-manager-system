@@ -314,6 +314,7 @@ export async function convertToStudentAction(previousState, formData) {
                 finalMessage = `Chuyển đổi thành công. Lấy Zalo UID thất bại: ${zaloResult.message}`;
             }
         }
+        revalidateData();
         reloadStudent();
         return { success: true, message: finalMessage };
     } catch (error) {

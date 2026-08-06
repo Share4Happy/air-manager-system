@@ -22,17 +22,18 @@ function SubmitBtn({ text = 'Lưu' }) {
 }
 
 function AddAccountForm({ formAction, formState, onClose }) {
-    const [token, setToken] = useState('');
-    useEffect(() => { if (formState.status === true) setToken(''); }, [formState]);
+    const [botId, setBotId] = useState('');
+    useEffect(() => { if (formState.status === true) setBotId(''); }, [formState]);
     return (
         <form action={formAction} className='flex flex-col gap-4 p-4'>
             <div className='flex flex-col gap-1'>
-                <label className='text-sm font-medium text-[var(--text-primary)]'>Zalo Access Token</label>
-                <textarea name="token" placeholder="Dán Access Token của bạn vào đây" required
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none'
-                    style={{ height: 200, resize: 'none' }} />
+                <label className='text-sm font-medium text-[var(--text-primary)]'>Bot ID (ZaloLite)</label>
+                <input name="botId" placeholder="VD: f61c40f5-cb8d-4502-8b81-9bebbe705b31" required
+                    value={botId}
+                    onChange={(e) => setBotId(e.target.value)}
+                    className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700'
+                />
+                <p className='text-xs text-[var(--text-secondary)]'>Nhập UUID bot từ ZaloLite API Gateway. Hệ thống sẽ tự lấy thông tin bot (tên, ảnh, số điện thoại) qua API.</p>
             </div>
             <div className='flex gap-2 justify-end'>
                 <button type="button" onClick={onClose}
@@ -189,7 +190,7 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
                             <div key={acc._id}
                                 className='border border-[var(--border-color)] rounded-lg p-3 flex flex-col gap-2 hover:shadow-sm transition-shadow'>
                                 <div className='flex items-center gap-3'>
-                                    <Image src={acc.avt} alt={acc.name} width={44} height={44}
+                                    <Image src={acc.avt || defaultAvatarUrl()} alt={acc.name} width={44} height={44}
                                         className='w-11 h-11 rounded-full object-cover' />
                                     <div className='flex-1 min-w-0'>
                                         <h5 className='text-sm font-semibold text-[var(--text-primary)] truncate'>{acc.name}</h5>

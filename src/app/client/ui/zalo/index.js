@@ -7,7 +7,7 @@ import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import Noti from '@/components/(features)/(noti)/noti';
 import Loading from '@/components/(ui)/(loading)/loading';
 import { Svg_Logout, Svg_Setting } from '@/components/(icon)/svg';
-import { truncateString } from '@/function';
+import { truncateString, defaultAvatarUrl } from '@/function';
 import Image from 'next/image';
 function SelectableZaloItem({ item, action }) {
     const { pending } = useFormStatus();
@@ -17,7 +17,7 @@ function SelectableZaloItem({ item, action }) {
             <button type="submit" className={'flex items-center gap-3 p-3 rounded-md bg-[var(--bg-primary)] cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)] w-full'} disabled={pending}>
                 <div className='flex items-center gap-2'>
                     <div className={'relative w-10 h-10 rounded-full overflow-hidden'}>
-                        <Image src={item.avt} alt={item.name} fill />
+                        <Image src={item.avt || defaultAvatarUrl()} alt={item.name} fill />
                     </div>
                     <div className='flex flex-col items-start gap-1'>
                         <h5>{item.name}</h5>
@@ -71,7 +71,7 @@ export default function SettingZalo({ user, zalo }) {
                                     <div className={'flex items-center gap-3 p-3 rounded-md cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)] w-full'}>
                                         <div className='flex items-center gap-2'>
                                             <div className={'relative w-10 h-10 rounded-full overflow-hidden'}>
-                                                <Image src={user.zalo.avt} alt={user.zalo.name} fill />
+                                                <Image src={user.zalo?.avt || defaultAvatarUrl()} alt={user.zalo.name} fill />
                                             </div>
                                             <div className='flex flex-col items-start gap-1'>
                                                 <h5>{user.zalo.name}</h5>

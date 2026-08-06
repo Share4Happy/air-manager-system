@@ -48,7 +48,7 @@ const initialNavItems = [
     </div>, content: 'Công cụ'
   },
   { href: '/student/list', icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />, content: 'Học sinh' },
-  { href: '/search', icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />, content: 'Eportfolio' },
+  { href: '/e-portfolio', icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />, content: 'Eportfolio' },
   {
     href: '/academic', icon: <div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
@@ -185,7 +185,7 @@ export default function Nav() {
   };
 
   const activeIndex = useMemo(() => {
-    const activeItem = orderedItems.find(item => pathname.startsWith(item.href) && item.href !== '/' && item.href !== '/search') ||
+    const activeItem = orderedItems.find(item => pathname.startsWith(item.href) && item.href !== '/') ||
       (pathname === '/' && orderedItems.find(item => item.href === '/'));
     return activeItem ? orderedItems.findIndex(i => i.href === activeItem.href) : -1;
   }, [pathname, orderedItems]);
@@ -207,7 +207,6 @@ export default function Nav() {
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/';
-    if (href === '/search') return false;
     return pathname.startsWith(href);
   };
 

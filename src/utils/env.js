@@ -41,3 +41,11 @@ export function getDriveDownloadBase() {
 export function getDefaultAvatarId() {
   return process.env.NEXT_PUBLIC_DRIVE_DEFAULT_AVATAR_ID || '1iq7y8VE0OyFIiHmpnV_ueunNsTeHK1bG';
 }
+
+export function getZaloLiteBaseUrl() {
+  return process.env.ZALOLITE_BASE_URL || 'https://sms-service.talab.io.vn/api/gateway/v1.0';
+}
+
+export function getZaloLiteApiKey() {
+  return process.env.ZALOLITE_API_KEY || '';
+}

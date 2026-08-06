@@ -10,6 +10,7 @@ const TaskSchema = new Schema({
     },
     history: { type: Schema.Types.ObjectId, ref: "logmes" },
     status: { type: Boolean, default: false },
+    campaignId: { type: String, default: '' },
     scheduledFor: { type: Date, required: true },
 });
 
@@ -47,6 +48,7 @@ const ScheduledJobSchema = new Schema(
             completed: { type: Number, default: 0 },
             failed: { type: Number, default: 0 },
         },
+        campaignId: { type: String, default: '' },
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: "user",

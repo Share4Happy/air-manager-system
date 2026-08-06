@@ -4,8 +4,9 @@ import { useState } from 'react'
 import Report from '@/app/teacher/ui/report'
 import AttendanceTab from './attendance-tab'
 import SlaTab from './sla-tab'
+import ReportConfigTab from './report-config-tab'
 
-export default function ReportClient({ initialReports }) {
+export default function ReportClient({ initialReports, users = [], zalo = [], areas = [] }) {
     const [tab, setTab] = useState('attendance')
 
     return (
@@ -21,13 +22,19 @@ export default function ReportClient({ initialReports }) {
                     className={`px-4 py-2 text-sm font-medium transition-colors ${tab === 'attendance' ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                     onClick={() => setTab('attendance')}
                 >
-                    Chuyên cần
+                    Báo cáo & Thông báo
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-medium transition-colors ${tab === 'sla' ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                     onClick={() => setTab('sla')}
                 >
                     SLA
+                </button>
+                <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${tab === 'config' ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                    onClick={() => setTab('config')}
+                >
+                    Cấu hình báo cáo
                 </button>
 
             </div>
@@ -38,8 +45,10 @@ export default function ReportClient({ initialReports }) {
                 </div>
             ) : tab === 'attendance' ? (
                 <AttendanceTab />
-            ) : (
+            ) : tab === 'sla' ? (
                 <SlaTab />
+            ) : (
+                <ReportConfigTab users={users} zalo={zalo} areas={areas} />
             )}
         </div>
     )

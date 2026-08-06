@@ -1,27 +1,12 @@
 
 'use server';
 
-import { google } from 'googleapis';
 import connectDB from '@/config/connectDB';
 import ZaloAccount from '@/models/zalo';
 import checkAuthToken from '@/utils/checktoken';
 import { reloadUser, reloadZalo } from '@/data/actions/reload';
 import User from '@/models/users';
-
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcaXcpdsonX5eGRd0T-X_yJejKqD0krSSSV3rYDnpot23nWvXkzO3QnnvIo7UqYss1/exec';
-const SPREADSHEET_ID = '1ZQsHUyVD3vmafcm6_egWup9ErXfxIg4U-TfVDgDztb8';
-const TARGET_SHEET = 'Account';
-
-async function getGoogleSheetsClient() {
-    const auth = new google.auth.GoogleAuth({
-        credentials: {
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        },
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    return google.sheets({ version: 'v4', auth });
-}
+import { fetchBot } from '@/function/zalolite';
 
 export async function addZaloAccountAction(previousState, formData) {
     const user = await checkAuthToken();
@@ -30,55 +15,31 @@ export async function addZaloAccountAction(previousState, formData) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
 
-    const token = formData.get('token');
-    if (!token || typeof token !== 'string') { return { status: false, message: 'Token không hợp lệ hoặc không được cung cấp.' }; }
+    const botId = String(formData.get('botId') || '').trim();
+    if (!botId) return { status: false, message: 'Vui lòng nhập bot_id (UUID của bot trên ZaloLite).' };
     try {
-        const scriptResponse = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ token }),
-            cache: 'no-store',
-        })
-        const accountData = await scriptResponse.json();
-        if (!scriptResponse.ok || accountData.error) {
-            console.error('Google Apps Script Error:', accountData);
-            return { status: false, message: 'Lỗi khi xác thực token với Google Apps Script.' };
-        }
-        const newRowForSheet = [
-            accountData.phone || '',
-            accountData.userId || '',
-            accountData.name || '',
-            accountData.avatar || '',
-            accountData.token || '',
-        ];
+        const bot = await fetchBot(botId);
+        if (!bot) return { status: false, message: 'Không tìm thấy bot với bot_id này trên ZaloLite Gateway.' };
+
         const dataForMongo = {
-            uid: accountData.userId,
-            name: accountData.name,
-            phone: accountData.phone,
-            avt: accountData.avatar,
+            botId,
+            uid: bot.zalo_global_uid || bot.uid || '',
+            name: bot.name || 'Bot chưa có tên',
+            phone: bot.phone || bot.raw_profile?.phoneNumber || '',
+            avt: bot.avatar || '',
+            is_active: bot.is_active ?? true,
         };
         await connectDB();
-        const sheets = await getGoogleSheetsClient();
-        await Promise.all([
-            sheets.spreadsheets.values.append({
-                spreadsheetId: SPREADSHEET_ID,
-                range: `${TARGET_SHEET}!A1`,
-                valueInputOption: 'USER_ENTERED',
-                requestBody: {
-                    values: [newRowForSheet],
-                },
-            }),
-            ZaloAccount.findOneAndUpdate(
-                { uid: dataForMongo.uid },
-                dataForMongo,
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-            )
-        ]);
+        await ZaloAccount.findOneAndUpdate(
+            { $or: [{ botId }, { uid: dataForMongo.uid }] },
+            dataForMongo,
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
         reloadZalo();
-        return { status: true, message: 'Thêm tài khoản thành công!' };
+        return { status: true, message: `Thêm bot "${dataForMongo.name}" thành công!` };
     } catch (error) {
         console.error('Add Zalo Account Action Error:', error);
-        return { status: false, message: 'Đã xảy ra lỗi không xác định. Vui lòng thử lại.' };
+        return { status: false, message: error.message || 'Đã xảy ra lỗi không xác định. Vui lòng thử lại.' };
     }
 }
 

@@ -117,7 +117,7 @@ export default function SettingZaloRoles({ data, allUsers = [] }) {
                     <div className={`${'flex flex-col gap-2 p-2'} scroll`}>
                         {data.map((item) => (
                             <div key={item._id} className={'flex items-center gap-3 p-3 rounded-md bg-[var(--bg-primary)] cursor-pointer transition-colors duration-200 hover:bg-[var(--hover)]'} onClick={() => handleOpenManager(item)}>
-                                <Image src={item.avt} alt={item.name} width={40} height={40} className={'w-10 h-10 rounded-full object-cover'} />
+                                <Image src={item.avt || defaultAvatarUrl()} alt={item.name} width={40} height={40} className={'w-10 h-10 rounded-full object-cover'} />
                                 <div className={''}>
                                     <h5>{item.name}</h5>
                                     <p>{item.phone}</p>

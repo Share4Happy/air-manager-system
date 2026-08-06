@@ -90,3 +90,44 @@ MongoDB (models)  src/models/*.js
 2. **`src/app/client/index.js`:** Xóa nút tab "Logs Bot" (was lines 59-64)
 3. **`src/app/client/index.js`:** Xóa nhánh render `<BotLogs>` trong ternary (was line 120)
 4. Giữ lại file `src/app/client/ui/bot-logs/index.js` nhưng không còn được tham chiếu
+
+### Thay AppScript bằng ZaloLite (iTrail) API Gateway
+**Ngày:** 03/08/2026
+
+**Bối cảnh:** Hệ thống cũ gửi Zalo qua Google Apps Script (token riêng từng tài khoản). Hệ thống mới dùng **ZaloLite API Gateway** (`https://sms-service.talab.io.vn/api/gateway/v1.0`) với **1 API key dùng chung** cho tất cả bots, định danh bot bằng `bot_id` (UUID). Gateway tự resolve phone→UID khi gửi.
+
+**Env mới (`.env.development`):**
+- `ZALOLITE_BASE_URL` — base URL gateway
+- `ZALOLITE_API_KEY` — secret key từ dashboard ZaloLite (bắt buộc để gửi)
+
+**Thay đổi:**
+1. **`src/function/zalolite.js` (MỚI):** Client gateway — `fetchBot`, `fetchBots`, `sendBatch` (≤10 người, ≤5 đồng bộ / 6-10 async + campaign_id), `sendByPhone`, `sendFriendBatch`, `pollCampaign`. Kèm retry 3× cho lỗi mạng (timeout/ECONNREFUSED/502/503/504), **không** retry -201/-213/-117/blocked, circuit breaker (3 lỗi liên tiếp → mở 60s).
+2. **`src/models/zalo.js`:** Thêm `botId` (UUID), `is_active`; `uid`/`phone` không còn bắt buộc.
+3. **`src/models/schedule.js`:** Thêm `campaignId` (job + task) cho batch async.
+4. **`src/app/actions/zalo.actions.js`:** `addZaloAccountAction` — nhập `bot_id` → `fetchBot` → upsert ZaloAccount. **Bỏ** luồng Apps Script token + Google Sheets append (`googleapis` không còn dùng ở đây).
+5. **`src/app/client/ui/zalo-config/index.js`:** Form "Thêm tài khoản" đổi từ textarea Access Token → input `bot_id`.
+6. **`src/app/api/(zalo)/action/route.js`:** Scheduler chia 2 nhánh:
+   - `sendMessage`/`addFriend` → **iTrail**: gộp task đến hạn cùng nội dung (≤10) gọi `send-batch` / `friends/requests/send-batch`; kết quả map từng recipient về `logmes` + `tasks[]` + `statistics`. Batch 6-10 → lưu `campaignId`, poll ở lần chạy sau (`pollPendingCampaigns`).
+   - `findUid`/`checkFriend` → **giữ nguyên AppScript** (`actionZalo`).
+7. **`src/app/actions/schedule.actions.js`:** `createScheduleAction` — `sendMessage`/`addFriend` chỉ cần `phone` (bỏ yêu cầu UID, gateway tự resolve).
+
+**Lưu ý:**
+- Nội dung 1 call batch giống nhau cho mọi recipient; template có `{name}` cá nhân hóa → mỗi người thành 1 batch riêng.
+- Map kết quả batch → task theo thứ tự `recipients[]` (giả định gateway trả kết quả cùng thứ tự).
+- `ZALOLITE_API_KEY` trong `iTrail_Message_Structure.md` (`QUxMIFlPVVIgQkFTRSBBUkUgQkVMT05HIFRPIFVT`) là base64 placeholder — cần key thật để test gửi.
+
+### Tab "Cấu hình báo cáo" (báo cáo định kỳ qua Zalo)
+**Ngày:** 04/08/2026
+
+**Thay đổi:**
+1. **Model mới:**
+   - `src/models/reportConfig.js` — cấu hình báo cáo: `recipientUserId`, `zaloAccountId`, `reportType` (attendance|monthly), `messageTemplate`, `frequency` (daily|weekly|monthly), `sendTime` (HH:MM), `weekday` (1=T2…7=CN), `monthDay`, `isActive`, `lastSentAt`, `nextRunAt`.
+   - `src/models/reportTemplate.js` — thư viện mẫu tin: `name`, `content`, `reportType`, `createdBy`.
+2. **`src/function/report.js` (MỚI):** `computeNextRunAt`, `generateAttendanceReport` (từ `Course.Student[].Learn[].Checkin` + trial sessions), `generateMonthlyReport` (từ `Invoice`/`Student.Status`/trial), `renderReportTemplate` (thay `{body}` `{period}` `{date}` + biến thể), `executeReportConfig` (sinh nội dung → `sendBatch` 1 SĐT → ghi `logmes`).
+3. **`src/app/actions/reportConfig.actions.js` (MỚI):** `saveReportConfigAction`, `toggleReportConfigAction`, `deleteReportConfigAction`, `sendReportNowAction`, `saveReportTemplateAction`, `deleteReportTemplateAction` (quyền Admin/Sale).
+4. **`src/app/api/report-config/route.js` (MỚI):** `GET` trả `{ configs, templates }` (populate người nhận + tài khoản Zalo).
+5. **`src/app/academic/report/`:** thêm tab "Cấu hình báo cáo" (`report-config-tab.js`); `page.js` truyền thêm `user_data({})` + `zalo_data()`.
+6. **`src/app/api/(zalo)/action/route.js`:** thêm `processPendingReports()` — mỗi tick tìm config `isActive && nextRunAt <= now`, gửi báo cáo, cập nhật `lastSentAt`/`nextRunAt`; lỗi → giữ `nextRunAt` thử lại.
+
+**Kỳ báo cáo:** Chuyên cần = hôm qua (daily) / 7 ngày (weekly) / tháng trước (monthly); Thống kê tháng = tháng trước.
+**Placeholder mẫu:** `{body}` (nội dung tự sinh), `{period}` (kỳ), `{date}` (ngày gửi), `{Tên biến thể}` (hệ Variant).

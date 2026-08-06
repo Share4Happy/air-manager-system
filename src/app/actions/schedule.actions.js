@@ -140,15 +140,18 @@ export async function createScheduleAction(prevState, formData) {
         // Chỉ lọc nếu hành động không phải là 'findUid'
         if (actionType !== 'findUid') {
             const originalCount = validTasks.length;
-            validTasks = validTasks.filter(task =>
-                task.uid && Array.isArray(task.uid) && task.uid.some(
+            const needsPhone = ['sendMessage', 'addFriend'].includes(actionType);
+            validTasks = validTasks.filter(task => {
+                // iTrail Gateway tự resolve phone → UID, chỉ cần có số điện thoại
+                if (needsPhone) return !!task.phone;
+                return task.uid && Array.isArray(task.uid) && task.uid.some(
                     u => u.zalo?.toString() === zaloAccountId.toString() && u.uid
-                )
-            );
+                );
+            });
             removedCount = originalCount - validTasks.length;
 
             if (validTasks.length === 0) {
-                return { success: true, message: `Tất cả ${originalCount} người đã bị loại bỏ do không có UID hợp lệ cho tài khoản Zalo này.` };
+                return { success: true, message: `Tất cả ${originalCount} người đã bị loại bỏ do ${needsPhone ? 'thiếu số điện thoại' : 'không có UID hợp lệ'} cho tài khoản Zalo này.` };
             }
         }
         // Từ đây, tất cả logic sẽ sử dụng `validTasks` thay vì `tasksToSchedule`
@@ -216,7 +219,7 @@ export async function createScheduleAction(prevState, formData) {
         const minutes = Math.floor((duration % 3600000) / 60000);
         let message = `Đã tạo lịch trình "${newJob.jobName}" cho ${validTasks.length} người. Ước tính hoàn thành trong ${hours} giờ ${minutes} phút.`;
         if (removedCount > 0) {
-            message += ` Đã tự động loại bỏ ${removedCount} người do không có UID hợp lệ.`;
+            message += ` Đã tự động loại bỏ ${removedCount} người do ${['sendMessage', 'addFriend'].includes(actionType) ? 'thiếu số điện thoại' : 'không có UID hợp lệ'}.`;
         }
 
         revalidateData();
