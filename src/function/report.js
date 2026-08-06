@@ -18,7 +18,7 @@ function ReportConfigUpdate(id, update) {
     return ReportConfig.findByIdAndUpdate(id, { $set: update })
 }
 
-function sleep(ms) {
+export function sleep(ms) {
     return new Promise(r => setTimeout(r, ms))
 }
 
@@ -50,11 +50,11 @@ export function computeResumeAt(now = new Date()) {
     return d
 }
 
-async function countHourlySent(zaloId, now = new Date()) {
+export async function countHourlySent(zaloId, now = new Date()) {
     const start = new Date(now)
     start.setMinutes(0, 0, 0)
     return Logs.countDocuments({
-        type: 'sendReport',
+        type: { $in: ['sendReport', 'sendCare'] },
         zalo: zaloId,
         createdAt: { $gte: start },
     })

@@ -11,6 +11,7 @@ import SettingVariant from './ui/variant';
 import SettingZaloRoles from './ui/zalos';
 import ActionHistory from './ui/hisotry';
 import ZaloConfig from './ui/zalo-config';
+import LessonCancelTab from './ui/lesson-cancel';
 
 function TableSkeleton() {
     return <div style={{ height: '500px', background: '#f8f9fa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang tải dữ liệu...</div>;
@@ -54,6 +55,12 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                     onClick={() => setActiveTab('zalo-config')}
                 >
                     Cấu hình Zalo
+                </button>
+                <button
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'lesson-cancel' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
+                    onClick={() => setActiveTab('lesson-cancel')}
+                >
+                    Thông báo nghỉ
                 </button>
             </div>
 
@@ -107,6 +114,8 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                         </Suspense>
                     </div>
                 </>
+            ) : activeTab === 'lesson-cancel' ? (
+                <LessonCancelTab user={user} users={users} zaloData={zaloData} />
             ) : (
                 <ZaloConfig zaloData={zaloData} allUsers={users} />
             )}

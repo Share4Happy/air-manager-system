@@ -14,7 +14,7 @@ const RoomSchema = new Schema(
 const logs = new Schema(
     {
         status: { type: RoomSchema },
-        type: { type: String, required: true, enum: ["sendMessage", "addFriend", "findUid", "checkFriend", "sendReport"] },
+        type: { type: String, required: true, enum: ["sendMessage", "addFriend", "findUid", "checkFriend", "sendReport", "sendCare"] },
         createdAt: { type: Date, default: Date.now },
         createBy: { type: Schema.Types.ObjectId, ref: 'user', required: true },
         customer: { type: Schema.Types.ObjectId, ref: 'customer' },

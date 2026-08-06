@@ -28,7 +28,7 @@ const COLLAPSED_W = '60px';
 const EXPANDED_W = '240px';
 
 const academicChildren = [
-  { href: '/academic/report', content: 'Báo cáo chuyên cần' },
+  { href: '/academic/report', content: 'Báo cáo & Thông báo' },
   { href: '/academic/program', content: 'Quản lý chương trình học' },
   { href: '/academic/rooms', content: 'Quản lý phòng học' },
   { href: '/academic/course-manager', content: 'Quản lý khóa học' },
