@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import authenticate from '@/utils/authenticate'
 import { getSettings, updateSetting } from '@/data/database/notification'
+import { clearZaloLiteConfigCache } from '@/utils/zalolite-config'
 
 export async function GET(request) {
   try {
@@ -26,6 +27,9 @@ export async function PUT(request) {
       for (const s of body.settings) {
         const updated = await updateSetting(s.key, s.value, user._id)
         results.push(updated)
+      }
+      if (body.settings.some(s => s.key === 'ZALOLITE_BASE_URL' || s.key === 'ZALOLITE_API_KEY')) {
+        clearZaloLiteConfigCache()
       }
     }
     return NextResponse.json({ success: true, data: results })

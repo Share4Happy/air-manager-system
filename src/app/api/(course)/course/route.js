@@ -7,7 +7,7 @@ import PostArea from '@/models/area';
 import { NextResponse } from 'next/server';
 import authenticate from '@/utils/authenticate';
 import { reloadCourse } from '@/data/actions/reload';
-import { getDriveClient, createDriveFolder } from '@/function/drive/folder';
+import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder';
 
 const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
 
@@ -53,7 +53,7 @@ export async function POST(request) {
                 imageUrls = await Promise.all(
                     Detail.map(d => createDriveFolder(
                         drive,
-                        d.Day ? new Date(d.Day).toISOString() : `Buổi ${d.Topic}`,
+                        d.Day ? lessonFolderName(newCourseID, d.Day) : `Buổi ${d.Topic}`,
                         courseFolderId
                     ))
                 );

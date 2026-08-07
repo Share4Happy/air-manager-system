@@ -24,3 +24,9 @@ export async function createDriveFolder(drive, name, parentId) {
   })
   return res.data.id
 }
+
+export function lessonFolderName(code, day) {
+  const d = new Date(day)
+  const date = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
+  return date ? `${code}-${date}` : code
+}

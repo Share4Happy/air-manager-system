@@ -1,7 +1,4 @@
-import { getZaloLiteBaseUrl, getZaloLiteApiKey } from '@/utils/env'
-
-const BASE_URL = getZaloLiteBaseUrl()
-const API_KEY = getZaloLiteApiKey()
+import { getZaloLiteConfig } from '@/utils/zalolite-config'
 
 const NETWORK_RETRY_CODES = [502, 503, 504]
 
@@ -47,9 +44,10 @@ async function zaloliteFetch(path, { method = 'GET', body } = {}, retries = 3) {
     err.circuitOpen = true
     throw err
   }
-  if (!API_KEY) throw new Error('Chưa cấu hình ZALOLITE_API_KEY trong .env.development.')
+  const { baseUrl, apiKey } = await getZaloLiteConfig()
+  if (!apiKey) throw new Error('Chưa cấu hình ZALOLITE_API_KEY trong Cài đặt (tab ZaloLite).')
 
-  const url = `${BASE_URL}${path}`
+  const url = `${baseUrl}${path}`
   let attempt = 0
   let lastErr = null
   while (attempt <= retries) {
@@ -57,7 +55,7 @@ async function zaloliteFetch(path, { method = 'GET', body } = {}, retries = 3) {
       const res = await fetch(url, {
         method,
         headers: {
-          'x-api-key': API_KEY,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json',
         },
         body: body ? JSON.stringify(body) : undefined,

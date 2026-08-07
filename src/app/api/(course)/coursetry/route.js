@@ -9,6 +9,7 @@ import Area from '@/models/area'
 import jsonRes from '@/utils/response'
 import '@/models/users'
 import '@/models/book'
+import { lessonFolderName } from '@/function/drive/folder'
 
 const TRIAL_ID = new Types.ObjectId('6871bc14ada3650715efc786')
 const PARENT_ID = process.env.DRIVE_COURSE_FOLDER_ID
@@ -129,7 +130,7 @@ export async function POST(request) {
 
         const sessionId = new Types.ObjectId()
         const sessionDate = new Date(day);
-        const folderId = await createDriveFolder(drive, sessionDate.toISOString(), rootFolderId)
+        const folderId = await createDriveFolder(drive, lessonFolderName(course.name || 'Học thử', sessionDate), rootFolderId)
         const session = {
             _id: sessionId,
             day: sessionDate,

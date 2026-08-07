@@ -5,7 +5,7 @@ import Area from '@/models/area';
 import { NextResponse } from 'next/server';
 import { Types, isValidObjectId } from 'mongoose';
 import { reloadCourse } from '@/data/actions/reload';
-import { getDriveClient, createDriveFolder } from '@/function/drive/folder';
+import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder';
 
 const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
 const CREATE_LESSON_REQUIRED = ['Day', 'Topic', 'Room', 'Time', 'Teacher'];
@@ -62,7 +62,7 @@ export async function POST(request) {
                     }
                 }
                 if (courseFolderId) {
-                    imageURL = await createDriveFolder(drive, new Date(data.Day).toISOString(), courseFolderId);
+                    imageURL = await createDriveFolder(drive, lessonFolderName(course.ID, data.Day), courseFolderId);
                 } else {
                     imageURL = await createDriveFolder(drive, data.Day, PARENT_FOLDER_ID);
                 }

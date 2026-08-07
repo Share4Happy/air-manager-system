@@ -19,6 +19,7 @@ Next.js 16 (App Router) + React 19 management system for a robotics school ("AI 
   2. `src/data/actions/get.js` `*_data()` (`'use server'`) → `src/data/database/*.js` queries Mongoose directly.
 - Auth: JWT in httpOnly cookie `sys1` (`process.env.token`). `src/app/layout.js` calls `/api/check` per request.
 - Media: only fileIds stored in Mongo; real files on Google Drive. `next.config.js` allows remote images from `lh3.googleusercontent.com` / `drive.google.com`.
+- **Drive folder structure (standard — always):** every class folder lives INSIDE `DRIVE_COURSE_FOLDER_ID` (`1syIZ0XYkmnYCYnQ6TRw1eCTgvKTuBZtR`, "AIR_data_course") — never create anything directly at the shared-drive root (`0AK_Z4-cveE6dUk9PVA`). Naming: class folder = `{MãLớp}` (e.g. `24FZ2007`); lesson folder inside it = `{MãLớp}-{YYYY-MM-DD}` (e.g. `25SA1002-2025-07-26`). Use `lessonFolderName(code, day)` from `src/function/drive/folder.js` when naming lesson folders. The "Đồng bộ Drive" tab in Settings (`POST /api/drive-storage/verify`) restores/moves/renames folders to this standard.
 - `docs/ARCH.md` has the fuller architecture/data-flow overview.
 
 ## Trial-course (Học thử) gotchas — read before touching
