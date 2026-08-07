@@ -6,6 +6,8 @@ services:
     container_name: air-manager
     ports:
       - "4000:4000"
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
     restart: unless-stopped

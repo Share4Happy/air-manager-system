@@ -30,11 +30,9 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_OPTIONS=--openssl-legacy-provider
 ENV NODE_ENV=production
-# Cấu hình biến môi trường cho Mongoose và các biến khác
-ENV MONGODB_URI="mongodb+srv://AirStudent:9Rq2bovDKGytsonB@air-student.mzfi0.mongodb.net/air"
-ENV JWT_SECRET="A1412I8800R"
-ENV token='sys1'
-ENV URL="http://localhost:4000/"
+# Các biến cấu hình (MONGODB_URI, JWT_SECRET, token, URL, GOOGLE_*, DRIVE_*, ...)
+# được truyền lúc chạy qua file env (docker-compose: env_file .env.production)
+# xem .env.production.sample để biết đủ danh sách biến.
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
