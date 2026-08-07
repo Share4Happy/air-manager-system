@@ -2,13 +2,30 @@
 import connectDB from '@/config/connectDB';
 import Course from '@/models/course';
 import Student from '@/models/student';
+import User from '@/models/users';
 import ZaloAccount from '@/models/zalo';
 import LessonNotify from '@/models/lessonNotify';
 import Logs from '@/models/log';
 import checkAuthToken from '@/utils/checktoken';
 import { user_data } from '@/data/actions/get';
-import { getReportSendSettings, countHourlySent, sleep } from '@/function/report';
+import { getReportSendSettings, countHourlySent, sleep, fmtDate } from '@/function/report';
 import { sendByPhone } from '@/function/zalolite';
+import { getEportfolioUrl } from '@/utils/env';
+import { srcImage } from '@/function/index';
+
+function checkinText(code) {
+    if (code === 1) return 'Có mặt';
+    if (code === 2) return 'Xin nghỉ';
+    if (code === 3) return 'Vắng mặt';
+    return 'Chưa điểm danh';
+}
+
+function renderCareTemplate(content, vars) {
+    return String(content).replace(/\{(\w+)\}/g, (m, key) => {
+        const val = vars[key];
+        return val === undefined || val === null ? m : String(val);
+    });
+}
 
 async function requireAdminSale() {
     const user = await checkAuthToken();
@@ -34,7 +51,8 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
         let ok = false;
         let errMsg = '';
         try {
-            const resp = await sendByPhone(zalo.botId, { phone: r.phone, text: message, mode: 'safe' });
+            const text = renderCareTemplate(message, r.vars);
+            const resp = await sendByPhone(zalo.botId, { phone: r.phone, text, mode: 'safe' });
             if (resp.async) {
                 ok = true;
             } else if (Array.isArray(resp.data?.results)) {
@@ -71,7 +89,7 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
                     data: {
                         error_code: ok ? 0 : -1,
                         error_message: ok ? '' : errMsg,
-                        message,
+                        message: renderCareTemplate(message, r.vars),
                         recipients: [r.phone],
                     },
                 },
@@ -105,17 +123,46 @@ export async function sendCancelNotificationAction(formData) {
         const zalo = await ZaloAccount.findById(zaloId).lean();
         if (!zalo || !zalo.botId) return { status: false, message: 'Tài khoản Zalo chưa có botId (ZaloLite).' };
 
-        const course = await Course.findById(courseId).select('ID Detail Student').lean();
+        const course = await Course.findById(courseId).select('ID Name Detail Student').lean();
         const lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId));
         if (!course || !lesson) return { status: false, message: 'Không tìm thấy buổi học.' };
+
+        let teacherName = '';
+        if (lesson.Teacher) {
+            const t = await User.findById(lesson.Teacher).select('name').lean();
+            teacherName = t?.name || '';
+        }
+
+        const learnByID = new Map();
+        (course.Student || []).forEach(s => {
+            const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === detailId);
+            if (learn) learnByID.set(String(s.ID), learn);
+        });
 
         const studentIds = (course.Student || []).map(s => s.ID).filter(Boolean);
         const students = studentIds.length
             ? await Student.find({ ID: { $in: studentIds } }).select('_id ID Name ParentName Phone').lean()
             : [];
+        const courseName = course.Name || course.ID;
+        const lessonDay = lesson.Day ? fmtDate(lesson.Day) : '';
         const recipients = students
             .filter(s => s.Phone)
-            .map(s => ({ name: s.ParentName || s.Name, phone: s.Phone, _id: s._id, ID: s.ID }));
+            .map(s => {
+                const learn = learnByID.get(String(s.ID));
+                const img = (learn?.Image || [])[0];
+                const vars = {
+                    HoTen: s.Name || '',
+                    TenPH: s.ParentName || '',
+                    Lop: courseName,
+                    Ngay: lessonDay,
+                    GiaoVien: teacherName,
+                    DiemDanh: checkinText(learn?.Checkin || 0),
+                    HinhAnh: img?.id ? srcImage(img.id) : '',
+                    NhanXetGV: learn?.CmtFn || '',
+                    LinkEportfolio: `${getEportfolioUrl()}/e-portfolio/${s._id}`,
+                };
+                return { name: s.ParentName || s.Name, phone: s.Phone, _id: s._id, ID: s.ID, vars };
+            });
         if (recipients.length === 0) return { status: false, message: 'Lớp không có học sinh nào có số điện thoại.' };
 
         await LessonNotify.findOneAndUpdate(

@@ -5,6 +5,8 @@ import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import Noti from '@/components/(features)/(noti)/noti';
 import { sendCancelNotificationAction } from '@/app/actions/lessonCancel.actions';
 import { saveCareTemplateAction, deleteCareTemplateAction } from '@/app/actions/careTemplate.actions';
+import SettingZalo from '@/app/client/ui/zalo';
+import { srcImage } from '@/function/index';
 
 const MESSAGE_TYPE_LABELS = {
     notice: 'Thông báo',
@@ -33,6 +35,47 @@ function progressBadge(count, total) {
     return <span className={`px-2 py-0.5 rounded text-xs font-medium ${full ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{count}/{total}</span>;
 }
 
+function kindBadge(item) {
+    if (item.kind === 'today') return <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Buổi hôm nay</span>;
+    return <span className="px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-600 whitespace-nowrap">Lớp nghỉ</span>;
+}
+
+function checkinText(code) {
+    if (code === 1) return 'Có mặt';
+    if (code === 2) return 'Xin nghỉ';
+    if (code === 3) return 'Vắng mặt';
+    return 'Chưa điểm danh';
+}
+
+const SEND_VARIABLES = [
+    { key: 'HoTen', label: 'Tên học sinh' },
+    { key: 'TenPH', label: 'Tên phụ huynh' },
+    { key: 'Lop', label: 'Tên lớp' },
+    { key: 'Ngay', label: 'Ngày buổi học' },
+    { key: 'GiaoVien', label: 'Giáo viên' },
+    { key: 'DiemDanh', label: 'Điểm danh' },
+    { key: 'HinhAnh', label: 'Link hình ảnh' },
+    { key: 'NhanXetGV', label: 'Nhận xét giáo viên' },
+    { key: 'LinkEportfolio', label: 'Link e-portfolio' },
+];
+
+function VariableChips({ onInsert }) {
+    return (
+        <div className="flex flex-wrap gap-1.5 mt-1">
+            {SEND_VARIABLES.map(v => (
+                <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => onInsert(`{${v.key}}`)}
+                    title={v.label}
+                    className="px-2 py-0.5 rounded bg-gray-100 border border-gray-300 text-xs font-mono text-[var(--main_d)] cursor-pointer hover:bg-blue-100 hover:border-blue-300">
+                    {`{${v.key}}`}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function careBadge(item) {
     const students = item.students || [];
     const handled = students.filter(s => s.notifyStatus === 'done' || s.notifyStatus === 'failed').length;
@@ -53,6 +96,7 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
     const [loading, setLoading] = useState(true);
     const [noti, setNoti] = useState({ open: false, status: true, mes: '' });
     const [selectedItem, setSelectedItem] = useState(null);
+    const [selectedDate, setSelectedDate] = useState('');
 
     const [historyOpen, setHistoryOpen] = useState(false);
     const [historyItems, setHistoryItems] = useState([]);
@@ -81,7 +125,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
         const loadSetter = history ? setHistoryLoading : setLoading;
         loadSetter(true);
         try {
-            const res = await fetch(`/api/client/lesson-cancel${history ? '?history=1' : ''}`);
+            const qs = history ? 'history=1' : (selectedDate ? `date=${selectedDate}` : '');
+            const res = await fetch(`/api/client/lesson-cancel${qs ? '?' + qs : ''}`);
             const json = await res.json();
             setter(json.success ? json.data : []);
         } catch (err) {
@@ -90,7 +135,7 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
         } finally {
             loadSetter(false);
         }
-    }, []);
+    }, [selectedDate]);
 
     const fetchTemplates = useCallback(async () => {
         try {
@@ -277,11 +322,17 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
 
             <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)]">
                 <div className="flex justify-between items-center p-3 border-b border-[var(--border-color)]">
-                    <h5 className="font-semibold text-[var(--text-primary)]">Thông báo nghỉ buổi học</h5>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-[var(--text-secondary)]">
-                            Zalo gửi: <span className="text-[var(--text-primary)] font-medium">{selectedZalo || 'Chưa chọn'}</span>
-                        </span>
+                    <h5 className="font-semibold text-[var(--text-primary)]">Chăm sóc lớp học</h5>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                            <span>Ngày:</span>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={e => setSelectedDate(e.target.value)}
+                                className="px-2 py-1.5 border border-gray-300 rounded bg-white text-sm outline-none text-gray-700 cursor-pointer" />
+                        </label>
+                        <SettingZalo user={user?.[0]} zalo={zaloData} />
                         <button
                             onClick={() => fetchList(false)}
                             className="px-4 py-2 rounded bg-gray-100 border border-gray-300 text-sm font-medium cursor-pointer transition-colors hover:bg-gray-200">
@@ -303,7 +354,11 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                 {loading ? (
                     <p className="p-4 text-sm text-[var(--text-secondary)] italic">Đang tải...</p>
                 ) : items.length === 0 ? (
-                    <p className="p-4 text-sm text-[var(--text-secondary)] italic">Không có buổi học nào báo nghỉ từ hôm nay trở đi.</p>
+                    <p className="p-4 text-sm text-[var(--text-secondary)] italic">
+                        {selectedDate
+                            ? `Không có buổi học nào báo nghỉ hoặc diễn ra ngày ${fmtDate(selectedDate)}.`
+                            : 'Không có buổi học nào hôm nay hoặc lớp nghỉ trong thời gian tới.'}
+                    </p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm min-w-max">
@@ -311,10 +366,14 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                 <tr className="bg-[var(--main_d)] text-white">
                                     <th className="p-2 font-medium text-left">Lớp</th>
                                     <th className="p-2 font-medium text-left">Khu vực</th>
-                                    <th className="p-2 font-medium text-left">Ngày nghỉ</th>
+                                    <th className="p-2 font-medium text-left">Loại</th>
+                                    <th className="p-2 font-medium text-left">Ngày</th>
                                     <th className="p-2 font-medium text-left">Lý do</th>
                                     <th className="p-2 font-medium text-left">Giáo viên</th>
                                     <th className="p-2 font-medium text-center">Số học sinh</th>
+                                    <th className="p-2 font-medium text-center">Điểm danh</th>
+                                    <th className="p-2 font-medium text-center">Hình ảnh</th>
+                                    <th className="p-2 font-medium text-center">Nhận xét</th>
                                     <th className="p-2 font-medium text-left">Trạng thái</th>
                                     <th className="p-2 font-medium text-left">Zalo</th>
                                     <th className="p-2 font-medium text-center">Thao tác</th>
@@ -323,16 +382,21 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                             <tbody>
                                 {items.map(item => {
                                     const isSelected = selectedItem?.detailId === item.detailId;
+                                    const isToday = item.kind === 'today';
                                     return (
                                         <tr key={item.detailId}
                                             onClick={() => setSelectedItem(prev => prev?.detailId === item.detailId ? null : item)}
                                             className={`border-b border-[var(--border-color)] cursor-pointer align-top ${isSelected ? 'bg-blue-100' : 'hover:bg-blue-50'}`}>
                                             <td className="p-2 font-medium whitespace-nowrap">{item.courseID}</td>
                                             <td className="p-2 whitespace-nowrap text-[var(--text-secondary)]">{item.areaName}</td>
-                                            <td className="p-2 whitespace-nowrap font-medium text-red-600">{fmtDate(item.day)}</td>
-                                            <td className="p-2 max-w-[200px] text-[var(--text-secondary)]">{item.reason || '—'}</td>
+                                            <td className="p-2">{kindBadge(item)}</td>
+                                            <td className={`p-2 whitespace-nowrap font-medium ${isToday ? '' : 'text-red-600'}`}>{fmtDate(item.day)}</td>
+                                            <td className="p-2 max-w-[200px] text-[var(--text-secondary)]">{isToday ? '—' : (item.reason || '—')}</td>
                                             <td className="p-2 whitespace-nowrap">{item.teacherName || '—'}</td>
                                             <td className="p-2 text-center">{item.students.length}</td>
+                                            <td className="p-2 text-center">{isToday ? progressBadge(item.lesson?.rollCallChecked || 0, item.lesson?.enrolled || 0) : '—'}</td>
+                                            <td className="p-2 text-center">{isToday ? progressBadge(item.lesson?.withImage || 0, item.lesson?.enrolled || 0) : '—'}</td>
+                                            <td className="p-2 text-center">{isToday ? progressBadge(item.lesson?.withComment || 0, item.lesson?.enrolled || 0) : '—'}</td>
                                             <td className="p-2 whitespace-nowrap">{careBadge(item)}</td>
                                             <td className="p-2 whitespace-nowrap">{zaloBadge(item)}</td>
                                             <td className="p-2" onClick={e => e.stopPropagation()}>
@@ -406,13 +470,16 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                     <th className="p-2 font-medium text-left">Tên học sinh</th>
                                     <th className="p-2 font-medium text-left">Phụ huynh</th>
                                     <th className="p-2 font-medium text-left">Số điện thoại</th>
+                                    <th className="p-2 font-medium text-left">Điểm danh</th>
+                                    <th className="p-2 font-medium text-left">Hình ảnh</th>
+                                    <th className="p-2 font-medium text-left">Nhận xét</th>
                                     <th className="p-2 font-medium text-left">Trạng thái chăm sóc</th>
                                     <th className="p-2 font-medium text-left">Zalo</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {selectedItem.students.length === 0 ? (
-                                    <tr><td className="p-2 text-sm italic text-[var(--text-secondary)]" colSpan="6">Lớp chưa có học sinh.</td></tr>
+                                    <tr><td className="p-2 text-sm italic text-[var(--text-secondary)]" colSpan="9">Lớp chưa có học sinh.</td></tr>
                                 ) : (
                                     selectedItem.students.map(s => {
                                         const care = s.notifyStatus || 'pending';
@@ -423,6 +490,12 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                             : zalo === 'failed'
                                                 ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-600">Gửi lỗi</span>
                                                 : <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-[var(--text-secondary)]">Chưa gửi</span>;
+                                        const checkin = checkinText(s.checkin);
+                                        const checkinCls = s.checkin === 1
+                                            ? 'text-emerald-700'
+                                            : s.checkin === 2 || s.checkin === 3
+                                                ? 'text-rose-600'
+                                                : 'text-[var(--text-secondary)]';
                                         return (
                                             <tr key={s.ID} className={`border-b border-[var(--border-color)] hover:bg-blue-50 ${isSel ? 'bg-blue-50' : ''}`}>
                                                 <td className="p-2">
@@ -434,6 +507,29 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                                 <td className="p-2 whitespace-nowrap font-medium">{s.Name}</td>
                                                 <td className="p-2 whitespace-nowrap">{s.ParentName || '—'}</td>
                                                 <td className="p-2 whitespace-nowrap">{s.Phone || '—'}</td>
+                                                <td className="p-2 whitespace-nowrap">
+                                                    <span className={`text-xs font-medium ${checkinCls}`}>{checkin}</span>
+                                                </td>
+                                                <td className="p-2">
+                                                    {(s.images || []).length ? (
+                                                        <div className="flex items-center gap-1">
+                                                            {s.images.slice(0, 3).map(img => (
+                                                                <img key={img.id} src={srcImage(img.id)} alt=""
+                                                                    className="w-7 h-7 rounded object-cover border border-gray-200 cursor-pointer hover:opacity-80"
+                                                                    title="Xem ảnh"
+                                                                    onClick={e => { e.stopPropagation(); window.open(srcImage(img.id), '_blank'); }} />
+                                                            ))}
+                                                            {s.images.length > 3 && (
+                                                                <span className="text-xs text-[var(--text-secondary)]">+{s.images.length - 3}</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-[var(--text-secondary)]">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-2 max-w-[220px] text-[var(--text-secondary)]">
+                                                    {s.cmtfn ? <span className="line-clamp-2">{s.cmtfn}</span> : '—'}
+                                                </td>
                                                 <td className="p-2">
                                                     <select
                                                         value={care}
@@ -478,8 +574,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
             <FlexiblePopup
                 open={!!sendTarget}
                 onClose={() => setSendTarget(null)}
-                title={sendTarget ? `Gửi thông báo nghỉ - ${sendTarget.courseID}` : ''}
-                width="560px"
+                title={sendTarget ? `Gửi Zalo chăm sóc - ${sendTarget.courseID}` : ''}
+                width="580px"
                 renderItemList={() => (
                     <div className="flex flex-col gap-3 p-4">
                         <div>
@@ -495,10 +591,12 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                         <div>
                             <label className={labelCls}>Nội dung tin nhắn</label>
                             <textarea rows="6" className={`${inputCls} resize-y`} value={message} onChange={e => setMessage(e.target.value)}
-                                placeholder="Nhập nội dung thông báo nghỉ..." />
+                                placeholder="Nhập nội dung tin nhắn..." />
+                            <p className="text-xs text-[var(--text-secondary)] mt-1 mb-1">Chèn biến để điền dữ liệu riêng cho từng học sinh:</p>
+                            <VariableChips onInsert={tok => setMessage(m => m + tok)} />
                         </div>
                         <p className="text-xs text-[var(--text-secondary)]">
-                            Sẽ gửi cho {sendTarget?.students?.filter(s => s.Phone).length || 0} học sinh có số điện thoại, cách nhau 3–5 phút (giới hạn theo cài đặt gửi tin chung).
+                            Sẽ gửi cho {sendTarget?.students?.filter(s => s.Phone).length || 0} học sinh có số điện thoại, cách nhau 3–5 phút (giới hạn theo cài đặt gửi tin chung). Các biến như {'{HoTen}'}, {'{DiemDanh}'}, {'{HinhAnh}'} sẽ được thay bằng dữ liệu riêng của từng học sinh.
                         </p>
                         <div className="flex justify-end pt-3 border-t border-[var(--border-color)]">
                             <button onClick={handleSend} disabled={sending}
@@ -558,7 +656,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                 renderItemList={() => (
                     <div className="flex flex-col gap-3 p-4">
                         <p className="text-sm text-[var(--text-secondary)]">
-                            Xác nhận đã thông báo buổi nghỉ <span className="text-[var(--text-primary)] font-medium">{fmtDate(notifyTarget?.day)}</span> của lớp{' '}
+                            Xác nhận đã thông báo buổi {notifyTarget?.kind === 'today' ? '' : 'nghỉ '}
+                            <span className="text-[var(--text-primary)] font-medium">{fmtDate(notifyTarget?.day)}</span> của lớp{' '}
                             <span className="text-[var(--text-primary)] font-medium">{notifyTarget?.courseID}</span> cho phụ huynh.
                         </p>
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-[var(--text-secondary)]">

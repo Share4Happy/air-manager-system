@@ -19,7 +19,7 @@ function TableSkeleton() {
 export default function CustomerView({ c, running, initialResult, user, sources, labelData, formData, zaloData, users, variant }) {
     const [selectedCustomers, setSelectedCustomers] = useState(new Map());
     const [viewMode, setViewMode] = useState('manage');
-    const [activeTab, setActiveTab] = useState('care');
+    const [activeTab, setActiveTab] = useState('lesson-cancel');
 
     const handleActionComplete = () => {
         setSelectedCustomers(new Map());
@@ -45,6 +45,12 @@ export default function CustomerView({ c, running, initialResult, user, sources,
         <div className={'flex flex-col gap-3 mx-auto h-full'}>
             <div className="flex gap-1 bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-1 w-fit flex-wrap">
                 <button
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'lesson-cancel' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
+                    onClick={() => setActiveTab('lesson-cancel')}
+                >
+                    Chăm sóc lớp học
+                </button>
+                <button
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'care' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
                     onClick={() => setActiveTab('care')}
                 >
@@ -55,12 +61,6 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                     onClick={() => setActiveTab('zalo-config')}
                 >
                     Cấu hình Zalo
-                </button>
-                <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'lesson-cancel' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
-                    onClick={() => setActiveTab('lesson-cancel')}
-                >
-                    Thông báo nghỉ
                 </button>
             </div>
 
