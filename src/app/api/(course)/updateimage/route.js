@@ -4,6 +4,7 @@ import { Readable } from 'stream';
 import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
+import { compressVideoToHD } from '@/function/compress';
 
 
 
@@ -39,14 +40,24 @@ export async function POST(request) {
             );
         }
 
-        // --- 1. Tải file lên Google Drive ---
-        const fileBuffer = Buffer.from(await file.arrayBuffer());
+        // --- 1. Nén video xuống HD (nếu là video) rồi tải lên Google Drive ---
+        let fileBuffer = Buffer.from(await file.arrayBuffer());
+        let uploadName = file.name;
+        let uploadMime = file.type;
+        if (fileType === 'video') {
+            const compressed = await compressVideoToHD(fileBuffer, { mimeType: file.type, originalName: file.name });
+            if (compressed) {
+                fileBuffer = compressed.buffer;
+                uploadMime = compressed.mimeType;
+                uploadName = compressed.name;
+            }
+        }
         const readableStream = new Readable();
         readableStream.push(fileBuffer);
         readableStream.push(null);
 
-        const fileMetadata = { name: file.name, parents: [folderId] };
-        const media = { mimeType: file.type, body: readableStream };
+        const fileMetadata = { name: uploadName, parents: [folderId] };
+        const media = { mimeType: uploadMime, body: readableStream };
 
         const response = await drive.files.create({
             requestBody: fileMetadata,
@@ -161,14 +172,24 @@ export async function PUT(request) {
             );
         }
 
-        // --- 2. Tải file mới lên Google Drive ---
-        const fileBuffer = Buffer.from(await newImageFile.arrayBuffer());
+        // --- 2. Nén video xuống HD (nếu là video) rồi tải lên Google Drive ---
+        let fileBuffer = Buffer.from(await newImageFile.arrayBuffer());
+        let uploadName = newImageFile.name;
+        let uploadMime = newImageFile.type;
+        if (newImageFile.type.startsWith('video/')) {
+            const compressed = await compressVideoToHD(fileBuffer, { mimeType: newImageFile.type, originalName: newImageFile.name });
+            if (compressed) {
+                fileBuffer = compressed.buffer;
+                uploadMime = compressed.mimeType;
+                uploadName = compressed.name;
+            }
+        }
         const readableStream = new Readable();
         readableStream.push(fileBuffer);
         readableStream.push(null);
 
-        const fileMetadata = { name: newImageFile.name, parents: [folderId] };
-        const media = { mimeType: newImageFile.type, body: readableStream };
+        const fileMetadata = { name: uploadName, parents: [folderId] };
+        const media = { mimeType: uploadMime, body: readableStream };
 
         const uploadResponse = await drive.files.create({
             requestBody: fileMetadata,

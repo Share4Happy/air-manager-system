@@ -8,8 +8,24 @@ import Book from '@/models/book'
 import Student from '@/models/student'
 import User from '@/models/users'
 import Area from '@/models/area'
+import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder'
+import { reloadCourse } from '@/data/actions/reload'
+import { revalidateTag } from 'next/cache'
 
 const isId = v => Types.ObjectId.isValid(v)
+const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID
+
+async function findOrCreateClassFolder(drive, code) {
+    if (!PARENT_FOLDER_ID) return null
+    const list = await drive.files.list({
+        q: `name='${code}' and '${PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+    })
+    if (list.data.files?.length) return list.data.files[0].id
+    return createDriveFolder(drive, code, PARENT_FOLDER_ID)
+}
 
 /* ───────── helpers ───────── */
 const topicById = async tid =>
@@ -54,10 +70,11 @@ export async function GET(_req, { params }) {
         await connect()
         const c = await Course.findOne(
             { 'Detail._id': id },
-            { ID: 1, Version: 1, Area: 1, Student: 1, Detail: { $elemMatch: { _id: id } } }
+            { ID: 1, Version: 1, Area: 1, Student: 1, Detail: 1 }
         ).lean()
         if (c) {
-            const ses = c.Detail[0]
+            const ses = c.Detail.find(d => d._id.toString() === id)
+            const buoi = c.Detail.findIndex(d => d._id.toString() === id) + 1
 
             const [topic, teachers, studs, room] = await Promise.all([
                 topicById(ses.Topic),
@@ -73,6 +90,25 @@ export async function GET(_req, { params }) {
             const uMap = new Map(teachers.map(u => [u._id.toString(), u]))
             const sMap = new Map(studs.map(s => [s.ID, s]))
 
+            if (!ses.Image) {
+                try {
+                    const drive = getDriveClient()
+                    const classFolderId = await findOrCreateClassFolder(drive, c.ID)
+                    if (classFolderId) {
+                        const folderId = await createDriveFolder(drive, lessonFolderName(c.ID, ses.Day), classFolderId)
+                        await Course.updateOne(
+                            { _id: c._id, 'Detail._id': id },
+                            { $set: { 'Detail.$.Image': folderId } }
+                        )
+                        ses.Image = folderId
+                        reloadCourse(c._id)
+                        revalidateTag(`data_lesson${id}`)
+                    }
+                } catch (err) {
+                    console.error('[SESSION_GET] ensure lesson folder:', err)
+                }
+            }
+
             const students = buildStudents(
                 c.Student.flatMap(s => {
                     const attendance = s.Learn.find(lr => lr.Lesson.toString() === id);
@@ -87,6 +123,7 @@ export async function GET(_req, { params }) {
                     course: { _id: c._id, ID: c.ID, Version: c.Version },
                     session: {
                         _id: ses._id,
+                        buoi,
                         Topic: topic,
                         Day: ses.Day,
                         Room: room,
@@ -94,7 +131,8 @@ export async function GET(_req, { params }) {
                         Teacher: uMap.get(String(ses.Teacher)) || null,
                         TeachingAs: uMap.get(String(ses.TeachingAs)) || null,
                         Image: ses.Image,
-                        DetailImage: ses.DetailImage
+                        DetailImage: ses.DetailImage,
+                        Checkin: ses.Checkin || null
                     },
                     students
                 }
@@ -104,13 +142,14 @@ export async function GET(_req, { params }) {
         /* ───── Khóa học thử ───── */
         const t = await Trial.findOne(
             { 'sessions._id': id },
-            { name: 1, sessions: { $elemMatch: { _id: id } } }
+            { name: 1, sessions: 1 }
         ).lean()
 
         if (!t)
             return NextResponse.json({ success: false, message: 'Không tìm thấy buổi học.' }, { status: 404 })
 
-        const s = t.sessions[0]
+        const s = t.sessions.find(x => x._id.toString() === id)
+        const buoi = t.sessions.findIndex(x => x._id.toString() === id) + 1
 
         const [topic2, teachers2, studs2, room2] = await Promise.all([
             topicById(s.topicId),
@@ -140,6 +179,7 @@ export async function GET(_req, { params }) {
                 course: { _id: t._id, ID: 'trycourse', Version: 1, type: 'trial' },
                 session: {
                     _id: s._id,
+                    buoi,
                     Topic: topic2,
                     Day: s.day,
                     Room: room2,
@@ -147,7 +187,8 @@ export async function GET(_req, { params }) {
                     Teacher: uMap2.get(String(s.teacher)) || null,
                     TeachingAs: uMap2.get(String(s.teachingAs)) || null,
                     Image: s.folderId,
-                    DetailImage: s.images
+                    DetailImage: s.images,
+                    checkin: s.checkin || null
                 },
                 students: students2
             }

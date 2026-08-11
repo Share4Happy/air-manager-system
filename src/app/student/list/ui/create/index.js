@@ -8,6 +8,7 @@ import Noti from '@/components/(features)/(noti)/noti';
 import AlertPopup from '@/components/(features)/(noti)/alert';
 import Menu from '@/components/(ui)/(button)/menu';
 import Loading from '@/components/(ui)/(loading)/loading';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import { area_data } from '@/data/actions/get';
 import { useRouter } from 'next/navigation';
 
@@ -21,7 +22,7 @@ const AddStudentForm = forwardRef(({
     const [formData, setFormData] = useState({
         studentName: '', dob: '', school: '', parentName: '',
         area: '', areaId: '',
-        phone: '', email: '', address: ''
+        phone: '', phone2: '', email: '', address: ''
     });
     const router = useRouter();
     const [avatarFile, setAvatarFile] = useState(null);
@@ -33,7 +34,7 @@ const AddStudentForm = forwardRef(({
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'phone') {
+        if (name === 'phone' || name === 'phone2') {
             const numericValue = value.replace(/[^0-9]/g, '');
             setFormData(prev => ({ ...prev, [name]: numericValue }));
         } else {
@@ -75,6 +76,10 @@ const AddStudentForm = forwardRef(({
             onShowNotification('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số và bắt đầu bằng số 0.', false);
             return false;
         }
+        if (formData.phone2 && !phoneRegex.test(formData.phone2)) {
+            onShowNotification('Số điện thoại 2 không hợp lệ. Vui lòng nhập 10 chữ số và bắt đầu bằng số 0.', false);
+            return false;
+        }
         return true;
     };
 
@@ -91,6 +96,7 @@ const AddStudentForm = forwardRef(({
         submissionData.append('School', formData.school);
         submissionData.append('ParentName', formData.parentName);
         submissionData.append('Phone', formData.phone);
+        submissionData.append('Phones', JSON.stringify([formData.phone, formData.phone2].filter(Boolean)));
         submissionData.append('Email', formData.email);
         submissionData.append('Address', formData.address);
         submissionData.append('Area', formData.areaId);
@@ -179,7 +185,7 @@ const AddStudentForm = forwardRef(({
                     </div>
                     <div className="flex gap-1 flex-col">
                         <p className='text-sm font-semibold text-[var(--text-primary)]'>Ngày sinh <span className="text-[var(--red)]">*</span></p>
-                        <input name="dob" value={formData.dob} onChange={handleInputChange} type='date' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
+                        <DateInput name="dob" value={formData.dob} onChange={(v) => handleInputChange({ target: { name: 'dob', value: v } })} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
                     </div>
                     <div className="flex gap-1 flex-col">
                         <p className='text-sm font-semibold text-[var(--text-primary)]'>Trường học</p>
@@ -190,7 +196,7 @@ const AddStudentForm = forwardRef(({
             <div className="px-4">
                 <TextNoti mes={<p>Thông tin liên hệ như SĐT (Có zalo) và Email sẽ được sử dụng để liên lạc với phụ huynh học sinh, vui lòng nhập chính xác những thông tin này.<br /></p>} title={'Thông tin liên hệ'} color={'yellow'} />
             </div>
-            <div className="p-4 flex flex-col gap-2">
+<div className="p-4 flex flex-col gap-2">
                 <div className="flex gap-2">
                     <div className="flex gap-1 flex-col flex-1">
                         <p className='text-sm font-semibold text-[var(--text-primary)]'>Tên phụ huynh <span className="text-[var(--red)]">*</span></p>
@@ -199,6 +205,16 @@ const AddStudentForm = forwardRef(({
                     <div className="flex gap-1 flex-col flex-1">
                         <p className='text-sm font-semibold text-[var(--text-primary)]'>Số điện thoại <span className="text-[var(--red)]">*</span></p>
                         <input name="phone" value={formData.phone} onChange={handleInputChange} type='tel' placeholder='Số điện thoại' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} maxLength="10" />
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="flex gap-1 flex-col flex-1">
+                        <p className='text-sm font-semibold text-[var(--text-primary)]'>Số điện thoại 2</p>
+                        <input name="phone2" value={formData.phone2} onChange={handleInputChange} type='tel' placeholder='Số điện thoại (tùy chọn)' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} maxLength="10" />
+                    </div>
+                    <div className="flex gap-1 flex-col flex-1">
+                        <p className='text-sm font-semibold text-[var(--text-primary)]'>Email</p>
+                        <input name="email" value={formData.email} onChange={handleInputChange} type='email' placeholder='Email' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -217,22 +233,18 @@ const AddStudentForm = forwardRef(({
                         />
                     </div>
                     <div className="flex gap-1 flex-col flex-1">
-                        <p className='text-sm font-semibold text-[var(--text-primary)]'>Email</p>
-                        <input name="email" value={formData.email} onChange={handleInputChange} type='email' placeholder='Email' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
+                        <p className='text-sm font-semibold text-[var(--text-primary)]'>Địa chỉ</p>
+                        <input name="address" value={formData.address} onChange={handleInputChange} type='text' placeholder='Địa chỉ' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
                     </div>
-                </div>
-                <div className="flex gap-1 flex-col flex-1">
-                    <p className='text-sm font-semibold text-[var(--text-primary)]'>Địa chỉ</p>
-                    <input name="address" value={formData.address} onChange={handleInputChange} type='text' placeholder='Địa chỉ' className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[calc(100%-24px)]`} />
                 </div>
             </div>
             <div className="px-4 pb-4 pt-0 flex gap-2">
                 <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ background: 'gray', borderRadius: 5 }} onClick={isSubmitting ? undefined : handleAttemptClose}>
-                    <p className="text-sm font-normal text-[var(--text-primary)] text-white">Hủy bỏ</p>
+                    <p className="text-sm font-normal text-white">Hủy bỏ</p>
                 </div>
                 <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5 bg-[var(--main_d)] rounded flex items-center gap-2 cursor-pointer" onClick={isSubmitting ? undefined : handleSubmit}>
                     <Svg_Add w={18} h={18} c={'white'} />
-                    <p className="text-sm font-normal text-[var(--text-primary)] text-white">Tạo học sinh</p>
+                    <p className="text-sm font-normal text-white">Tạo học sinh</p>
                 </div>
             </div>
         </>
@@ -261,13 +273,13 @@ export default function Create() {
     const alertActions = (
         <div className="flex gap-2 justify-end w-full">
             <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ background: 'gray', borderRadius: 5 }} onClick={() => setShowCloseConfirm(false)}>
-                <p className="text-sm font-normal text-[var(--text-primary)] text-white">Ở lại</p>
+                <p className="text-sm font-normal text-white">Ở lại</p>
             </div>
             <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ background: 'var(--red)', borderRadius: 5 }} onClick={() => {
                 setShowCloseConfirm(false);
                 handleClosePopup();
             }}>
-                <p className="text-sm font-normal text-[var(--text-primary)] text-white">Xác nhận</p>
+                <p className="text-sm font-normal text-white">Xác nhận</p>
             </div>
         </div>
     );
@@ -319,7 +331,7 @@ export default function Create() {
                 onClose={() => setNotification(prev => ({ ...prev, open: false }))}
                 button={
                     <div className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ width: 'calc(100% - 24px)', justifyContent: 'center' }} onClick={() => setNotification(prev => ({ ...prev, open: false }))}>
-                        <p className="text-sm font-normal text-[var(--text-primary)] text-white">Tắt thông báo</p>
+                        <p className="text-sm font-normal text-white">Tắt thông báo</p>
                     </div>
                 }
             />

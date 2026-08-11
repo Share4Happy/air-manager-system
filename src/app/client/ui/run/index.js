@@ -119,7 +119,7 @@ function MessageEditor({ value, onChange, variants }) {
 
 // THAY ĐỔI: Thêm prop `users`
 function ActionForm({ onSubmitAction, selectedCustomers, onClose, currentType, labels, variants, users }) {
-    const [actionType, setActionType] = useState('findUid');
+    const [actionType, setActionType] = useState('sendMessage');
     const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
     const [isLabelMenuOpen, setIsLabelMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // THAY ĐỔI: State cho menu user
@@ -133,10 +133,8 @@ function ActionForm({ onSubmitAction, selectedCustomers, onClose, currentType, l
 
     const actionOptions = useMemo(() => {
         const baseActions = [
-            { value: 'findUid', name: 'Tìm kiếm UID' },
             { value: 'sendMessage', name: 'Gửi tin nhắn Zalo' },
             { value: 'assignRole', name: 'Gán người phụ trách' },
-            { value: 'checkFriend', name: 'Kiểm tra bạn bè' },
             { value: 'addFriend', name: 'Gửi kết bạn' },
         ];
         const customerActions = [
@@ -147,7 +145,7 @@ function ActionForm({ onSubmitAction, selectedCustomers, onClose, currentType, l
         return !currentType ? [...baseActions, ...customerActions] : baseActions;
     }, [currentType]);
 
-    const isScheduleAction = useMemo(() => ['findUid', 'sendMessage', 'checkFriend', 'addFriend'].includes(actionType), [actionType]);
+    const isScheduleAction = useMemo(() => ['sendMessage', 'addFriend'].includes(actionType), [actionType]);
     const isAssignAction = useMemo(() => actionType === 'assignRole', [actionType]); // THAY ĐỔI: check action mới
     const selectedActionName = useMemo(() => actionOptions.find(opt => opt.value === actionType)?.name, [actionType, actionOptions]);
     const customersArray = useMemo(() => Array.from(selectedCustomers.values()).map(c => ({ _id: c._id, name: c.name, phone: c.phone, uid: c.uid })), [selectedCustomers]);
@@ -334,7 +332,7 @@ export default function BulkActions({ selectedCustomers, onActionComplete, label
     const handleFormSubmit = (formData) => {
         const actionType = formData.get('actionType');
         startTransition(() => {
-            if (['findUid', 'sendMessage', 'checkFriend', 'addFriend'].includes(actionType)) {
+            if (['sendMessage', 'addFriend'].includes(actionType)) {
                 scheduleAction(formData);
             } else if (actionType === 'assignRole') {
                 // THAY ĐỔI: Gọi action mới

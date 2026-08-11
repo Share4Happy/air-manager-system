@@ -10,7 +10,6 @@ import '@/models/zalo'
 import ScheduledJob from "@/models/schedule";
 import { reloadStudent } from '@/data/actions/reload';
 import { statusStudent } from '@/data/default';
-import { getZaloUid } from '@/function/drive/appscript';
 
 export async function getCombinedData(params) {
     const cachedData = nextCache(
@@ -303,20 +302,11 @@ export async function convertToStudentAction(previousState, formData) {
             Profile: { Avatar: "", ImgPJ: [], ImgSkill: "", Intro: "", Present: [], Skill: {} },
             Status: [statusStudent({})],
         });
-        const savedStudent = await newStudent.save();
+        await newStudent.save();
         await Customer.findByIdAndUpdate(customerId, { status: 1 });
-        let finalMessage = 'Chuyển đổi khách hàng thành học sinh thành công!';
-        if (customer.phone) {
-            const zaloResult = await getZaloUid(customer.phone);
-            if (zaloResult.uid) {
-                await Student.findByIdAndUpdate(savedStudent._id, { $set: { Uid: zaloResult.uid } });
-            } else {
-                finalMessage = `Chuyển đổi thành công. Lấy Zalo UID thất bại: ${zaloResult.message}`;
-            }
-        }
         revalidateData();
         reloadStudent();
-        return { success: true, message: finalMessage };
+        return { success: true, message: 'Chuyển đổi khách hàng thành học sinh thành công!' };
     } catch (error) {
         console.error('Lỗi khi chuyển đổi khách hàng:', error);
         return { success: false, error: 'Không thể chuyển đổi khách hàng. Lỗi server.' };

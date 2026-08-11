@@ -6,7 +6,9 @@ import User from '@/models/users'
 import Area from '@/models/area'
 import LessonNotify from '@/models/lessonNotify'
 import CareTemplate from '@/models/careTemplate'
+import Logs from '@/models/log'
 import checkAuthToken from '@/utils/checktoken'
+import { processPendingCareSends } from '@/app/actions/lessonCancel.actions'
 import mongoose from 'mongoose'
 
 async function requireAdminSale() {
@@ -48,6 +50,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const history = searchParams.get('history') === '1'
     const templatesOnly = searchParams.get('templates') === '1'
+    const logsOnly = searchParams.get('logs') === '1'
 
     try {
         await connectDB()
@@ -55,6 +58,51 @@ export async function GET(request) {
             const templates = await CareTemplate.find({}).sort({ createdAt: -1 }).lean()
             return NextResponse.json({ success: true, data: templates })
         }
+        if (logsOnly) {
+            processPendingCareSends()
+            const logs = await Logs.find({ type: 'sendCare' })
+                .populate('zalo', 'name')
+                .populate('createBy', 'name phone')
+                .populate('student', 'Name')
+                .sort({ createdAt: -1 })
+                .limit(100)
+                .lean()
+            const groups = new Map()
+            logs.forEach(l => {
+                const bid = l.status?.data?.batchId
+                const key = bid || l._id
+                const g = groups.get(key) || { logs: [] }
+                g.logs.push(l)
+                groups.set(key, g)
+            })
+            const merged = Array.from(groups.values()).map(g => {
+                const list = g.logs
+                const first = list[0]
+                const allOk = list.every(x => !!x.status?.status)
+                const recipients = list.flatMap(x => x.status?.data?.recipients || [])
+                const names = list.flatMap(x => x.status?.data?.recipientNames || []).filter(Boolean)
+                return {
+                    _id: first._id,
+                    createdAt: first.createdAt,
+                    zalo: first.zalo,
+                    createBy: first.createBy,
+                    student: first.student,
+                    status: {
+                        ...(first.status || {}),
+                        status: allOk,
+                        message: list.length > 1
+                            ? (allOk
+                                ? `Đã gửi cho ${list.length} người nhận.`
+                                : `${list.filter(x => !x.status?.status).length}/${list.length} người nhận gửi thất bại.`)
+                            : first.status?.message,
+                    },
+                    _recipients: recipients,
+                    _recipientNames: names,
+                }
+            })
+            return NextResponse.json({ success: true, data: JSON.parse(JSON.stringify(merged)) })
+        }
+        processPendingCareSends()
         const now = new Date()
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
         const todayEnd = new Date(todayStart)
@@ -196,6 +244,8 @@ export async function GET(request) {
                         method: rec.method,
                         notifiedBy: rec.notifiedBy,
                         notifiedAt: rec.notifiedAt,
+                        pendingQueueCount: Array.isArray(rec.pendingQueue) ? rec.pendingQueue.length : 0,
+                        queueResumeAt: rec.queueResumeAt || null,
                         confirmations: (rec.confirmations || []).map(cf => ({
                             by: cf.by,
                             name: cf.by ? (confirmUserMap.get(String(cf.by)) || '') : '',

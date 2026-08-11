@@ -8,7 +8,7 @@ import LessonNotify from '@/models/lessonNotify';
 import Logs from '@/models/log';
 import checkAuthToken from '@/utils/checktoken';
 import { user_data } from '@/data/actions/get';
-import { getReportSendSettings, countHourlySent, sleep, fmtDate } from '@/function/report';
+import { getReportSendSettings, countHourlySent, sleep, fmtDate, computeResumeAt, fmtTime } from '@/function/report';
 import { sendByPhone } from '@/function/zalolite';
 import { getEportfolioUrl } from '@/utils/env';
 import { srcImage } from '@/function/index';
@@ -36,7 +36,7 @@ async function requireAdminSale() {
     return { ok: true, user };
 }
 
-async function runCancelSendLoop({ courseId, detailId, recipients, message, zaloId, zalo, createBy }) {
+async function runCancelSendLoop({ courseId, detailId, recipients, message, zaloId, zalo, createBy, batchId }) {
     const settings = await getReportSendSettings();
     let rec = await LessonNotify.findOne({ course: courseId, detailId });
     let sent = 0;
@@ -46,7 +46,20 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
             await sleep(Math.round(delayMin * 60 * 1000));
         }
         const sentCount = await countHourlySent(zaloId);
-        if (sentCount >= settings.hourlyLimit) break;
+        if (sentCount >= settings.hourlyLimit) {
+            const pendingQueue = recipients.slice(i).map(r => ({ phone: r.phone, name: r.name || '', _id: r._id, ID: r.ID, vars: r.vars }));
+            if (!rec) rec = await LessonNotify.findOne({ course: courseId, detailId });
+            if (rec) {
+                rec.pendingQueue = pendingQueue;
+                rec.pendingText = message;
+                rec.queueResumeAt = computeResumeAt();
+                rec.zalo = zaloId;
+                rec.batchId = batchId || '';
+                await rec.save();
+            }
+            console.log(`[sendCare] hourly limit reached, queued ${pendingQueue.length} recipients, resume at ${fmtTime(rec?.queueResumeAt)}`);
+            return { blocked: true, queued: pendingQueue.length, resumeAt: rec?.queueResumeAt || null };
+        }
         const r = recipients[i];
         let ok = false;
         let errMsg = '';
@@ -91,6 +104,8 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
                         error_message: ok ? '' : errMsg,
                         message: renderCareTemplate(message, r.vars),
                         recipients: [r.phone],
+                        recipientNames: [r.name || ''],
+                        batchId,
                     },
                 },
                 type: 'sendCare',
@@ -103,7 +118,53 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
             console.error('[sendCare] log error:', e.message);
         }
     }
+    if (rec) {
+        rec.pendingQueue = [];
+        rec.pendingText = '';
+        rec.queueResumeAt = null;
+        await rec.save();
+    }
     console.log(`[sendCare] done: sent ${sent}/${recipients.length}`);
+    return { blocked: false, sent };
+}
+
+async function buildCareRecipients({ course, lesson, courseId, detailId }) {
+    let teacherName = '';
+    if (lesson.Teacher) {
+        const t = await User.findById(lesson.Teacher).select('name').lean();
+        teacherName = t?.name || '';
+    }
+
+    const learnByID = new Map();
+    (course.Student || []).forEach(s => {
+        const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === detailId);
+        if (learn) learnByID.set(String(s.ID), learn);
+    });
+
+    const studentIds = (course.Student || []).map(s => s.ID).filter(Boolean);
+    const students = studentIds.length
+        ? await Student.find({ ID: { $in: studentIds } }).select('_id ID Name ParentName Phone').lean()
+        : [];
+    const courseName = course.Name || course.ID;
+    const lessonDay = lesson.Day ? fmtDate(lesson.Day) : '';
+    return students
+        .filter(s => s.Phone)
+        .map(s => {
+            const learn = learnByID.get(String(s.ID));
+            const img = (learn?.Image || [])[0];
+            const vars = {
+                HoTen: s.Name || '',
+                TenPH: s.ParentName || '',
+                Lop: courseName,
+                Ngay: lessonDay,
+                GiaoVien: teacherName,
+                DiemDanh: checkinText(learn?.Checkin || 0),
+                HinhAnh: img?.id ? srcImage(img.id) : '',
+                NhanXetGV: learn?.CmtFn || '',
+                LinkEportfolio: `${getEportfolioUrl()}/e-portfolio/${s._id}`,
+            };
+            return { name: s.ParentName || s.Name, phone: s.Phone, _id: s._id, ID: s.ID, vars };
+        });
 }
 
 export async function sendCancelNotificationAction(formData) {
@@ -112,6 +173,7 @@ export async function sendCancelNotificationAction(formData) {
     const courseId = (formData.get('courseId') || '').toString();
     const detailId = (formData.get('detailId') || '').toString();
     const message = (formData.get('message') || '').toString().trim();
+    const selectedIds = formData.getAll('studentIds').map(v => v.toString().trim()).filter(Boolean);
     if (!courseId || !detailId) return { status: false, message: 'Thiếu thông tin buổi học.' };
     if (!message) return { status: false, message: 'Vui lòng nhập nội dung tin nhắn.' };
 
@@ -127,43 +189,29 @@ export async function sendCancelNotificationAction(formData) {
         const lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId));
         if (!course || !lesson) return { status: false, message: 'Không tìm thấy buổi học.' };
 
-        let teacherName = '';
-        if (lesson.Teacher) {
-            const t = await User.findById(lesson.Teacher).select('name').lean();
-            teacherName = t?.name || '';
+        let recipients = await buildCareRecipients({ course, lesson, courseId, detailId });
+        if (selectedIds.length) {
+            const idSet = new Set(selectedIds);
+            recipients = recipients.filter(r => idSet.has(String(r.ID)));
+        }
+        if (recipients.length === 0) {
+            return { status: false, message: 'Không có học sinh được chọn có số điện thoại.' };
         }
 
-        const learnByID = new Map();
-        (course.Student || []).forEach(s => {
-            const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === detailId);
-            if (learn) learnByID.set(String(s.ID), learn);
-        });
+        let rec = await LessonNotify.findOne({ course: courseId, detailId });
+        const batchId = (rec?.batchId && rec.pendingQueue?.length > 0) ? rec.batchId : new mongoose.Types.ObjectId().toString();
 
-        const studentIds = (course.Student || []).map(s => s.ID).filter(Boolean);
-        const students = studentIds.length
-            ? await Student.find({ ID: { $in: studentIds } }).select('_id ID Name ParentName Phone').lean()
-            : [];
-        const courseName = course.Name || course.ID;
-        const lessonDay = lesson.Day ? fmtDate(lesson.Day) : '';
-        const recipients = students
-            .filter(s => s.Phone)
-            .map(s => {
-                const learn = learnByID.get(String(s.ID));
-                const img = (learn?.Image || [])[0];
-                const vars = {
-                    HoTen: s.Name || '',
-                    TenPH: s.ParentName || '',
-                    Lop: courseName,
-                    Ngay: lessonDay,
-                    GiaoVien: teacherName,
-                    DiemDanh: checkinText(learn?.Checkin || 0),
-                    HinhAnh: img?.id ? srcImage(img.id) : '',
-                    NhanXetGV: learn?.CmtFn || '',
-                    LinkEportfolio: `${getEportfolioUrl()}/e-portfolio/${s._id}`,
-                };
-                return { name: s.ParentName || s.Name, phone: s.Phone, _id: s._id, ID: s.ID, vars };
-            });
-        if (recipients.length === 0) return { status: false, message: 'Lớp không có học sinh nào có số điện thoại.' };
+        // Resume due pending queue (nếu có) trước, rồi gộp thêm người nhận mới
+        const now = new Date();
+        let resumeTargets = [];
+        if (rec && rec.pendingQueue?.length > 0 && rec.queueResumeAt && new Date(rec.queueResumeAt) <= now) {
+            resumeTargets = rec.pendingQueue.map(t => ({ phone: t.phone, name: t.name || '', _id: t._id, ID: t.ID, vars: t.vars || {} }));
+            rec.pendingQueue = [];
+            rec.pendingText = '';
+            rec.queueResumeAt = null;
+            await rec.save();
+        }
+        const combined = [...resumeTargets, ...recipients];
 
         await LessonNotify.findOneAndUpdate(
             { course: courseId, detailId },
@@ -175,21 +223,77 @@ export async function sendCancelNotificationAction(formData) {
                     notifiedBy: auth.user.id,
                     day: lesson.Day || null,
                     reason: lesson.Note || '',
+                    zalo: zaloId,
+                    batchId,
                 },
             },
             { upsert: true, new: true }
         );
 
-        runCancelSendLoop({ courseId, detailId, recipients, message, zaloId, zalo, createBy: auth.user.id }).catch(err => {
+        const settings = await getReportSendSettings();
+        const sentCount = await countHourlySent(zaloId);
+        if (sentCount >= settings.hourlyLimit) {
+            const queue = combined.map(r => ({ phone: r.phone, name: r.name || '', _id: r._id, ID: r.ID, vars: r.vars }));
+            const resumeAt = computeResumeAt();
+            await LessonNotify.findOneAndUpdate(
+                { course: courseId, detailId },
+                { $set: { pendingQueue: queue, pendingText: message, queueResumeAt: resumeAt, zalo: zaloId, batchId } }
+            );
+            return {
+                status: true,
+                queued: true,
+                message: `Đã đạt giới hạn gửi tin trong giờ (${settings.hourlyLimit} tin/giờ). ${queue.length} tin đã vào hàng chờ, sẽ gửi từ ${fmtTime(resumeAt)}.`,
+            };
+        }
+
+        runCancelSendLoop({ courseId, detailId, recipients: combined, message, zaloId, zalo, createBy: auth.user.id, batchId }).catch(err => {
             console.error('[sendCare] loop error:', err?.message);
         });
 
+        const total = combined.length;
         return {
             status: true,
-            message: `Đang gửi thông báo nghỉ cho ${recipients.length} học sinh (giới hạn theo cài đặt gửi tin).`,
+            message: resumeTargets.length
+                ? `Đang gửi tiếp ${resumeTargets.length} tin trong hàng chờ và ${recipients.length} học sinh mới (giới hạn theo cài đặt gửi tin).`
+                : `Đang gửi thông báo cho ${total} học sinh được chọn (giới hạn theo cài đặt gửi tin).`,
         };
     } catch (err) {
         console.error('Send Cancel Notification Error:', err);
         return { status: false, message: err.message || 'Lỗi hệ thống, không thể gửi.' };
+    }
+}
+
+export async function processPendingCareSends() {
+    try {
+        await connectDB();
+        const now = new Date();
+        const recs = await LessonNotify.find({
+            pendingQueue: { $exists: true, $ne: [] },
+            queueResumeAt: { $lte: now },
+        }).lean();
+        for (const rec of recs) {
+            const zalo = rec.zalo ? await ZaloAccount.findById(rec.zalo).lean() : null;
+            if (!zalo || !zalo.botId) continue;
+            const recipients = (rec.pendingQueue || []).map(t => ({ phone: t.phone, name: t.name || '', _id: t._id, ID: t.ID, vars: t.vars || {} }));
+            if (recipients.length === 0) continue;
+            await LessonNotify.updateOne(
+                { _id: rec._id },
+                { $set: { pendingQueue: [], pendingText: '', queueResumeAt: null } }
+            );
+            runCancelSendLoop({
+                courseId: rec.course,
+                detailId: rec.detailId,
+                recipients,
+                message: rec.pendingText || '',
+                zaloId: rec.zalo,
+                zalo,
+                createBy: rec.notifiedBy || null,
+                batchId: rec.batchId || '',
+            }).catch(err => {
+                console.error('[sendCare] resume loop error:', err?.message);
+            });
+        }
+    } catch (err) {
+        console.error('[sendCare] process pending error:', err?.message);
     }
 }

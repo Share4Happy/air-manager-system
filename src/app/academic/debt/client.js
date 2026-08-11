@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import React from 'react'
 import Link from 'next/link'
+import DateInput from '@/components/(ui)/(input)/DateInput'
 import Pay from '@/app/student/list/ui/pay'
 import BankManager from '@/components/bank-manager'
 import CenterPopup from '@/components/(features)/(popup)/popup_center'
@@ -531,20 +532,18 @@ const rows = useMemo(() => {
                                     <div className="flex gap-3">
                                         <div className="flex-1">
                                             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Ngày bắt đầu</label>
-                                            <input
+                                            <DateInput
                                                 className="w-full px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700"
-                                                type="date"
                                                 value={manualStartDate}
-                                                onChange={e => setManualStartDate(e.target.value)}
+                                                onChange={setManualStartDate}
                                             />
                                         </div>
                                         <div className="flex-1">
                                             <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">Ngày kết thúc</label>
-                                            <input
+                                            <DateInput
                                                 className="w-full px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700"
-                                                type="date"
                                                 value={manualEndDate}
-                                                onChange={e => setManualEndDate(e.target.value)}
+                                                onChange={setManualEndDate}
                                             />
                                         </div>
                                     </div>

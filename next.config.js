@@ -2,6 +2,7 @@ module.exports = {
     turbopack: {
         root: process.cwd(),
     },
+    serverExternalPackages: ['ffmpeg-static'],
     allowedDevOrigins: ['192.168.20.135'],
     images: {
         unoptimized: true,

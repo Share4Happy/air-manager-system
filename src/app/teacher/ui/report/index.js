@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -260,9 +261,9 @@ const EnhancedViolationsReport = ({ initialReports }) => {
                     </div>
                     <input type="text" placeholder="Tìm tên giáo viên..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full sm:w-[180px]`} />
                     <div className={'flex items-center gap-1 flex-wrap'}>
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Từ ngày" />
+                        <DateInput value={startDate} onChange={setStartDate} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Từ ngày" />
                         <span className={'text-[var(--text-primary)]'}>–</span>
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Đến ngày" />
+                        <DateInput value={endDate} onChange={setEndDate} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[130px] sm:w-[135px]`} title="Đến ngày" />
                     </div>
                 </div>
                 <div className={'flex gap-4'}>

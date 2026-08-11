@@ -49,50 +49,52 @@
     }
 }
 
-h1 {
+@layer base {
+  h1 {
     font-size: var(--font-size-xl);
     margin: 0;
     color: var(--text-primary);
-}
+  }
 
-h2 {
+  h2 {
     font-size: var(--font-size-lg);
     margin: 0;
     color: var(--text-primary);
-}
+  }
 
-h3 {
+  h3 {
     font-size: var(--font-size-md);
     margin: 0;
     color: var(--text-primary);
-}
+  }
 
-h4 {
+  h4 {
     font-size: var(--font-size-sm);
     margin: 0;
     color: var(--text-primary);
-}
+  }
 
-h5,
-label {
+  h5,
+  label {
     font-size: var(--font-size-xs);
     margin: 0;
     color: var(--text-primary);
     font-weight: 400;
-}
+  }
 
-h6,
-blockquote {
+  h6,
+  blockquote {
     font-size: var(--font-size-xxs);
     margin: 0;
     color: var(--text-secondary);
     font-weight: 400;
-}
+  }
 
-p {
+  p {
     font-size: var(--font-size-base);
     margin: 0;
     color: var(--text-primary);
+  }
 }
 
 .text_w_400 {

@@ -19,6 +19,17 @@ const ConfirmationSchema = new Schema(
     { _id: false }
 )
 
+const PendingQueueSchema = new Schema(
+    {
+        phone: { type: String },
+        name: { type: String },
+        _id: { type: Schema.Types.ObjectId, ref: 'student' },
+        ID: { type: String },
+        vars: { type: Schema.Types.Mixed, default: {} },
+    },
+    { _id: false }
+)
+
 const LessonNotifySchema = new Schema(
     {
         course: { type: Schema.Types.ObjectId, ref: 'course', required: true },
@@ -31,6 +42,11 @@ const LessonNotifySchema = new Schema(
         notifiedAt: { type: Date, default: null },
         students: { type: [LessonNotifyStudentSchema], default: [] },
         confirmations: { type: [ConfirmationSchema], default: [] },
+        zalo: { type: Schema.Types.ObjectId, ref: 'zaloaccount', default: null },
+        batchId: { type: String, default: '' },
+        pendingQueue: { type: [PendingQueueSchema], default: [] },
+        pendingText: { type: String, default: '' },
+        queueResumeAt: { type: Date, default: null },
     },
     { timestamps: true }
 )

@@ -6,6 +6,7 @@ import CourseItem from '@/app/course/ui/course-item';
 import Create from '@/app/course/ui/create';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/(ui)/(loading)/loading';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import CourseTryItem from '@/app/course/ui/coursetry-item';
 import { reloadCourse } from '@/data/actions/reload';
 
@@ -222,18 +223,16 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                             <option value="lastYear">Năm trước</option>
                         </select>
 
-                        <input
-                            type="date"
+                        <DateInput
                             className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
                             value={startDate}
-                            onChange={(e) => { setStartDate(e.target.value); setTimeRange('') }}
+                            onChange={(v) => { setStartDate(v); setTimeRange('') }}
                         />
 
-                        <input
-                            type="date"
+                        <DateInput
                             className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
                             value={endDate}
-                            onChange={(e) => { setEndDate(e.target.value); setTimeRange('') }}
+                            onChange={(v) => { setEndDate(v); setTimeRange('') }}
                         />
 
                         <button

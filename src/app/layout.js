@@ -1,4 +1,4 @@
-import { Inter, Oswald } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import { cookies } from 'next/headers';
 import Layout_Login from '@/app/(auth)/login';
 import Nav from '@/components/(layout)/nav';
@@ -9,16 +9,11 @@ import { getAppUrl, getCookieName } from '@/utils/env';
 
 export const dynamic = 'force-dynamic'
 
-const inter = Inter({
+const roboto = Roboto({
   subsets: ['vietnamese', 'latin'],
+  weight: ['400', '500', '700'],
   display: 'swap',
-  variable: '--font-inter',
-});
-
-const oswald = Oswald({
-  subsets: ['vietnamese', 'latin'],
-  display: 'swap',
-  variable: '--font-oswald',
+  variable: '--font-roboto',
 });
 
 export const metadata = {
@@ -55,8 +50,8 @@ export default async function RootLayout({ children }) {
   }
   
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${oswald.variable}`}>
+    <html lang="vi">
+      <body className={roboto.variable}>
         {data ?
           <div className="w-full h-full overflow-hidden flex">
             <div className="fixed top-0 left-0 h-full w-[var(--sidebar-w,240px)] border-r border-[var(--border-color)] bg-[var(--bg-primary)] z-[99] max-lg:hidden transition-all duration-300">

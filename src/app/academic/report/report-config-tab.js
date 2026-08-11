@@ -68,6 +68,8 @@ function logContent(l) {
 }
 
 function logRecipients(l) {
+    if (l?._recipientNames?.length) return l._recipientNames
+    if (l?._recipients?.length) return l._recipients
     const r = l?.status?.data?.recipients
     return Array.isArray(r) ? r : []
 }
@@ -188,7 +190,39 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
         try {
             const res = await fetch('/api/report-history')
             const json = await res.json()
-            if (json.success) setHistory(json.data || [])
+            if (json.success) {
+                const raw = json.data || []
+                const groups = new Map()
+                raw.forEach(l => {
+                    const bid = l.status?.data?.batchId
+                    const key = bid || l._id
+                    const g = groups.get(key) || { logs: [] }
+                    g.logs.push(l)
+                    groups.set(key, g)
+                })
+                const merged = Array.from(groups.values()).map(g => {
+                    const logs = g.logs
+                    const first = logs[0]
+                    const allOk = logs.every(x => !!x.status?.status)
+                    const recipients = logs.flatMap(x => x.status?.data?.recipients || [])
+                    const recipientNames = logs.flatMap(x => x.status?.data?.recipientNames || []).filter(Boolean)
+                    return {
+                        ...first,
+                        status: {
+                            ...(first.status || {}),
+                            status: allOk,
+                            message: logs.length > 1
+                                ? (allOk
+                                    ? `Đã gửi cho ${logs.length} người nhận.`
+                                    : `${logs.filter(x => !x.status?.status).length}/${logs.length} người nhận gửi thất bại.`)
+                                : first.status?.message,
+                        },
+                        _recipients: recipients,
+                        _recipientNames: recipientNames,
+                    }
+                })
+                setHistory(merged)
+            }
         } catch (err) {
             console.error(err)
         } finally {

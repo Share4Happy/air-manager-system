@@ -67,7 +67,7 @@ export async function dataCourse(_id) {
         const [usersData, relevantBooks, studentsData] = await Promise.all([
             userIds.size > 0 ? User.find({ _id: { $in: Array.from(userIds) } }).select('name phone').lean() : Promise.resolve([]),
             lessonIds.length > 0 ? Book.find({ 'Topics._id': { $in: lessonIds.map(lid => new mongoose.Types.ObjectId(lid)) } }).lean() : Promise.resolve([]),
-            studentIds.length > 0 ? Student.find({ ID: { $in: studentIds } }).select('ID Name _id Profile Course').lean() : Promise.resolve([])
+            studentIds.length > 0 ? Student.find({ ID: { $in: studentIds } }).select('ID Name _id Profile Course Phone Phones').lean() : Promise.resolve([])
         ]);
         const userDetailsMap = new Map(usersData.map(u => [u._id.toString(), u]));
         const lessonDetailsMap = new Map();
@@ -101,6 +101,8 @@ export async function dataCourse(_id) {
                 const info = studentInfoMap.get(student.ID);
                 student.Name = info?.Name || 'Không tìm thấy';
                 student.userId = info?._id || null;
+                student.Phone = info?.Phone || '';
+                student.Phones = info?.Phones || [];
                 student.StatusProfile = CheckProfileDone(info?.Profile || {});
                 student.StatusCourse = info?.Course?.filter(c => c.course.toString() == _id)[0]?.tuition == null ? false : true || false;
             });

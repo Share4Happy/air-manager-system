@@ -280,6 +280,7 @@ export default function SendCmt({ data, lesson }) {
                                             }}
                                         >
                                             {student.Name}
+                                            <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.7 }}>SĐT: {student.Phone || '-'}</span>
                                         </li>
                                     );
                                 })}

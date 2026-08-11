@@ -558,6 +558,7 @@ export async function executeReportConfig(cfg) {
     const limit = settings.hourlyLimit
     const attempted = []
     const queuedTargets = []
+    const batchId = new mongoose.Types.ObjectId().toString()
     let blocked = false
 
     for (let i = 0; i < targets.length; i++) {
@@ -599,6 +600,8 @@ export async function executeReportConfig(cfg) {
                     error_message: ok ? '' : errMsg,
                     message: text,
                     recipients: [target.phone],
+                    recipientNames: [target.name || ''],
+                    batchId,
                 },
             },
             type: 'sendReport',

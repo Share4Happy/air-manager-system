@@ -7,7 +7,6 @@ import '@/models/book'
 import authenticate from '@/utils/authenticate';
 import jsonRes from '@/utils/response';
 import { uploadImageToDrive, deleteImageFromDrive } from '@/function/drive/image';
-import { getZaloUid } from '@/function/drive/appscript';
 import { reloadStudent } from '@/data/actions/reload';
 import { course_data, student_data } from '@/data/actions/get';
 
@@ -56,23 +55,17 @@ export async function PUT(request, { params }) {
             }
         }
 
-        const fields = ['Name', 'BD', 'School', 'ParentName', 'Email', 'Address', 'Area'];
+        const fields = ['Name', 'BD', 'School', 'ParentName', 'Email', 'Address', 'Area', 'Phone', 'Phones'];
         fields.forEach(field => {
             if (formData.has(field)) {
-                updateData[field] = formData.get(field);
+                if (field === 'Phones') {
+                    try { updateData.Phones = JSON.parse(formData.get(field) || '[]'); } catch { updateData.Phones = []; }
+                } else {
+                    updateData[field] = formData.get(field);
+                }
             }
         });
 
-        const newPhone = formData.get('Phone');
-        if (newPhone && newPhone !== existingStudent.Phone) {
-            updateData.Phone = newPhone;
-            const zaloResult = await getZaloUid(newPhone);
-            if (zaloResult.uid) {
-                updateData.Uid = zaloResult.uid;
-            } else {
-                finalMessage = `Cập nhật thông tin thành công. ${zaloResult.message}`;
-            }
-        }
         if (Object.keys(updateData).length === 0) {
             return jsonRes(200, { status: true, mes: 'Không có thông tin nào được thay đổi.', data: null })
         }

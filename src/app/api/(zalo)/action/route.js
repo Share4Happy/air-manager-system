@@ -6,14 +6,13 @@ import Student from "@/models/student";
 import Variant from "@/models/variant";
 import Logs from "@/models/log";
 import dbConnect from "@/config/connectDB";
-import { actionZalo } from '@/function/drive/appscript';
 import { sendBatch, sendFriendBatch, pollCampaign } from '@/function/zalolite';
 import ReportConfig from '@/models/reportConfig';
 import { computeNextRunAt, executeReportConfig } from '@/function/report';
+import { processPendingCareSends } from '@/app/actions/lessonCancel.actions';
 
 const BATCH_MAX = 10;
 const GATEWAY_ACTIONS = ['sendMessage', 'addFriend'];
-const LEGACY_ACTIONS = ['findUid', 'checkFriend'];
 
 async function formatMessage(template, targetDoc, zaloAccountDoc) {
     if (!template) return "";
@@ -216,122 +215,38 @@ async function processSingleTask(taskDetail) {
 
     try {
         const isStudent = task.person.type === true;
-        const TargetModel = isStudent ? Student : Customer;
-        const targetId = task.person._id;
-        const logTargetField = isStudent ? { student: targetId, customer: null } : { customer: targetId, student: null };
+        const logTargetField = isStudent ? { student: task.person._id, customer: null } : { customer: task.person._id, student: null };
 
-        const targetDoc = await TargetModel.findById(targetId).lean();
-
-        if (!targetDoc) {
-            throw new Error(`Target document not found in ${isStudent ? 'Student' : 'Customer'} with _id: ${targetId}`);
-        }
-
-        let apiResponse;
-        let errorMessageForLog = null;
         const actionType = job.actionType;
-        let uidPerson = null;
-        if (isStudent) {
-            uidPerson = targetDoc.Uid || null;
-        } else {
-            if (actionType === 'addFriend' || actionType === 'sendMessage' || actionType === 'checkFriend') {
-                const uidEntry = targetDoc.uid?.find(u => u.zalo?.toString() === zaloAccount._id.toString());
-                if (!uidEntry || !uidEntry.uid) {
-                    errorMessageForLog = "Không tìm thấy UID của khách hàng tương ứng với tài khoản Zalo thực hiện.";
-                    apiResponse = { status: false, message: errorMessageForLog, content: { error_code: -1, error_message: errorMessageForLog, data: {} } };
-                } else {
-                    uidPerson = uidEntry.uid;
-                }
-            }
-        }
+        const noticeMessage = actionType === 'findUid'
+            ? 'Không cần lịch tìm UID riêng: ZaloLite Gateway tự resolve phone → UID khi gửi tin nhắn.'
+            : 'Không cần lịch kiểm tra bạn bè riêng: ZaloLite Gateway tự xác định trạng thái bạn bè khi gửi tin nhắn.';
 
-
-        let finalMessage = "";
-        if (!errorMessageForLog) {
-            finalMessage = await formatMessage(job.config.messageTemplate, targetDoc, zaloAccount);
-            apiResponse = await actionZalo({
-                phone: targetDoc.phone,
-                uidPerson: uidPerson,
-                actionType: actionType,
-                message: finalMessage,
-                uid: zaloAccount.uid,
-            });
-        }
-        const logPayload = {
-            message: finalMessage || errorMessageForLog,
-            status: {
-                status: apiResponse.status,
-                message: apiResponse.message,
-                data: {
-                    error_code: apiResponse.content?.error_code,
-                    error_message: apiResponse.content?.error_message,
-                }
-            },
+        const newLog = await Logs.create({
+            message: noticeMessage,
+            status: { status: true, message: 'Không cần thực hiện (Gateway xử lý tự động)', data: { error_code: 0, error_message: '' } },
             type: actionType,
             createBy: job.createdBy,
             ...logTargetField,
             zalo: job.zaloAccount,
             schedule: job._id,
-        };
-        const newLog = await Logs.create(logPayload);
-        const errorCode = apiResponse.content?.error_code;
-        if (actionType === 'findUid') {
-            if (errorCode === 0) {
-                const updateData = {
-                    zaloavt: apiResponse.content.data.avatar,
-                    zaloname: apiResponse.content.data.zalo_name,
-                };
-                await TargetModel.findByIdAndUpdate(targetId, { $set: updateData });
-
-                const newUidValue = apiResponse.content.data.uid;
-                const updateResult = await TargetModel.updateOne(
-                    { _id: targetId, 'uid.zalo': zaloAccount._id },
-                    { $set: { 'uid.$.uid': newUidValue } }
-                );
-                if (updateResult.matchedCount === 0) {
-                    await TargetModel.findByIdAndUpdate(
-                        targetId,
-                        { $push: { uid: { zalo: zaloAccount._id, uid: newUidValue } } }
-                    );
-                }
-            }
-            else if ([216, 212, 219].includes(errorCode)) {
-                await TargetModel.findByIdAndUpdate(targetId, { $set: { uid: null } });
-            }
-        }
-        if (actionType === 'checkFriend') {
-            const friendStatus = Number(apiResponse.content?.error_message);
-            if (!isNaN(friendStatus)) {
-                await TargetModel.updateOne(
-                    { _id: targetId },
-                    { $set: { "uid.$[elem].isFriend": friendStatus } },
-                    { arrayFilters: [{ "elem.zalo": zaloAccount._id }] }
-                );
-            }
-        }
-        if (actionType === 'addFriend' && apiResponse.status === true) {
-            await TargetModel.updateOne(
-                { _id: targetId },
-                { $set: { "uid.$[elem].isReques": 1 } },
-                { arrayFilters: [{ "elem.zalo": zaloAccount._id }] }
-            );
-        }
+        });
         await ScheduledJob.updateOne(
             { _id: job._id, 'tasks._id': task._id },
             { $set: { 'tasks.$.history': newLog._id } }
         );
 
-        const statsUpdateField = apiResponse.status ? 'statistics.completed' : 'statistics.failed';
         const updatedJob = await ScheduledJob.findByIdAndUpdate(
             job._id,
-            { $inc: { [statsUpdateField]: 1 } },
-            { new: true } 
+            { $inc: { 'statistics.completed': 1 } },
+            { new: true }
         ).lean();
         if (updatedJob) {
             const { completed, failed, total } = updatedJob.statistics;
             if ((completed + failed) >= total) {
                 await ZaloAccount.findByIdAndUpdate(
-                    job.zaloAccount, 
-                    { $pull: { action: job._id } } 
+                    job.zaloAccount,
+                    { $pull: { action: job._id } }
                 );
             }
         }
@@ -417,6 +332,7 @@ export async function GET(request) {
         await dbConnect();
         await pollPendingCampaigns();
         await processPendingReports();
+        await processPendingCareSends();
 
         const now = new Date();
         const oneMinuteLater = new Date(now.getTime() + 60 * 1000);

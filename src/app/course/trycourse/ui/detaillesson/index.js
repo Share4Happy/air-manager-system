@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right'
 import Noti from '@/components/(features)/(noti)/noti'
 import Loading from '@/components/(ui)/(loading)/loading'
+import DateInput from '@/components/(ui)/(input)/DateInput'
 import Menu from '@/components/(ui)/(button)/menu'
 import WrapIcon from '@/components/(ui)/(button)/hoveIcon'
 import { Svg_Add, Svg_Course, Svg_Delete, Svg_Pen, Svg_Profile, Svg_Student } from '@/components/(icon)/svg'
@@ -203,7 +204,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
         return (
             <div className={'p-4'} style={{ opacity: loading ? 0.5 : 1 }}>
                 {isPast && <p className={'text-[var(--red)] text-sm italic mb-4'}>Buổi học đã kết thúc, không thể chỉnh sửa.</p>}
-                <div className={'flex flex-col gap-2 mb-3'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Ngày học:</p><input type='date' className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' value={form.day} onChange={e => setForm({ ...form, day: e.target.value })} disabled={loading || isPast} /></div>
+                <div className={'flex flex-col gap-2 mb-3'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Ngày học:</p><DateInput className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' value={form.day} onChange={v => setForm({ ...form, day: v })} disabled={loading || isPast} /></div>
                 <div className={'flex flex-col gap-2 mb-3'}><p className='text-sm font-semibold text-[var(--text-primary)]'>Giờ:</p><input className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} onBlur={e => setForm({ ...form, time: normalizeTime(e.target.value) })} disabled={loading || isPast} /></div>
                 <Select label='Chương trình' value={bookMap[form.book]?.Name} menu={bookM} />
                 <Select label='Chủ đề' value={topics.find(t => t._id === form.topicId)?.Name} menu={topicM} />

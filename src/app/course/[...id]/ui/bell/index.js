@@ -80,6 +80,7 @@ function AnnounceStudent({ course, setIsSending, setProgress }) {
 
     const studentsInCourse = useMemo(() => toArr(course?.Student), [course]);
     const studentNameMap = useMemo(() => new Map(masterStudentList.map(s => [s.ID, s.Name])), [masterStudentList]);
+    const studentPhoneMap = useMemo(() => new Map(masterStudentList.map(s => [s.ID, s.Phone])), [masterStudentList]);
 
     useEffect(() => {
         if (isOpen && masterStudentList.length === 0) {
@@ -230,11 +231,13 @@ function AnnounceStudent({ course, setIsSending, setProgress }) {
                         studentsInCourse.map(student => {
                             const isSelected = selectedStudentIds.includes(student.ID);
                             const name = studentNameMap.get(student.ID) || 'Không tìm thấy tên';
+                            const phone = studentPhoneMap.get(student.ID) || '';
                             return (
                                 <div key={student.ID} className={'flex items-center gap-3 p-[10px] cursor-pointer border-b border-[var(--border-color-light)] transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} style={{ background: isSelected ? 'var(--main_d)' : 'transparent', color: isSelected ? 'white' : 'var(--text-primary)', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => handleToggleStudent(student.ID)}>
                                     <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
                                         <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: isSelected ? 'var(--bg-secondary)' : 'var(--text-secondary)' }}>ID: {student.ID}</p>
                                         <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: isSelected ? 'var(--bg-secondary)' : 'var(--text-secondary)' }}>Họ và Tên: {name}</p>
+                                        <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: isSelected ? 'var(--bg-secondary)' : 'var(--text-secondary)' }}>SĐT: {phone || '-'}</p>
                                     </div>
                                     <div className={'flex items-center justify-center w-4 h-4'}>
                                         {renderStatusIndicator(student.ID, isSelected)}

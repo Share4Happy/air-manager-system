@@ -10,7 +10,6 @@ import { statusStudent } from '@/data/default'
 import { uploadImageToDrive } from '@/function/drive/image'
 import { reloadStudent } from '@/data/actions/reload'
 import authenticate from '@/utils/authenticate'
-import { getZaloUid } from '@/function/drive/appscript'
 
 // Tạo học sinh mới
 export async function POST(request) {
@@ -36,25 +35,16 @@ export async function POST(request) {
             School: formData.get('School'),
             ParentName: formData.get('ParentName'),
             Phone: formData.get('Phone'),
+            Phones: JSON.parse(formData.get('Phones') || '[]'),
             Email: formData.get('Email'),
             Address: formData.get('Address'),
             Area: formData.get('Area'),
             Profile: { Avatar: "", ImgPJ: [], ImgSkill: "", Intro: "", Present: [], Skill: {} },
             Status: [statusStudent({})],
         });
-        const savedStudent = await newStudent.save();
-        let finalMessage = 'Tạo học sinh mới thành công!';
-        const phone = formData.get('Phone');
-        if (phone) {
-            const zaloResult = await getZaloUid(phone);
-            if (zaloResult.uid) {
-                await PostStudent.findByIdAndUpdate(savedStudent._id, { $set: { Uid: zaloResult.uid } });
-            } else {
-                finalMessage = `Tạo học sinh mới thành công. Quá trình lấy uid thất bại: ${zaloResult.message}, kiểm tra lại số điện thoại liên hệ`;
-            }
-        }
+        await newStudent.save();
         reloadStudent();
-        return jsonRes(201, { status: true, mes: finalMessage, data: null });
+        return jsonRes(201, { status: true, mes: 'Tạo học sinh mới thành công!', data: null });
     } catch (error) {
         console.error('Lỗi API [POST /api/students]:', error);
         return jsonRes(500, { status: false, mes: error.message, data: null });

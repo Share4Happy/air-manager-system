@@ -35,6 +35,15 @@ const TrialSessionSchema = new Schema(
         teachingAs: { type: Schema.Types.ObjectId, ref: 'user' },
         status: { type: Boolean, default: true },
         note: { type: String },
+        checkin: {
+            type: {
+                id: { type: String },
+                folderId: { type: String },
+                time: { type: Date },
+                status: { type: String },
+            },
+            default: null,
+        },
     },
     { _id: true }
 );

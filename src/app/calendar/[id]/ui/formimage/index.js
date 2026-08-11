@@ -9,6 +9,54 @@ import { Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
 import { driveThumbnailUrl, drivePreviewUrl, driveFolderUrl } from '@/function';
 
+function uploadViaXHR(formData, { onProgress, timeoutMs }) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/updateimage');
+        xhr.responseType = 'text';
+
+        const timer = setTimeout(() => {
+            xhr.abort();
+            reject(new Error('Quá thời gian chờ tải lên.'));
+        }, timeoutMs);
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                onProgress(Math.round((e.loaded / e.total) * 100));
+            }
+        };
+
+        xhr.onload = () => {
+            clearTimeout(timer);
+            const text = xhr.responseText;
+            if (!text) {
+                reject(new Error(`Server trả về phản hồi rỗng (status: ${xhr.status})`));
+                return;
+            }
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch {
+                reject(new Error(`Server trả về dữ liệu không phải JSON (status: ${xhr.status}): ${text.slice(0, 200)}`));
+                return;
+            }
+            resolve({ status: xhr.status, result });
+        };
+
+        xhr.onerror = () => {
+            clearTimeout(timer);
+            reject(new Error('Lỗi kết nối mạng khi tải lên.'));
+        };
+
+        xhr.onabort = () => {
+            clearTimeout(timer);
+            reject(new Error('Đã hủy tải lên.'));
+        };
+
+        xhr.send(formData);
+    });
+}
+
 function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState({
@@ -193,8 +241,10 @@ function Lightbox({ mediaItem, onClose, onUpdateSuccess }) {
     );
 }
 
-function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMode, selectedIds, onToggleSelect, onStartSelect, onCancelSelect, onDeleteSelected, deleting }) {
+function MediaGallery({ session, mediaItems = [], uploadingItems = [], onAdd, onMediaClick, selectMode, selectedIds, onToggleSelect, onStartSelect, onCancelSelect, onDeleteSelected, deleting }) {
     const getDriveImageUrl = (id) => driveThumbnailUrl(id, 400);
+    const ringRadius = 16;
+    const ringCircumference = 2 * Math.PI * ringRadius;
 
     return (
         <div className="flex flex-col gap-4 h-full">
@@ -234,13 +284,52 @@ function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMod
             </div>
 
             {
-                mediaItems.length === 0 ? (
+                mediaItems.length === 0 && uploadingItems.length === 0 ? (
                     <div className="flex-1 flex justify-center items-center p-12 text-center text-[#64748b] bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]">
                         <h5 style={{ fontStyle: 'italic' }}>Chưa có hình ảnh hoặc video nào.</h5>
                     </div>
                 ) : (
                     <div className="flex-1 mr-[-16px] overflow-scroll [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-[#888] [&::-webkit-scrollbar-thumb]:rounded">
                         <div className="flex-1 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3 overflow-y-auto pr-2">
+                            {uploadingItems.map(item => (
+                                <div key={item.key} className="relative w-full aspect-square rounded-lg overflow-hidden bg-[#e2e8f0]">
+                                    {item.status === 'success' ? (
+                                        <img src={getDriveImageUrl(item.driveId)} alt="Đã tải lên" className="absolute inset-0 w-full h-full object-cover" />
+                                    ) : item.type === 'video' ? (
+                                        <video src={item.previewUrl} muted className="absolute inset-0 w-full h-full object-cover" />
+                                    ) : (
+                                        <img src={item.previewUrl} alt="Đang tải lên" className="absolute inset-0 w-full h-full object-cover" />
+                                    )}
+
+                                    {item.status === 'uploading' && (
+                                        <div className="absolute inset-0 bg-black/45 flex flex-col items-center justify-center gap-1">
+                                            <svg viewBox="0 0 40 40" width="40" height="40" className="rotate-[-90deg]">
+                                                <circle cx="20" cy="20" r={ringRadius} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="4" />
+                                                <circle cx="20" cy="20" r={ringRadius} fill="none" stroke="#4ade80" strokeWidth="4" strokeLinecap="round"
+                                                    strokeDasharray={ringCircumference}
+                                                    strokeDashoffset={ringCircumference * (1 - Math.max(0, Math.min(100, item.percent)) / 100)} />
+                                            </svg>
+                                            {item.percent >= 100 && (
+                                                <p className="text-white text-[10px] font-medium">Đang xử lý...</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {item.status === 'failed' && (
+                                        <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                                            <div className="w-8 h-8 rounded-full bg-[var(--red)] flex items-center justify-center">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {item.status === 'success' && (
+                                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[var(--green)] flex items-center justify-center">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                             {mediaItems.map(item => (
                                 <button
                                     key={item.id}
@@ -272,35 +361,14 @@ function MediaGallery({ session, mediaItems = [], onAdd, onMediaClick, selectMod
 //================================================================
 // 2. COMPONENT TẢI FILE LÊN (POPUP 2) - ĐÃ CẬP NHẬT
 //================================================================
-const UploadManager = forwardRef(({
-    session,
-    onClose,
-    onUploadFinish,
-    onStartUpload,
-    onProgressUpdate,
-    onUploadComplete,
-    isUploading // Nhận trạng thái isUploading từ cha
-}, ref) => {
+const UploadManager = forwardRef(({ onClose, onStartUpload }, ref) => {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [error, setError] = useState('');
     const fileInputRef = useRef(null);
-    const uploadCancelled = useRef(false);
 
     useImperativeHandle(ref, () => ({
-        requestClose: () => {
-            if (isUploading && !uploadCancelled.current) {
-                const confirmClose = window.confirm(
-                    'Đang trong quá trình tải lên. Bạn có chắc chắn muốn hủy bỏ? Những file đã tải lên thành công sẽ được giữ lại.'
-                );
-                if (confirmClose) {
-                    uploadCancelled.current = true;
-                    onClose();
-                }
-            } else {
-                onClose();
-            }
-        }
+        requestClose: () => onClose()
     }));
 
     useEffect(() => {
@@ -324,72 +392,13 @@ const UploadManager = forwardRef(({
         setSelectedFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (selectedFiles.length === 0) {
             setError('Vui lòng chọn ít nhất một file.');
             return;
         }
-
-        // Đóng popup tải file và bắt đầu hiển thị progress ngoài màn hình chính
+        onStartUpload(selectedFiles);
         onClose();
-        onStartUpload(selectedFiles.length);
-        uploadCancelled.current = false;
-
-        let successCount = 0;
-        let failedCount = 0;
-        let fileIndex = 0;
-
-        for (const file of selectedFiles) {
-            if (uploadCancelled.current) {
-                onProgressUpdate({ lastError: 'Quá trình tải lên đã bị hủy bởi người dùng.' });
-                break;
-            }
-
-            fileIndex++;
-            onProgressUpdate({ currentFile: `(${fileIndex}/${selectedFiles.length}) ${file.name}`, lastError: '' });
-
-            try {
-                const fileType = file.type.startsWith('video') ? 'video' : 'image';
-                const formData = new FormData();
-                formData.append('folderId', session.Image);
-                formData.append('images', file);
-                formData.append('fileType', fileType);
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
-                const response = await fetch('/api/updateimage', { method: 'POST', body: formData, signal: controller.signal });
-                clearTimeout(timeoutId);
-                const contentType = response.headers.get('content-type');
-                const text = await response.text();
-                if (!text) throw new Error(`Server trả về phản hồi rỗng (status: ${response.status}, contentType: ${contentType})`);
-                let result;
-                try {
-                    result = JSON.parse(text);
-                } catch {
-                    throw new Error(`Server trả về dữ liệu không phải JSON (status: ${response.status}): ${text.slice(0, 200)}`);
-                }
-                if (!response.ok || result.status !== 2) throw new Error(result.mes || 'Lỗi không xác định từ server');
-
-                const uploaded = result.data?.[0];
-                if (uploaded?.id) {
-                    successCount++;
-                    onProgressUpdate({ success: successCount });
-                } else {
-                    throw new Error("API không trả về ID của file.");
-                }
-
-            } catch (err) {
-                console.error(`Lỗi tải lên file ${file.name}:`, err);
-                failedCount++;
-                const userMsg = err.message?.includes('oauth2') || err.message?.includes('token')
-                    ? 'Lỗi xác thực kết nối Google Drive (token/service account)'
-                    : err.message || 'Lỗi không xác định';
-                onProgressUpdate({ failed: failedCount, lastError: `Tệp "${file.name}": ${userMsg}` });
-            }
-        }
-
-        await onUploadFinish(); // Refresh dữ liệu
-        onUploadComplete(); // Báo cho cha biết đã hoàn tất để ẩn progress bar
     };
 
     // Component này chỉ hiển thị giao diện chọn file, không hiển thị progress nữa
@@ -453,11 +462,10 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
 
     // *** STATE MỚI ĐỂ QUẢN LÝ TIẾN TRÌNH UPLOAD Ở CẤP CAO NHẤT ***
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState({
-        total: 0, success: 0, failed: 0, currentFile: '', lastError: ''
-    });
+    const [uploadQueue, setUploadQueue] = useState([]);
 
     const uploaderRef = useRef();
+    const uploadUrlsRef = useRef([]);
 
     const handleUploadFinish = async () => {
         await Re_lesson(session._id);
@@ -475,26 +483,76 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
     };
 
     // *** CÁC HÀM MỚI ĐỂ KIỂM SOÁT UI TIẾN TRÌNH ***
-    const handleStartUpload = (totalFiles) => {
-        setIsUploading(true);
-        setUploadProgress({ total: totalFiles, success: 0, failed: 0, currentFile: '', lastError: '' });
+    const updateQueueItem = (key, patch) => {
+        setUploadQueue(prev => prev.map(item => (item.key === key ? { ...item, ...patch } : item)));
     };
 
-    const handleProgressUpdate = (update) => {
-        setUploadProgress(prev => ({ ...prev, ...update }));
-    };
+    const runUploadLoop = async (jobs) => {
+        let failedCount = 0;
+        let lastError = '';
 
-    const handleUploadComplete = () => {
-        setUploadProgress(prev => {
-            if (prev.failed > 0) {
-                setNoti({ open: true, status: false, mes: `Tải lên thất bại ${prev.failed}/${prev.total} file. ${prev.lastError || ''}` });
+        for (const job of jobs) {
+            const formData = new FormData();
+            formData.append('folderId', session.Image);
+            formData.append('images', job.file);
+            formData.append('fileType', job.type);
+
+            try {
+                const timeoutMs = job.type === 'video' ? 300000 : 60000;
+                const { result } = await uploadViaXHR(formData, {
+                    onProgress: (percent) => updateQueueItem(job.key, { percent }),
+                    timeoutMs
+                });
+
+                if (result.status !== 2) throw new Error(result.mes || 'Lỗi không xác định từ server');
+
+                const uploaded = result.data?.[0];
+                if (!uploaded?.id) throw new Error("API không trả về ID của file.");
+
+                updateQueueItem(job.key, { status: 'success', driveId: uploaded.id, percent: 100 });
+            } catch (err) {
+                console.error(`Lỗi tải lên file ${job.file.name}:`, err);
+                failedCount++;
+                const userMsg = err.message?.includes('oauth2') || err.message?.includes('token')
+                    ? 'Lỗi xác thực kết nối Google Drive (token/service account)'
+                    : err.message || 'Lỗi không xác định';
+                lastError = `Tệp "${job.file.name}": ${userMsg}`;
+                updateQueueItem(job.key, { status: 'failed', error: userMsg });
             }
-            return prev;
-        });
-        setTimeout(() => {
-            setIsUploading(false);
-            onUploadSuccess?.();
-        }, 3000);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        await handleUploadFinish();
+        uploadUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+        uploadUrlsRef.current = [];
+        setUploadQueue([]);
+        setIsUploading(false);
+        onUploadSuccess?.();
+
+        if (failedCount > 0) {
+            setNoti({ open: true, status: false, mes: `Tải lên thất bại ${failedCount}/${jobs.length} file. ${lastError || ''}` });
+        }
+    };
+
+    const handleStartUpload = (files) => {
+        const jobs = files.map((file, index) => ({
+            key: `upload-${Date.now()}-${index}`,
+            file,
+            type: file.type.startsWith('video') ? 'video' : 'image'
+        }));
+        const queue = jobs.map(job => ({
+            key: job.key,
+            type: job.type,
+            previewUrl: URL.createObjectURL(job.file),
+            status: 'uploading',
+            percent: 0,
+            driveId: ''
+        }));
+        uploadUrlsRef.current = queue.map(item => item.previewUrl);
+        setUploadQueue(queue);
+        setIsUploading(true);
+        runUploadLoop(jobs);
     };
 
     const toggleSelectMode = () => {
@@ -544,14 +602,8 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
     const renderUploadManager = () => (
         <UploadManager
             ref={uploaderRef}
-            session={session}
             onClose={() => setUploaderOpen(false)}
-            onUploadFinish={handleUploadFinish}
-            // Truyền các hàm điều khiển xuống
             onStartUpload={handleStartUpload}
-            onProgressUpdate={handleProgressUpdate}
-            onUploadComplete={handleUploadComplete}
-            isUploading={isUploading}
         />
     );
 
@@ -559,6 +611,7 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
         <MediaGallery
             session={session}
             mediaItems={mediaItems}
+            uploadingItems={uploadQueue}
             onAdd={() => setUploaderOpen(true)}
             onMediaClick={selectMode ? undefined : setLightboxMedia}
             selectMode={selectMode}
@@ -571,39 +624,15 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
         />
     );
 
-    // *** LOGIC CHO GIAO DIỆN TIẾN TRÌNH TẢI LÊN ***
-    const isComplete = isUploading && (uploadProgress.success + uploadProgress.failed === uploadProgress.total);
-    const progressPercentage = uploadProgress.total > 0 ? ((uploadProgress.success + uploadProgress.failed) / uploadProgress.total) * 100 : 0;
-
-    const renderFloatingProgress = () => {
-        if (!isUploading) return null;
-
-        return (
-            <div className="flex flex-col p-3 fixed gap-2 top-5 right-5 min-w-[240px] z-[99999] bg-white rounded-lg shadow-[var(--boxshaw2)]">
-                <div className="flex items-center justify-between gap-2">
-                    <p className='text-sm font-semibold text-[var(--text-primary)] shrink-0'>{Math.round(progressPercentage)}%</p>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded bg-[var(--green)] shrink-0"></div>
-                            <p className='text-xs text-[var(--text-primary)]'>{uploadProgress.success}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded bg-[var(--red)] shrink-0"></div>
-                            <p className='text-xs text-[var(--text-primary)]'>{uploadProgress.failed}</p>
-                        </div>
-                        <p className='text-xs text-[var(--text-secondary)]'>/ {uploadProgress.total}</p>
-                    </div>
-                </div>
-                <div className="w-full h-2 bg-[#e2e8f0] rounded overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#4ade80] to-[#22c55e] rounded transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
-                </div>
-                {uploadProgress.lastError && (
-                    <p className="text-[#dc2626] text-xs italic">{uploadProgress.lastError}</p>
-                )}
-            </div>
-        );
+    const handleCloseModal = () => {
+        if (isUploading) {
+            const confirmClose = window.confirm(
+                'Đang trong quá trình tải lên. Bạn có chắc chắn muốn đóng? Upload vẫn tiếp tục ngầm và thư viện sẽ cập nhật khi xong.'
+            );
+            if (!confirmClose) return;
+        }
+        setPopupOpen(false);
     };
-
 
     if (!session?.Image) return null;
 
@@ -620,12 +649,12 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
             </div>
 
             {isPopupOpen && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center" onMouseDown={() => setPopupOpen(false)}>
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center" onMouseDown={handleCloseModal}>
                     <div className="absolute inset-0 bg-black/50" />
                     <div className="relative bg-[var(--bg-primary)] rounded-lg shadow-lg flex flex-col max-h-[90vh] w-[90%] max-w-[1100px]" onMouseDown={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200">
                             <h3 className="m-0 text-xl">{isUploaderOpen ? 'Tải lên file mới' : 'Thư viện hình ảnh & video'}</h3>
-                            <button className="bg-transparent border-none text-2xl cursor-pointer" onClick={() => setPopupOpen(false)}>&times;</button>
+                            <button className="bg-transparent border-none text-2xl cursor-pointer" onClick={handleCloseModal}>&times;</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {isUploaderOpen ? renderUploadManager() : renderMediaGallery()}
@@ -640,9 +669,6 @@ export default function ImageUploader({ session, courseId, Version, onUploadSucc
                 onClose={() => setLightboxMedia(null)}
                 onUpdateSuccess={handleUploadFinish}
             />
-
-            {/* GIAO DIỆN TIẾN TRÌNH TẢI LÊN NỔI BÊN NGOÀI */}
-            {renderFloatingProgress()}
         </>
     );
 }

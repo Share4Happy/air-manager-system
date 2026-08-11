@@ -27,9 +27,11 @@ RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 ENV NODE_OPTIONS=--openssl-legacy-provider
 ENV NODE_ENV=production
+ENV FFMPEG_PATH=ffmpeg
 # Các biến cấu hình (MONGODB_URI, JWT_SECRET, token, URL, GOOGLE_*, DRIVE_*, ...)
 # được truyền lúc chạy qua file env (docker-compose: env_file .env.production)
 # xem .env.production.sample để biết đủ danh sách biến.

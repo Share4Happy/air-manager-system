@@ -11,6 +11,7 @@ import Noti from '@/components/(features)/(noti)/noti';
 import Loading from '@/components/(ui)/(loading)/loading';
 import Image from 'next/image';
 import { Svg_Send, Svg_Pen, Svg_Check, Svg_Out, Svg_History, Svg_Chat_1 } from '@/components/(icon)/svg';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import { history_data } from '@/data/actions/get';
 
 function HistoryLogItem({ log }) {
@@ -91,6 +92,7 @@ function CustomerUpdateForm({ formAction, initialData, onClose, isAnyActionPendi
             return '';
         }
     };
+    const [bd, setBd] = useState(() => formatDateForInput(initialData.bd));
     return (
         <form action={formAction} className='flex flex-col gap-4 p-4'>
             <input type="hidden" name="_id" value={initialData._id} />
@@ -100,7 +102,7 @@ function CustomerUpdateForm({ formAction, initialData, onClose, isAnyActionPendi
             </div>
             <div className='flex flex-col gap-1'>
                 <label htmlFor="bd">Ngày sinh</label>
-                <input id="bd" name="bd" type="date" defaultValue={formatDateForInput(initialData.bd)} className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' disabled={isAnyActionPending} />
+                <DateInput name="bd" value={bd} onChange={setBd} className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' disabled={isAnyActionPending} />
             </div>
             <div className='flex flex-col gap-1'>
                 <label htmlFor="nameparent">Tên phụ huynh</label>

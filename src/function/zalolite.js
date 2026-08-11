@@ -1,4 +1,5 @@
 import { getZaloLiteConfig } from '@/utils/zalolite-config'
+import ZaloAccount from '@/models/zalo'
 
 const NETWORK_RETRY_CODES = [502, 503, 504]
 
@@ -154,4 +155,39 @@ export async function sendFriendBatch(botId, { recipients, message, aliasPrefix 
 
 export function isBatchAsync(response) {
   return response?.async === true
+}
+
+export async function getActiveZaloAccount() {
+  const account = await ZaloAccount.findOne({ is_active: true }).sort({ createdAt: 1 }).lean()
+  if (!account) {
+    throw new Error('Chưa có tài khoản Zalo hoạt động (Cài đặt → tab Zalo Proxy).')
+  }
+  if (!account.botId) {
+    throw new Error(`Tài khoản Zalo "${account.name || ''}" chưa có botId (chưa cấu hình ZaloLite).`)
+  }
+  return account
+}
+
+export function extractSendUid(resp) {
+  if (!resp?.data) return null
+  const r = Array.isArray(resp.data.results) ? resp.data.results[0] : (resp.data.result || resp.data)
+  return r?.uid || null
+}
+
+export function sendResponseOk(resp) {
+  if (!resp) return false
+  if (resp.async) return true
+  if (Array.isArray(resp.data?.results)) {
+    const r = resp.data.results[0] || {}
+    return r.status === 'success'
+  }
+  return resp.data?.success !== false
+}
+
+export function sendResponseError(resp) {
+  if (Array.isArray(resp?.data?.results)) {
+    const r = resp.data.results[0] || {}
+    return r.error_message || r.message || ''
+  }
+  return resp?.data?.error_message || resp?.data?.message || ''
 }

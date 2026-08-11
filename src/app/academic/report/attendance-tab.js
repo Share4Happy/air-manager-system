@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import DateInput from '@/components/(ui)/(input)/DateInput'
 
 function toDateStr(d) {
     const y = d.getFullYear()
@@ -86,10 +87,9 @@ export default function AttendanceTab() {
         <div className="flex flex-col gap-4 overflow-auto pb-4">
             <div className="flex items-center gap-3 flex-wrap">
                 <label className="text-sm font-medium text-[var(--text-primary)]">Ngày:</label>
-                <input
-                    type="date"
+                <DateInput
                     value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
+                    onChange={setSelectedDate}
                     className="px-3 py-2 border border-gray-300 rounded bg-white text-sm outline-none text-gray-700 font-medium"
                 />
                 <span className={`text-xs font-medium ${dateCtx.color}`}>{dateCtx.text}</span>

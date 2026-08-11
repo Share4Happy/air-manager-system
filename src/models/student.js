@@ -75,6 +75,10 @@ const postSchema = new Schema({
   Phone: {
     type: String
   },
+  Phones: {
+    type: [String],
+    default: []
+  },
   Email: {
     type: String
   },

@@ -19,6 +19,15 @@ const DetailSchema = new Schema({
     },
     Type: { type: String },
     Note: { type: String },
+    Checkin: {
+        type: {
+            id: { type: String },
+            folderId: { type: String },
+            time: { type: Date },
+            status: { type: String },
+        },
+        default: null,
+    },
 });
 
 const LearnDetailSchema = new Schema({

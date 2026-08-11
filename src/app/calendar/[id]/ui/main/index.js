@@ -11,6 +11,7 @@ import Noti from '@/components/(features)/(noti)/noti';
 import Image from 'next/image';
 import ImageUploader from '../formimage';
 import StudentCourseImageManager from '../formimages';
+import CheckinPopup from '../checkin';
 import { Svg_Detail, Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
 import { driveThumbnailUrl, driveFolderUrl } from '@/function';
@@ -42,6 +43,7 @@ export default function Main({ data }) {
     const [note, setNote] = useState(() => session?.Note || '');
     const [mobileDocsOpen, setMobileDocsOpen] = useState(true);
     const [savingNote, setSavingNote] = useState(false);
+    const [showCheckin, setShowCheckin] = useState(false);
     const router = useRouter();
 
     if (!course || !session) {
@@ -60,6 +62,9 @@ export default function Main({ data }) {
     }
 
     const isTrialCourse = course?.type === 'trial' || false;
+
+    const checkinInfo = session?.Checkin || session?.checkin || null;
+    const alreadyChecked = !!checkinInfo?.id;
 
     const roll = (students || []).map(stu => ({
         ID: stu.ID,
@@ -299,6 +304,14 @@ export default function Main({ data }) {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                 <p className="text-base font-semibold text-[var(--text-primary)]">Sổ điểm danh</p>
                                 <div className="flex flex-wrap gap-2 self-stretch sm:self-auto">
+                                    <button onClick={() => setShowCheckin(true)} className="text-sm text-white w-full sm:w-auto sm:flex-none" style={{ padding: '8px 16px', background: alreadyChecked ? 'var(--green)' : 'var(--yellow)', border: 'none', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        {alreadyChecked ? (
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        ) : (
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                                        )}
+                                        {alreadyChecked ? 'Đã checkin' : 'Checkin'}
+                                    </button>
                                     <button onClick={reloadData} disabled={reloading} className="text-sm text-white flex-1 sm:flex-none" style={{ padding: '8px 16px', background: reloading ? 'var(--text-secondary)' : 'var(--green)', border: 'none', borderRadius: 5, cursor: reloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         {reloading && <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                                         {reloading ? 'Đang tải lại…' : 'Tải lại dữ liệu '}
@@ -405,6 +418,25 @@ export default function Main({ data }) {
                         </button>
                     </div>
                 </div>
+            </CenterPopup>
+
+            <CenterPopup open={showCheckin} onClose={() => setShowCheckin(false)} size="md">
+                <CheckinPopup
+                    sessionId={session._id}
+                    buoi={session.buoi}
+                    day={session.Day}
+                    startTime={session.Time}
+                    checkin={checkinInfo}
+                    onClose={() => setShowCheckin(false)}
+                    onDone={async (status) => {
+                        try { await Re_lesson(session._id); } catch { }
+                        router.refresh();
+                        setShowCheckin(false);
+                        setNotiOK(true);
+                        setNotiMsg(status === 'tre' ? 'Checkin thành công (Trễ).' : 'Checkin thành công (Đúng giờ).');
+                        setNotiOpen(true);
+                    }}
+                />
             </CenterPopup>
         </>
     );

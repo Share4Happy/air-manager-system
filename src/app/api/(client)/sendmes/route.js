@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { sendByPhone, getActiveZaloAccount, extractSendUid, sendResponseOk, sendResponseError } from '@/function/zalolite';
 
 const SHEET_ID = '1ZQsHUyVD3vmafcm6_egWup9ErXfxIg4U-TfVDgDztb8';
 const SHEET_NAME = 'Data';
@@ -69,22 +70,17 @@ export async function POST(req) {
 
     const result = { phone, status: 'failed' };
     try {
-        const url = new URL('https://script.google.com/macros/s/AKfycbx17JMuK_X-OhUAjin3IlDTAvhBgOOocoWMrTqT7q7_lWNq0eES-GHLwD4MKMIQ43p9eg/exec');
-        if (rawUid) url.searchParams.set('uid', rawUid);
-        else url.searchParams.set('phone', phone);
-        url.searchParams.set('mes', mes);
-       
-        
-        const r = await fetch(url.toString());
-        const json = await r.json();
+        const zaloAccount = await getActiveZaloAccount();
+        const r = await sendByPhone(zaloAccount.botId, { phone, text: mes, mode: 'safe' });
 
-        if (json.status === 2) {
+        if (sendResponseOk(r)) {
             result.status = 'success';
-            if (json.data?.uid) result.uid = json.data.uid;
-            if (json.data?.name) result.name = json.data.name;
-            else result.mes = mes;
+            const resolvedUid = extractSendUid(r);
+            if (resolvedUid) result.uid = resolvedUid;
+            result.name = r?.data?.results?.[0]?.name || '';
+            if (!result.name) result.mes = mes;
         } else {
-            result.error = json.mes;
+            result.error = sendResponseError(r);
         }
     } catch (e) { result.error = e.message; }
     const updates = [];

@@ -5,7 +5,6 @@ import Student from '../student';
 import Calendar from '../calendarcourse';
 import Image from 'next/image';
 import { Svg_Area, Svg_Canlendar, Svg_Course, Svg_Map, Svg_Profile, Svg_Student } from '@/components/(icon)/svg';
-import AnnounceStudent from '../bell';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/(ui)/(loading)/loading';
 import CommentPopup from '../cmt';
@@ -232,6 +231,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     }
     let lesson;
     let statusLesson = [1, 1, 1];
+    let checkinStatus = 'chua';
     let slide = ''
     const lessonId = activeLessonTab || (params.length > 1 ? params[1] : null);
     if (lessonId) {
@@ -259,6 +259,10 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
         if (num == 0) {
             statusLesson[1] = 0
             statusLesson[2] = 0
+        }
+
+        if (lesson?.Checkin?.id) {
+            checkinStatus = lesson.Checkin.status === 'tre' ? 'tre' : 'dung-gio';
         }
 
     }
@@ -344,6 +348,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Trạng thái lớp học :</span>
                                 </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <p className="Chip text-xs font-normal text-[var(--text-primary)]" style={{ background: checkinStatus === 'dung-gio' ? 'var(--green)' : checkinStatus === 'tre' ? 'var(--yellow)' : 'var(--red)', color: 'white', padding: '4px 12px', borderRadius: 12, width: 'max-content' }}>
+                                        {checkinStatus === 'dung-gio' ? 'Checkin đúng giờ' : checkinStatus === 'tre' ? 'Checkin trễ' : 'Chưa checkin'}
+                                    </p>
                                     <p className="Chip text-xs font-normal text-[var(--text-primary)]" style={{ background: statusLesson[0] == 1 ? 'var(--green)' : 'var(--red)', color: 'white', padding: '4px 12px', borderRadius: 12, width: 'max-content' }}>
                                         Điểm danh
                                     </p>
@@ -416,10 +423,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     </div>
                 </div>
                 <div className="w-full lg:w-[220px]">
-                    <div className="grid grid-cols-3 lg:grid-cols-2 gap-2 lg:gap-3">
-                        <div className="aspect-square"><Student course={data} student={sortedStudents} /></div>
-                        <div className="aspect-square"><AnnounceStudent course={data} /></div>
-                        <div className="aspect-square"><Calendar course={data} student={sortedStudents} /></div>
+                    <div className="flex flex-col items-end gap-2 lg:gap-3">
+                        <div className="aspect-square w-[104px]"><Student course={data} student={sortedStudents} /></div>
+                        <div className="aspect-square w-[104px]"><Calendar course={data} student={sortedStudents} /></div>
                     </div></div>
             </div>
 

@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import Menu from '@/components/(ui)/(button)/menu';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import Link from 'next/link';
 
 // === Các hàm tiện ích ===
@@ -181,7 +182,7 @@ export default function TeacherDashboard({ currentUser: currentUserArray, course
                     <div className="flex-1 flex gap-2">
                         <Menu isOpen={isWeekMenuOpen} onOpenChange={setIsWeekMenuOpen} customButton={<div className='input text-sm font-normal text-[var(--text-primary)]'>{weekButtonText}</div>} menuItems={
                             <div className="p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded mt-1">
-                                <input type="date" className="border border-gray-300 rounded-md p-2 text-sm w-full" value={selectedDate.toISOString().split('T')[0]} onChange={e => { setSelectedDate(new Date(e.target.value)); setIsWeekMenuOpen(false); }} />
+                                <DateInput className="border border-gray-300 rounded-md p-2 text-sm w-full" value={selectedDate.toISOString().split('T')[0]} onChange={v => { setSelectedDate(new Date(v)); setIsWeekMenuOpen(false); }} />
                             </div>}
                         />
                     </div>

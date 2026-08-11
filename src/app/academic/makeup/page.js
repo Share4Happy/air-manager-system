@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import DateInput from '@/components/(ui)/(input)/DateInput'
 
 const statusMap = {
     MAKEUP_PENDING: { label: 'Chờ xếp lịch bù', color: 'bg-[#fff3e0] text-[#e65100]' },
@@ -209,7 +210,7 @@ export default function MakeupPage() {
                             <input className="input text-sm p-2 border rounded" placeholder="Course ID" value={formData.courseId} onChange={e => setFormData(f => ({ ...f, courseId: e.target.value }))} required />
                             <input className="input text-sm p-2 border rounded" placeholder="Lesson ID" value={formData.lessonId} onChange={e => setFormData(f => ({ ...f, lessonId: e.target.value }))} required />
                             <input className="input text-sm p-2 border rounded" placeholder="Student ID (mã học sinh)" value={formData.studentId} onChange={e => setFormData(f => ({ ...f, studentId: e.target.value }))} required />
-                            <input className="input text-sm p-2 border rounded" type="date" placeholder="Ngày học bù" value={formData.makeupDate} onChange={e => setFormData(f => ({ ...f, makeupDate: e.target.value }))} />
+                            <DateInput className="input text-sm p-2 border rounded" placeholder="Ngày học bù" value={formData.makeupDate} onChange={v => setFormData(f => ({ ...f, makeupDate: v }))} />
                             <input className="input text-sm p-2 border rounded" type="time" placeholder="Giờ học bù" value={formData.makeupTime} onChange={e => setFormData(f => ({ ...f, makeupTime: e.target.value }))} />
                             <input className="input text-sm p-2 border rounded" placeholder="Nội dung cần bù" value={formData.contentToMakeup} onChange={e => setFormData(f => ({ ...f, contentToMakeup: e.target.value }))} />
                             <input className="input text-sm p-2 border rounded md:col-span-2" placeholder="Ghi chú" value={formData.note} onChange={e => setFormData(f => ({ ...f, note: e.target.value }))} />

@@ -17,6 +17,7 @@
     "cookie": "^1.0.1",
     "dayjs": "^1.11.13",
     "exceljs": "^4.4.0",
+    "ffmpeg-static": "^5.3.0",
     "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
@@ -37,7 +38,7 @@
       "sharp": "0.35.3"
     },
     "gaxios": "7.3.0",
-    "brace-expansion": "5.0.8",
+    "brace-expansion": "5.0.9",
     "uuid": "11.1.1"
   }
 }

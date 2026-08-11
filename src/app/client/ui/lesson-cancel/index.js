@@ -7,6 +7,7 @@ import { sendCancelNotificationAction } from '@/app/actions/lessonCancel.actions
 import { saveCareTemplateAction, deleteCareTemplateAction } from '@/app/actions/careTemplate.actions';
 import SettingZalo from '@/app/client/ui/zalo';
 import { srcImage } from '@/function/index';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 
 const MESSAGE_TYPE_LABELS = {
     notice: 'Thông báo',
@@ -27,6 +28,17 @@ function fmtTime(d) {
     const dt = new Date(d);
     if (isNaN(dt.getTime())) return '';
     return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
+
+function logRecipients(l) {
+    if (l?._recipientNames?.length) return l._recipientNames;
+    if (l?._recipients?.length) return l._recipients;
+    const r = l?.status?.data?.recipients;
+    return Array.isArray(r) ? r : [];
+}
+
+function logContent(l) {
+    return l?.status?.data?.message || l?.message || '';
 }
 
 function progressBadge(count, total) {
@@ -102,11 +114,18 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
     const [historyItems, setHistoryItems] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    const [sendHistoryOpen, setSendHistoryOpen] = useState(false);
+    const [sendHistoryItems, setSendHistoryItems] = useState([]);
+    const [sendHistoryLoading, setSendHistoryLoading] = useState(false);
+    const [selectedSendLog, setSelectedSendLog] = useState(null);
+
     const [sendTarget, setSendTarget] = useState(null);
+    const [sendSelectedIds, setSendSelectedIds] = useState([]);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
 
     const [templates, setTemplates] = useState([]);
+    const [templateListOpen, setTemplateListOpen] = useState(false);
     const [templatePopupOpen, setTemplatePopupOpen] = useState(false);
     const [templateForm, setTemplateForm] = useState({ _id: '', name: '', content: '', messageType: 'notice' });
 
@@ -147,6 +166,20 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
         }
     }, []);
 
+    const fetchSendHistory = useCallback(async () => {
+        setSendHistoryLoading(true);
+        try {
+            const res = await fetch('/api/client/lesson-cancel?logs=1');
+            const json = await res.json();
+            setSendHistoryItems(json.success ? json.data || [] : []);
+        } catch (err) {
+            console.error(err);
+            setSendHistoryItems([]);
+        } finally {
+            setSendHistoryLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchList(false);
         fetchTemplates();
@@ -169,6 +202,7 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
 
     const openSend = (item) => {
         setSendTarget(item);
+        setSendSelectedIds((item.students || []).filter(s => s.Phone).map(s => s.ID));
         setMessage('Kính gửi quý phụ huynh,\nBuổi học hôm nay được thông báo nghỉ. Xin cảm ơn!');
     };
 
@@ -192,6 +226,7 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
             fd.append('courseId', sendTarget.courseId);
             fd.append('detailId', sendTarget.detailId);
             fd.append('message', message);
+            sendSelectedIds.forEach(id => fd.append('studentIds', id));
             const res = await sendCancelNotificationAction(fd);
             showNoti(res.status, res.message);
             if (res.status) {
@@ -326,10 +361,9 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                     <div className="flex flex-wrap items-center gap-2">
                         <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
                             <span>Ngày:</span>
-                            <input
-                                type="date"
+                            <DateInput
                                 value={selectedDate}
-                                onChange={e => setSelectedDate(e.target.value)}
+                                onChange={setSelectedDate}
                                 className="px-2 py-1.5 border border-gray-300 rounded bg-white text-sm outline-none text-gray-700 cursor-pointer" />
                         </label>
                         <SettingZalo user={user?.[0]} zalo={zaloData} />
@@ -339,14 +373,19 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                             Làm mới
                         </button>
                         <button
-                            onClick={() => { setTemplateForm({ _id: '', name: '', content: '', messageType: 'notice' }); setTemplatePopupOpen(true); }}
+                            onClick={() => { fetchTemplates(); setTemplateListOpen(true); }}
                             className="px-4 py-2 rounded bg-[var(--main_d)] text-white text-sm font-medium cursor-pointer transition-colors hover:bg-[var(--main_b)]">
-                            + Tạo mẫu
+                            Mẫu tin nhắn
                         </button>
                         <button
                             onClick={() => { setHistoryOpen(true); fetchList(true); }}
                             className="px-4 py-2 rounded bg-gray-100 border border-gray-300 text-sm font-medium cursor-pointer transition-colors hover:bg-gray-200">
                             Lịch sử lớp nghỉ
+                        </button>
+                        <button
+                            onClick={() => { setSendHistoryOpen(true); fetchSendHistory(); }}
+                            className="px-4 py-2 rounded bg-gray-100 border border-gray-300 text-sm font-medium cursor-pointer transition-colors hover:bg-gray-200">
+                            Lịch sử gửi tin
                         </button>
                     </div>
                 </div>
@@ -576,7 +615,9 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                 onClose={() => setSendTarget(null)}
                 title={sendTarget ? `Gửi Zalo chăm sóc - ${sendTarget.courseID}` : ''}
                 width="580px"
-                renderItemList={() => (
+                renderItemList={() => {
+                    const withPhone = (sendTarget?.students || []).filter(s => s.Phone);
+                    return (
                     <div className="flex flex-col gap-3 p-4">
                         <div>
                             <label className={labelCls}>Mẫu tin nhắn</label>
@@ -586,7 +627,37 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                     <option key={t._id} value={t._id}>{t.name}</option>
                                 ))}
                             </select>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">Tạo mẫu mới bằng nút "+ Tạo mẫu" trên thanh công cụ.</p>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">Quản lý mẫu qua nút "Mẫu tin nhắn" trên thanh công cụ.</p>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className={labelCls} style={{ marginBottom: 0 }}>Người nhận ({sendSelectedIds.length}/{withPhone.length})</label>
+                                <div className="flex items-center gap-2 text-xs text-[var(--main_d)]">
+                                    <button type="button" onClick={() => setSendSelectedIds(withPhone.map(s => s.ID))}
+                                        className="cursor-pointer border-none bg-transparent hover:underline">
+                                        Chọn tất cả
+                                    </button>
+                                    <button type="button" onClick={() => setSendSelectedIds([])}
+                                        className="cursor-pointer border-none bg-transparent hover:underline">
+                                        Bỏ chọn
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="max-h-52 overflow-y-auto border border-gray-200 rounded bg-white">
+                                {withPhone.length === 0 ? (
+                                    <p className="p-3 text-xs italic text-[var(--text-secondary)]">Lớp không có học sinh nào có số điện thoại.</p>
+                                ) : (
+                                    withPhone.map(s => (
+                                        <label key={s.ID} className="flex items-center gap-2 px-2.5 py-1.5 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-blue-50 text-sm">
+                                            <input type="checkbox" checked={sendSelectedIds.includes(s.ID)}
+                                                onChange={() => setSendSelectedIds(prev => prev.includes(s.ID) ? prev.filter(x => x !== s.ID) : [...prev, s.ID])}
+                                                className="cursor-pointer" />
+                                            <span className="text-[var(--text-primary)]">{s.Name}</span>
+                                            <span className="text-[var(--text-secondary)] text-xs">({s.Phone})</span>
+                                        </label>
+                                    ))
+                                )}
+                            </div>
                         </div>
                         <div>
                             <label className={labelCls}>Nội dung tin nhắn</label>
@@ -596,14 +667,79 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                             <VariableChips onInsert={tok => setMessage(m => m + tok)} />
                         </div>
                         <p className="text-xs text-[var(--text-secondary)]">
-                            Sẽ gửi cho {sendTarget?.students?.filter(s => s.Phone).length || 0} học sinh có số điện thoại, cách nhau 3–5 phút (giới hạn theo cài đặt gửi tin chung). Các biến như {'{HoTen}'}, {'{DiemDanh}'}, {'{HinhAnh}'} sẽ được thay bằng dữ liệu riêng của từng học sinh.
+                            Sẽ gửi cho {sendSelectedIds.filter(id => withPhone.some(s => s.ID === id)).length} học sinh được chọn, cách nhau 3–5 phút (giới hạn theo cài đặt gửi tin chung). Nếu đạt giới hạn tin/giờ, số còn lại sẽ vào hàng chờ và gửi tiếp vào giờ sau. Các biến như {'{HoTen}'}, {'{DiemDanh}'}, {'{HinhAnh}'} sẽ được thay bằng dữ liệu riêng của từng học sinh.
                         </p>
                         <div className="flex justify-end pt-3 border-t border-[var(--border-color)]">
-                            <button onClick={handleSend} disabled={sending}
+                            <button onClick={handleSend} disabled={sending || sendSelectedIds.length === 0}
                                 className="px-4 py-2 rounded bg-blue-600 text-white text-sm font-medium cursor-pointer border-none hover:bg-blue-700 disabled:opacity-50">
-                                {sending ? 'Đang gửi...' : 'Gửi thông báo'}
+                                {sending ? 'Đang gửi...' : `Gửi thông báo (${sendSelectedIds.length})`}
                             </button>
                         </div>
+                    </div>
+                    );
+                }}
+            />
+
+            {/* POPUP DANH SÁCH MẪU TIN NHẮN */}
+            <FlexiblePopup
+                open={templateListOpen}
+                onClose={() => setTemplateListOpen(false)}
+                title="Mẫu tin nhắn"
+                width="820px"
+                renderItemList={() => (
+                    <div className="flex flex-col gap-3 p-4">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <p className="text-xs text-[var(--text-secondary)]">Chọn mẫu để sử dụng / sửa, hoặc tạo mẫu mới.</p>
+                            <button onClick={() => { setTemplateForm({ _id: '', name: '', content: '', messageType: 'notice' }); setTemplateListOpen(false); setTemplatePopupOpen(true); }}
+                                className="px-4 py-2 rounded bg-[var(--main_d)] text-white text-sm font-medium cursor-pointer transition-colors hover:bg-[var(--main_b)]">
+                                + Tạo mẫu
+                            </button>
+                        </div>
+                        {templates.length === 0 ? (
+                            <p className="text-sm text-[var(--text-secondary)] italic">Chưa có mẫu nào.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-max">
+                                    <thead>
+                                        <tr className="bg-[var(--main_d)] text-white">
+                                            <th className="p-2 font-medium text-left">Tên</th>
+                                            <th className="p-2 font-medium text-left">Loại tin nhắn</th>
+                                            <th className="p-2 font-medium text-left">Nội dung</th>
+                                            <th className="p-2 font-medium text-center">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {templates.map(t => (
+                                            <tr key={t._id} className="border-b border-[var(--border-color)] hover:bg-blue-50 align-top">
+                                                <td className="p-2 font-medium whitespace-nowrap">{t.name}</td>
+                                                <td className="p-2 whitespace-nowrap">
+                                                    <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                                                        {MESSAGE_TYPE_LABELS[t.messageType] || 'Khác'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-2 text-xs text-[var(--text-secondary)] whitespace-pre-wrap line-clamp-2 max-w-md">{t.content}</td>
+                                                <td className="p-2">
+                                                    <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                                                        <button onClick={() => { setMessage(t.content); setTemplateListOpen(false); }}
+                                                            className="px-2 py-1 rounded bg-blue-600 text-white text-xs cursor-pointer border-none hover:bg-blue-700">
+                                                            Dùng
+                                                        </button>
+                                                        <button onClick={() => { setTemplateForm({ _id: t._id, name: t.name, content: t.content, messageType: t.messageType || 'notice' }); setTemplateListOpen(false); setTemplatePopupOpen(true); }}
+                                                            className="px-2 py-1 rounded bg-gray-200 text-xs cursor-pointer border-none hover:bg-gray-300">
+                                                            Sửa
+                                                        </button>
+                                                        <button onClick={() => handleDeleteTemplate(t._id)}
+                                                            className="px-2 py-1 rounded bg-red-600 text-white text-xs cursor-pointer border-none hover:bg-red-700">
+                                                            Xóa
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
             />
@@ -630,6 +766,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                         <div>
                             <label className={labelCls}>Nội dung mẫu</label>
                             <textarea rows="5" className={`${inputCls} resize-y`} value={templateForm.content} onChange={e => setTemplateForm(t => ({ ...t, content: e.target.value }))} placeholder="Nội dung tin nhắn..." />
+                            <p className="text-xs text-[var(--text-secondary)] mt-1 mb-1">Chèn biến động — sẽ được thay bằng dữ liệu riêng của từng học sinh khi gửi:</p>
+                            <VariableChips onInsert={tok => setTemplateForm(t => ({ ...t, content: (t.content || '') + tok }))} />
                         </div>
                         <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
                             {templateForm._id && (
@@ -709,7 +847,13 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                                     <td className="p-2 whitespace-nowrap">{fmtDate(item.day)}</td>
                                                     <td className="p-2 max-w-[200px] text-[var(--text-secondary)]">{item.reason || '—'}</td>
                                                     <td className="p-2 text-center">{item.students.length}</td>
-                                                    <td className="p-2 whitespace-nowrap">{careBadge(item)}</td>
+                                            <td className="p-2 whitespace-nowrap">{careBadge(item)}
+                                                {item.notify?.pendingQueueCount > 0 && (
+                                                    <span className="block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 whitespace-nowrap">
+                                                        Hàng chờ: {item.notify.pendingQueueCount} tin{item.notify.queueResumeAt ? ` · ${fmtTime(item.notify.queueResumeAt)}` : ''}
+                                                    </span>
+                                                )}
+                                            </td>
                                                     <td className="p-2 whitespace-nowrap">{zaloBadge(item)}</td>
                                                     <td className="p-2 whitespace-nowrap">
                                                         {lastCf
@@ -723,6 +867,94 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                 </table>
                             </div>
                         )}
+                    </div>
+                )}
+            />
+
+            {/* POPUP LỊCH SỬ GỬI TIN */}
+            <FlexiblePopup
+                open={sendHistoryOpen}
+                onClose={() => setSendHistoryOpen(false)}
+                title="Lịch sử gửi tin"
+                width="900px"
+                renderItemList={() => (
+                    <div className="p-4">
+                        {sendHistoryLoading ? (
+                            <p className="text-sm text-[var(--text-secondary)] italic">Đang tải...</p>
+                        ) : sendHistoryItems.length === 0 ? (
+                            <p className="text-sm text-[var(--text-secondary)] italic">Chưa có lịch sử gửi tin.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-max">
+                                    <thead>
+                                        <tr className="bg-[var(--main_d)] text-white">
+                                            <th className="p-2 font-medium text-left">Thời gian</th>
+                                            <th className="p-2 font-medium text-left">Zalo gửi</th>
+                                            <th className="p-2 font-medium text-left">Người tạo</th>
+                                            <th className="p-2 font-medium text-left">Người nhận</th>
+                                            <th className="p-2 font-medium text-left">Trạng thái</th>
+                                            <th className="p-2 font-medium text-center">Xem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sendHistoryItems.map(l => (
+                                            <tr key={l._id} className="border-b border-[var(--border-color)] hover:bg-blue-50 align-top">
+                                                <td className="p-2 whitespace-nowrap">{fmtDate(l.createdAt)} {fmtTime(l.createdAt)}</td>
+                                                <td className="p-2 whitespace-nowrap">{l.zalo?.name || '—'}</td>
+                                                <td className="p-2 whitespace-nowrap">{l.createBy?.name || '—'}</td>
+                                                <td className="p-2 text-[var(--text-secondary)]">{logRecipients(l).join(', ') || '—'}</td>
+                                                <td className="p-2 whitespace-nowrap">
+                                                    <span className={`px-2 py-0.5 rounded text-xs text-white ${l.status?.status ? 'bg-green-600' : 'bg-red-600'}`}>
+                                                        {l.status?.status ? 'Thành công' : 'Thất bại'}
+                                                    </span>
+                                                    <span className="block text-xs text-[var(--text-secondary)] mt-0.5">{l.status?.message}</span>
+                                                </td>
+                                                <td className="p-2 text-center">
+                                                    <button onClick={() => setSelectedSendLog(l)}
+                                                        className="px-2 py-1 rounded bg-blue-600 text-white text-xs cursor-pointer border-none hover:bg-blue-700">
+                                                        Xem
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+            />
+
+            {/* POPUP XEM NỘI DUNG TIN ĐÃ GỬI */}
+            <FlexiblePopup
+                open={!!selectedSendLog}
+                onClose={() => setSelectedSendLog(null)}
+                title="Nội dung tin đã gửi"
+                width="640px"
+                renderItemList={() => (
+                    <div className="flex flex-col gap-3 p-4">
+                        <div className="flex items-center gap-4 flex-wrap text-sm">
+                            <span className="text-[var(--text-secondary)]">Thời gian: <span className="text-[var(--text-primary)]">{fmtDate(selectedSendLog?.createdAt)} {fmtTime(selectedSendLog?.createdAt)}</span></span>
+                            <span className="text-[var(--text-secondary)]">Zalo gửi: <span className="text-[var(--text-primary)]">{selectedSendLog?.zalo?.name || '—'}</span></span>
+                            <span className="text-[var(--text-secondary)]">Trạng thái: <span className={selectedSendLog?.status?.status ? 'text-green-600' : 'text-red-600'}>{selectedSendLog?.status?.status ? 'Thành công' : 'Thất bại'}</span></span>
+                        </div>
+                        {logRecipients(selectedSendLog).length > 0 && (
+                            <div className="text-sm">
+                                <span className="text-[var(--text-secondary)]">Người nhận: </span>
+                                <span className="text-[var(--text-primary)]">{logRecipients(selectedSendLog).join(', ')}</span>
+                            </div>
+                        )}
+                        {logContent(selectedSendLog) ? (
+                            <pre className="text-sm text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 max-h-96 overflow-auto">{logContent(selectedSendLog)}</pre>
+                        ) : (
+                            <p className="text-sm text-[var(--text-secondary)] italic">Không có nội dung lưu trữ cho lần gửi này.</p>
+                        )}
+                        <div className="flex justify-end pt-3 border-t border-[var(--border-color)]">
+                            <button onClick={() => setSelectedSendLog(null)}
+                                className="px-4 py-2 rounded bg-gray-200 text-sm cursor-pointer border-none hover:bg-gray-300">
+                                Đóng
+                            </button>
+                        </div>
                     </div>
                 )}
             />

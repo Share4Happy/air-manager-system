@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import CourseItem from '../../ui/course-item';
 import { useRouter } from 'next/navigation';
 import Loading from '@/components/(ui)/(loading)/loading';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import CourseTryItem from '../../ui/coursetry-item';
 import { reloadCourse } from '@/data/actions/reload';
 
@@ -168,19 +169,17 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                          </select>
 
                          <div className='flex gap-2 w-full md:w-auto'>
-                             <input
-                                 type="date"
-                                 className='px-3 py-2 md:py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-0'
-                                 value={startDate}
-                                 onChange={(e) => { setStartDate(e.target.value); setTimeRange('') }}
-                             />
+                             <DateInput
+                                  className='px-3 py-2 md:py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-0'
+                                  value={startDate}
+                                  onChange={(v) => { setStartDate(v); setTimeRange('') }}
+                              />
 
-                             <input
-                                 type="date"
-                                 className='px-3 py-2 md:py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-0'
-                                 value={endDate}
-                                 onChange={(e) => { setEndDate(e.target.value); setTimeRange('') }}
-                             />
+                              <DateInput
+                                  className='px-3 py-2 md:py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-0'
+                                  value={endDate}
+                                  onChange={(v) => { setEndDate(v); setTimeRange('') }}
+                              />
                          </div>
 
                          <div className='flex items-center gap-2 w-full md:w-auto'>

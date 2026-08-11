@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import PostStudent from '@/models/student';
 import connectToDB from '@/config/connectDB';
-import { senMesByPhone } from '@/function/drive/appscript';
-
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPF49FIUFKMoGshlLpERTLx1tuW3txICdlrBGUyomMYWhgANSwY0oTNV_Eppqmo5Mruw/exec';
+import { sendByPhone, getActiveZaloAccount, extractSendUid, sendResponseOk, sendResponseError } from '@/function/zalolite';
 
 export async function POST(request) {
     let body;
@@ -33,9 +31,9 @@ export async function POST(request) {
             );
         }
 
-        if (!student.Uid && !student.Phone) {
+        if (!student.Phone) {
             return NextResponse.json(
-                { message: 'Dữ liệu không hợp lệ: Học sinh này không có Uid hoặc Số điện thoại để gửi tin.' },
+                { message: 'Dữ liệu không hợp lệ: Học sinh này không có số điện thoại để gửi tin.' },
                 { status: 400 }
             );
         }
@@ -50,28 +48,33 @@ export async function POST(request) {
             personalizedMessage = personalizedMessage.replaceAll('{nameparents}', student.ParentName || '');
         }
 
-        const response = await senMesByPhone({
-            uid: student.Uid,
+        const zaloAccount = await getActiveZaloAccount();
+        const response = await sendByPhone(zaloAccount.botId, {
             phone: student.Phone,
-            message: personalizedMessage
+            text: personalizedMessage,
+            mode: 'safe',
         });
 
-        if (response.status === 2) {
-            if (!student.Uid && student.Phone && response.data?.uid) {
+        if (sendResponseOk(response)) {
+            const resolvedUid = extractSendUid(response) || student.Uid;
+            if (!student.Uid && resolvedUid) {
                 await PostStudent.updateOne(
                     { ID: id },
-                    { $set: { Uid: response.data.uid } }
+                    { $set: { Uid: resolvedUid } }
                 );
             }
 
             return NextResponse.json({
                 status: 2,
-                message: response.mes || 'Gửi tin nhắn thành công',
-                data: response.data,
+                message: 'Gửi tin nhắn thành công',
+                data: {
+                    name: response?.data?.results?.[0]?.name || student.Name,
+                    uid: resolvedUid,
+                },
             }, { status: 200 });
 
         } else {
-            throw new Error(response.mes || 'Google Script xử lý thất bại.');
+            throw new Error(sendResponseError(response) || 'ZaloLite Gateway xử lý thất bại.');
         }
 
     } catch (error) {

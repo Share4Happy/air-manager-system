@@ -71,15 +71,15 @@ function DayLessons({ lessons }) {
             <div className="font-semibold truncate flex items-center gap-1">
               <span>{safeRoom(item)}</span>
               {item.room?.area && <span className="opacity-50 font-normal">· {item.room.area}</span>}
-              {isCancelled && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded bg-red-100 text-red-600 text-xs font-medium">Báo nghỉ</span>
-              )}
             </div>
             <div className="truncate text-xs flex sm:flex-col items-baseline gap-x-1">
               <span>{item.courseId}</span>
               {item.teacher?.name ? <span><span className="sm:hidden">— </span>{item.teacher.name}</span> : null}
             </div>
             {item.time && <div className="text-xs opacity-60">{item.time}</div>}
+            {isCancelled && (
+              <span className="shrink-0 mt-1 px-1.5 py-0.5 rounded bg-red-100 text-red-600 text-xs font-medium self-start">Báo nghỉ</span>
+            )}
           </Link>
         )
       })}
@@ -126,11 +126,11 @@ function MonthList({ data }) {
               style={today ? { background: 'var(--main)' } : undefined}>
               {dd}/{mm}/{yy} {today ? '(Hôm nay)' : ''}
             </div>
-            {lessons.map(item => {
+            {lessons.map((item, idx) => {
               const makeup = item.type === 'Học bù'
               const cancelled = item.type === 'Báo nghỉ'
               return (
-                <Link key={item._id} href={`/calendar/${item._id}`}
+                <Link key={item._id || idx} href={`/calendar/${item._id}`}
                   className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--hover)] transition-colors border-b border-[var(--border-color)] last:border-b-0"
                   style={{ opacity: cancelled ? 0.6 : 1 }}>
                   <div className="w-14 shrink-0 text-[var(--text-secondary)] font-medium">{item.time || '—'}</div>
@@ -173,11 +173,26 @@ export default function CalendarPage() {
   const fetchData = useCallback(async (monday) => {
     setLoading(true)
     try {
-      const month = monday.getMonth() + 1
-      const year = monday.getFullYear()
-      const res = await fetch(`/api/calendar?month=${month}&year=${year}`)
-      const json = await res.json()
-      const real = json.data || []
+      const months = new Set()
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + i)
+        months.add(`${d.getFullYear()}-${d.getMonth() + 1}`)
+      }
+      const res = await Promise.all([...months].map(async key => {
+        const [year, month] = key.split('-').map(Number)
+        const r = await fetch(`/api/calendar?month=${month}&year=${year}`)
+        return r.ok ? (await r.json()).data || [] : []
+      }))
+      const seen = new Set()
+      const real = []
+      for (const arr of res) {
+        for (const item of arr) {
+          if (item._id && seen.has(item._id)) continue
+          if (item._id) seen.add(item._id)
+          real.push(item)
+        }
+      }
       setData(real)
     } catch { } finally { setLoading(false) }
   }, [])
@@ -194,8 +209,13 @@ export default function CalendarPage() {
   useEffect(() => { fetchUser() }, [fetchUser])
 
   const weekDays = useMemo(() => getWeekRange(currentMonday).days, [currentMonday])
-  const viewMonth = currentMonday.getMonth() + 1
-  const viewYear = currentMonday.getFullYear()
+  const leftMonthLabel = useMemo(() => {
+    const ms = [...new Set(weekDays.map(d => d.getMonth()))]
+    const y = weekDays[0].getFullYear()
+    return ms.length === 1
+      ? `Tháng ${ms[0] + 1}/${y}`
+      : `Tháng ${ms[0] + 1} - ${ms[ms.length - 1] + 1}/${y}`
+  }, [weekDays])
   const monthLabel = useMemo(() => {
     const ms = [...new Set(weekDays.map(d => d.getMonth()))]
     const y = weekDays[0].getFullYear()
@@ -249,9 +269,9 @@ export default function CalendarPage() {
       items.push({ day, lessons: dayLessons, isToday })
     }
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col overflow-y-auto">
         {items.map(({ day, lessons, isToday }) => (
-          <div key={fmtDate(day)} className="flex flex-1 min-h-0 border-b border-gray-200 overflow-hidden">
+          <div key={fmtDate(day)} className="flex min-h-[140px] border-b border-gray-200 overflow-hidden">
             {/* Left sidebar — date indicator */}
             <div className={`w-[80px] shrink-0 flex flex-col items-center justify-center text-white ${isToday ? 'bg-red-600' : 'bg-[var(--main)]'}`}>
               <span className="text-xs font-semibold leading-tight text-center px-1">{DAY_LABELS[day.getDay() === 0 ? 6 : day.getDay() - 1]}</span>
@@ -274,7 +294,7 @@ export default function CalendarPage() {
       <div className="hidden lg:flex flex-col border-r border-[var(--border-color)] w-[380px] min-w-[380px]">
         <div style={{ background: 'var(--main)' }} className="flex flex-col justify-center px-4 border-b border-[var(--border-color)] h-[94px]">
           <span className="text-lg font-bold text-white">{viewMode === 'my' ? 'Lịch của tôi' : 'Toàn trung tâm'}</span>
-          <span className="text-sm text-white/80">Tháng {viewMonth}/{viewYear}</span>
+          <span className="text-sm text-white/80">{leftMonthLabel}</span>
         </div>
         {loading ? (
           <div className="flex-1 flex items-center justify-center"><Loading content={<p className="text-sm">Đang tải...</p>} /></div>

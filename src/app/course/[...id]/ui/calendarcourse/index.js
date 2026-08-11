@@ -5,6 +5,7 @@ import WrapIcon from '@/components/(ui)/(button)/hoveIcon';
 import Noti from '@/components/(features)/(noti)/noti';
 import Menu from '@/components/(ui)/(button)/menu';
 import Loading from '@/components/(ui)/(loading)/loading';
+import DateInput from '@/components/(ui)/(input)/DateInput';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/function';
@@ -16,7 +17,9 @@ const Cell = React.memo(({ flex, align, header, children }) => (<div style={{ fl
 const MoreIcons = React.memo(({ onEdit, onDelete, onDetail, onMakeup }) => (
     <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
         <WrapIcon icon={<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>} content="Sửa lịch học" placement="bottom" style={{ background: 'var(--yellow)' }} click={onEdit} />
-        <WrapIcon icon={<svg viewBox="0 0 448 512" width="14" height="14" fill="#fff"><path d="M432 32H312l-9.4-18.7A24 24 0 0 0 280 0H168a24 24 0 0 0-22.6 13.3L136 32H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h16l21.2 339a48 48 0 0 0 47.9 45h243.6a48 48 0 0 0 47.9-45L416 96h16a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16z" /></svg>} content="Báo nghỉ" placement="bottom" style={{ background: 'var(--red)' }} click={onDelete} />
+        <button onClick={onDelete} className="px-3 py-1.5 flex items-center gap-1.5 rounded text-white text-xs font-medium cursor-pointer border-none hover:opacity-90" style={{ background: 'var(--red)' }}>
+            Báo nghỉ
+        </button>
         <WrapIcon icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="14" height="14" fill="#fff"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336l24 0 0-64-24 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l48 0c13.3 0 24 10.7 24 24l0 88 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-208a32 32 0 1 1 0 64 32 32 0 1 1 0-64z" /></svg>} content="Chi tiết học sinh" placement="bottom" style={{ background: 'var(--main_d)' }} click={onDetail} />
         <WrapIcon icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="14" height="14" fill="#fff"><path d="M96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3zM504 312l0-64 64 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-64 0 0-64c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 64-64 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l64 0 0 64c0 13.3 10.7 24 24 24s24-10.7 24-24z"/></svg>} content="Tạo buổi bù" placement="bottom" style={{ background: 'var(--green)' }} click={onMakeup} />
     </div>
@@ -35,17 +38,8 @@ const ListMenu = React.memo(({ arr, loading, empty, onPick }) => {
     }, [arr, loading, empty, onPick]);
     return <div className={'mt-2 bg-white p-2 rounded-lg shadow-[var(--boxshaw2)]'}>{body}</div>;
 });
-const cols = [{ key: 'Day', label: 'Ngày', flex: 0.6, align: 'left' }, { key: 'Time', label: 'Giờ', flex: 0.6, align: 'left' }, { key: 'Topic', label: 'Chủ đề', flex: 2, align: 'left' }, { key: 'Room', label: 'Phòng', flex: 0.7, align: 'left' }, { key: 'Teacher', label: 'Giáo viên', flex: 1.2, align: 'left' }, { key: 'Type', label: 'Trạng thái', flex: 0.8, align: 'center' }, { key: 'Students', label: 'Sỉ số', flex: 0.8, align: 'center' }, { key: 'more', label: 'Hành động', flex: 1, align: 'center' }];
+const cols = [{ key: 'Day', label: 'Ngày', flex: 0.6, align: 'left' }, { key: 'Time', label: 'Giờ', flex: 0.6, align: 'left' }, { key: 'Topic', label: 'Chủ đề', flex: 2, align: 'left' }, { key: 'Room', label: 'Phòng', flex: 0.7, align: 'left' }, { key: 'Teacher', label: 'Giáo viên', flex: 1.2, align: 'left' }, { key: 'Type', label: 'Trạng thái', flex: 0.8, align: 'center' }, { key: 'more', label: 'Hành động', flex: 1, align: 'center' }];
 const ScheduleTable = React.memo(({ course, onEdit, onDelete, onShowStudents, onMakeup }) => {
-    const studentCountMap = useMemo(() => {
-        const counts = new Map();
-        toArr(course?.Student).forEach(student => {
-            toArr(student.Learn).forEach(learn => {
-                counts.set(learn.Lesson, (counts.get(learn.Lesson) || 0) + 1);
-            });
-        });
-        return counts;
-    }, [course?.Student]);
 
     return (
         <div className={'m-4 border border-[var(--border-color)] rounded-md overflow-x-auto'}>
@@ -60,7 +54,6 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onShowStudents, on
                             case 'Day': return <Cell key={col.key} flex={col.flex} align={col.align}>{formatDate(new Date(row.Day))}</Cell>;
                             case 'more': return <Cell key={col.key} flex={col.flex} align={col.align}><MoreIcons onEdit={() => onEdit(row)} onDelete={() => onDelete(row)} onDetail={() => onShowStudents(row)} onMakeup={() => onMakeup(row)} /></Cell>;
                             case 'Type': return <Cell key={col.key} flex={col.flex} align={col.align}><span className='text-xs font-semibold text-[var(--text-primary)]' style={{ padding: '4px 16px', borderRadius: '12px', background: row.Type === 'Báo nghỉ' ? 'var(--red)' : 'var(--green)', color: 'white' }}>{row.Type || 'Chính thức'}</span></Cell>;
-                            case 'Students': return <Cell key={col.key} flex={col.flex} align={col.align}><span>{studentCountMap.get(row._id) || 0} học sinh</span></Cell>;
                             default: return <Cell key={col.key} flex={col.flex} align={col.align}>{row[col.key]}</Cell>;
                         }
                     })}
@@ -141,7 +134,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
                 <p className="text-sm font-semibold text-[var(--text-primary)]">Chủ đề buổi học</p>
                 {isEditMode ? <p className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: '10px 12px', background: 'var(--bg_color)', borderRadius: 4 }}>{form.Topic}</p> : <Menu menuItems={<ListMenu arr={allTopics} empty="Chưa có chủ đề" onPick={v => handlePick('Topic', 'topic', v)} />} menuPosition="bottom" isOpen={open.topic} onOpenChange={v => handleOpen('topic', v)} customButton={<button className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ textAlign: 'left' }}><p className="text-sm font-normal text-[var(--text-primary)]">{form.Topic || 'Chọn chủ đề'}</p></button>} />}
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <input type="date" className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ flex: 1 }} value={form.Day} onChange={e => handleFormChange('Day', e.target.value)} />
+                    <DateInput className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ flex: 1 }} value={form.Day} onChange={v => handleFormChange('Day', v)} />
                     <input type="time" className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ flex: 1 }} value={form.Start} onChange={e => handleFormChange('Start', e.target.value)} />
                 </div>
                 <p className="text-sm font-semibold text-[var(--text-primary)]" style={{ marginTop: 8 }}>Giáo viên</p>
