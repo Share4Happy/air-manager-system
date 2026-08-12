@@ -151,13 +151,13 @@ async function getLessonsInRange(start, end) {
         { $set: { topic: { $arrayElemAt: [{ $filter: { input: '$bk.Topics', as: 'tp', cond: { $eq: ['$$tp._id', '$Detail.Topic'] } } }, 0] } } },
         { $lookup: { from: 'areas', localField: 'Area', foreignField: '_id', as: 'areaDoc' } },
         { $set: { areaName: { $arrayElemAt: ['$areaDoc.name', 0] }, area: '$Area' } },
-        { $project: { _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', lessonIdx: 1, teacher: '$Detail.Teacher', area: 1, areaName: 1, enrolled: { $size: '$Student' }, image: '$Detail.Image', detailImage: '$Detail.DetailImage', students: '$students' } },
+        { $project: { _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', lessonIdx: 1, teacher: '$Detail.Teacher', area: 1, areaName: 1, enrolled: { $size: '$Student' }, image: '$Detail.Image', detailImage: '$Detail.DetailImage', checkin: '$Detail.Checkin', students: '$students' } },
     ])
 
     const trialAgg = TrialCourse.aggregate([
         { $unwind: { path: '$sessions', includeArrayIndex: 'lessonIdx' } },
         { $match: { 'sessions.day': { $gte: start, $lt: end } } },
-        { $project: { _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', lessonIdx: 1, teacher: '$sessions.teacher', area: null, areaName: { $literal: 'Học thử' }, enrolled: { $size: '$sessions.students' }, image: '$sessions.images', detailImage: { $literal: [] }, students: '$sessions.students' } },
+        { $project: { _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', lessonIdx: 1, teacher: '$sessions.teacher', area: null, areaName: { $literal: 'Học thử' }, enrolled: { $size: '$sessions.students' }, image: '$sessions.images', detailImage: { $literal: [] }, checkin: '$sessions.checkin', students: '$sessions.students' } },
     ])
 
     const [official, trial] = await Promise.all([officialAgg, trialAgg])
@@ -175,6 +175,7 @@ export async function generateAttendanceReport({ start, end, options }) {
         unchecked: false,
         perClass: true,
         violations: true,
+        checkinLate: true,
         ...options,
     }
     if (options && typeof options.absent !== 'boolean'
@@ -189,6 +190,8 @@ export async function generateAttendanceReport({ start, end, options }) {
     const teacherIds = new Set()
     const noCheckin = []
     const noResource = []
+    const lateCheckins = []
+    const onTimeCheckins = []
 
     for (const l of lessons) {
         const name = l.courseId || l.courseName || l._id
@@ -229,6 +232,8 @@ export async function generateAttendanceReport({ start, end, options }) {
         if (row.enrolled > 0 && row.present + row.absent === 0) noCheckin.push(row)
         const hasImg = (l.image && String(l.image).length > 0) || (Array.isArray(l.detailImage) && l.detailImage.length > 0)
         if (!hasImg) noResource.push(row)
+        if (l.checkin?.status === 'tre') lateCheckins.push(row)
+        else if (l.checkin?.status === 'dung-gio') onTimeCheckins.push(row)
     }
 
     const teacherMap = {}
@@ -278,6 +283,14 @@ export async function generateAttendanceReport({ start, end, options }) {
         lines.push('Lỗi vi phạm:')
         lines.push(`Lớp chưa điểm danh: ${noCheckin.length}${noCheckinNames ? ` (${noCheckinNames})` : ''}`)
         lines.push(`Thiếu tài nguyên: ${noResource.length}${noResourceNames ? ` (${noResourceNames})` : ''}`)
+    }
+    if (o.checkinLate) {
+        const lateNames = [...new Set(lateCheckins.map(r => teacherName(r.teacher)).filter(Boolean))]
+        const lateLabel = lateNames.length
+            ? lateNames.join(', ')
+            : [...new Set(lateCheckins.map(r => r.name).filter(Boolean))].join(', ')
+        lines.push(`Checkin trễ: ${lateCheckins.length}${lateLabel ? ` (${lateLabel})` : ''}`)
+        lines.push(`Checkin đúng giờ: ${onTimeCheckins.length}`)
     }
     lines.push('')
     lines.push('--------------------------')
@@ -638,4 +651,85 @@ export async function executeReportConfig(cfg) {
             ? `Đã gửi báo cáo cho ${attempted.length} người nhận.`
             : `Gửi báo cáo thất bại ${failed.length}/${attempted.length}. ${failed.map(a => a.errMsg).filter(Boolean).join('; ')}`.trim(),
     }
+}
+
+export async function prepareReportSend(cfg) {
+    await connectDB()
+    const now = new Date()
+    const ids = Array.isArray(cfg.recipientUserIds) && cfg.recipientUserIds.length
+        ? cfg.recipientUserIds
+        : (cfg.recipientUserId ? [cfg.recipientUserId] : [])
+    const [recipients, zalo] = await Promise.all([
+        User.find({ _id: { $in: ids } }).select('name phone').lean(),
+        ZaloAccount.findById(cfg.zaloAccountId).lean(),
+    ])
+    if (!zalo || !zalo.botId) throw new Error('Tài khoản Zalo chưa có botId (ZaloLite).')
+    const withPhone = recipients.filter(r => r && r.phone)
+    if (withPhone.length === 0) throw new Error('Người nhận báo cáo không có số điện thoại.')
+    const targets = withPhone.map(r => ({ phone: r.phone, name: r.name || '' }))
+
+    const period = getReportPeriod(cfg, now)
+    let body
+    if (cfg.reportType === 'attendance') {
+        body = await generateAttendanceReport({ start: period.start, end: period.end, options: cfg.reportOptions?.attendance })
+    } else {
+        body = await generateMonthlyReport({ year: period.year, month: period.month, options: cfg.reportOptions?.monthly })
+    }
+    const periodLabel = cfg.reportType === 'monthly'
+        ? `Tháng ${period.month}/${period.year}`
+        : `${fmtDate(period.start)} - ${fmtDate(period.end)}`
+    const text = normalizeMessageText(await renderReportTemplate(cfg.messageTemplate || '{body}', {
+        body,
+        period: periodLabel,
+        date: fmtDate(now),
+    }))
+
+    return {
+        zaloName: zalo.name || '',
+        botId: zalo.botId,
+        zaloId: String(zalo._id || cfg.zaloAccountId),
+        createBy: cfg.createdBy ? String(cfg.createdBy) : null,
+        targets,
+        text,
+    }
+}
+
+export async function sendSingleReport({ botId, zaloId, createBy, target, text }) {
+    text = normalizeMessageText(text)
+    let ok = false
+    let errMsg = ''
+    try {
+        const resp = await sendByPhone(botId, { phone: target.phone, text, mode: 'safe' })
+        if (resp.async) {
+            ok = true
+        } else if (Array.isArray(resp.data?.results)) {
+            const r = resp.data.results[0] || {}
+            ok = r.status === 'success'
+            errMsg = r.error_message || r.message || ''
+        } else {
+            ok = resp.data?.success !== false
+        }
+    } catch (err) {
+        ok = false
+        errMsg = err?.message || 'Lỗi gửi tin nhắn'
+    }
+    await Logs.create({
+        status: {
+            status: ok,
+            message: ok ? 'Gửi báo cáo thành công' : (errMsg || 'Gửi báo cáo thất bại'),
+            data: {
+                error_code: ok ? 0 : -1,
+                error_message: ok ? '' : errMsg,
+                message: text,
+                recipients: [target.phone],
+                recipientNames: [target.name || ''],
+                batchId: new mongoose.Types.ObjectId().toString(),
+            },
+        },
+        type: 'sendReport',
+        createBy,
+        zalo: zaloId,
+        schedule: null,
+    })
+    return { ok, errMsg }
 }

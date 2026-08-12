@@ -294,17 +294,23 @@ async function pollPendingCampaigns() {
 
 async function processPendingReports() {
     const now = new Date();
-    const configs = await ReportConfig.find({ isActive: true, nextRunAt: { $lte: now } }).lean();
-    for (const cfg of configs) {
-        // Claim the config trước khi chạy để tránh lần gọi scheduler sau gửi trùng lặp
-        await ReportConfig.findByIdAndUpdate(cfg._id, {
-            nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
+    const configs = await ReportConfig.find({ isActive: true, nextRunAt: { $lte: now } }).select('_id').lean();
+    for (const { _id } of configs) {
+        // Claim atomic: chỉ một tick giành được config để tránh gửi trùng khi 2 tick chạy song song
+        const claimed = await ReportConfig.findOneAndUpdate(
+            { _id, nextRunAt: { $lte: now } },
+            { $set: { nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } },
+        ).lean();
+        if (!claimed) continue;
         try {
+            const cfg = await ReportConfig.findById(_id).lean();
             const result = await executeReportConfig(cfg);
             if (result.queued) {
-                if (cfg.queueResumeAt) {
-                    await ReportConfig.findByIdAndUpdate(cfg._id, { nextRunAt: cfg.queueResumeAt });
+                // Đọc lại queueResumeAt tươi: executeReportConfig tự set nextRunAt=resumeAt khi bị chặn,
+                // còn khi chưa đến giờ resume (trả về queued sớm) thì đặt đúng lịch tiếp tục
+                const fresh = await ReportConfig.findById(_id).select('queueResumeAt').lean();
+                if (fresh?.queueResumeAt) {
+                    await ReportConfig.findByIdAndUpdate(_id, { nextRunAt: fresh.queueResumeAt });
                 }
                 continue;
             }
@@ -314,15 +320,27 @@ async function processPendingReports() {
                 weekday: cfg.weekday,
                 monthDay: cfg.monthDay,
             });
-            await ReportConfig.findByIdAndUpdate(cfg._id, {
+            await ReportConfig.findByIdAndUpdate(_id, {
                 lastSentAt: now,
                 nextRunAt,
             });
             if (!result.status) {
-                console.warn(`[Scheduler] Report config ${cfg._id} send reported failure: ${result.message}`);
+                console.warn(`[Scheduler] Report config ${_id} send reported failure: ${result.message}`);
             }
         } catch (err) {
-            console.error(`[Scheduler] Report config ${cfg._id} error:`, err.message);
+            console.error(`[Scheduler] Report config ${_id} error:`, err.message);
+            const cfg = await ReportConfig.findById(_id).select('frequency sendTime weekday monthDay').lean();
+            if (cfg) {
+                // Lỗi thoáng qua: đặt lại lịch kế tiếp (không dời +24h lệch giờ gửi)
+                await ReportConfig.findByIdAndUpdate(_id, {
+                    nextRunAt: computeNextRunAt({
+                        frequency: cfg.frequency,
+                        sendTime: cfg.sendTime,
+                        weekday: cfg.weekday,
+                        monthDay: cfg.monthDay,
+                    }),
+                });
+            }
         }
     }
 }

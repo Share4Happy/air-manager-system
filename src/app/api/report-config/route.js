@@ -3,6 +3,7 @@ import connectDB from '@/config/connectDB'
 import ReportConfig from '@/models/reportConfig'
 import ReportTemplate from '@/models/reportTemplate'
 import ReportSetting from '@/models/reportSetting'
+import { normalizeMessageText } from '@/function/report'
 
 export async function GET() {
     try {
@@ -16,11 +17,20 @@ export async function GET() {
             ReportTemplate.find({}).sort({ createdAt: -1 }).lean(),
             ReportSetting.findOne().lean(),
         ])
+        const cleanConfigs = configs.map(c => ({
+            ...c,
+            messageTemplate: normalizeMessageText(c.messageTemplate),
+            pendingText: normalizeMessageText(c.pendingText),
+        }))
+        const cleanTemplates = templates.map(t => ({
+            ...t,
+            content: normalizeMessageText(t.content),
+        }))
         return NextResponse.json({
             success: true,
             data: {
-                configs: JSON.parse(JSON.stringify(configs)),
-                templates: JSON.parse(JSON.stringify(templates)),
+                configs: JSON.parse(JSON.stringify(cleanConfigs)),
+                templates: JSON.parse(JSON.stringify(cleanTemplates)),
                 setting: JSON.parse(JSON.stringify(setting)) || null,
             },
         })

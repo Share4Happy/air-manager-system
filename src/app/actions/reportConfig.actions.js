@@ -8,7 +8,15 @@ import ReportSetting from '@/models/reportSetting';
 import User from '@/models/users';
 import ZaloAccount from '@/models/zalo';
 import checkAuthToken from '@/utils/checktoken';
-import { computeNextRunAt, executeReportConfig } from '@/function/report';
+import {
+    computeNextRunAt,
+    countHourlySent,
+    executeReportConfig,
+    getReportSendSettings,
+    normalizeMessageText,
+    prepareReportSend,
+    sendSingleReport,
+} from '@/function/report';
 
 async function requireAuth() {
     const user = await checkAuthToken();
@@ -20,7 +28,7 @@ async function requireAuth() {
 }
 
 function readReportOptions(formData) {
-    const attendance = ['classes', 'present', 'absent', 'unchecked', 'lessonCount', 'studentTurns', 'perClass', 'violations'];
+    const attendance = ['classes', 'present', 'absent', 'unchecked', 'lessonCount', 'studentTurns', 'perClass', 'violations', 'checkinLate'];
     const monthly = ['tuition', 'enrollments', 'quits', 'upgrades', 'classesByArea', 'studentRank', 'trialCount', 'trialRate'];
     const attendanceOptions = {};
     const monthlyOptions = {};
@@ -43,7 +51,7 @@ function buildConfigPayload(formData) {
         reportOptions: readReportOptions(formData),
         zaloAccountId: (formData.get('zaloAccountId') || '').toString(),
         reportType: (formData.get('reportType') || 'attendance').toString(),
-        messageTemplate: (formData.get('messageTemplate') || '').toString(),
+        messageTemplate: normalizeMessageText((formData.get('messageTemplate') || '').toString()),
         frequency: (formData.get('frequency') || 'daily').toString(),
         sendTime: (formData.get('sendTime') || '08:00').toString(),
         weekday: parseInt(formData.get('weekday') || '1', 10),
@@ -144,6 +152,59 @@ export async function sendReportNowAction(_prevState, formData) {
     }
 }
 
+export async function prepareReportSendAction(_prevState, formData) {
+    const auth = await requireAuth();
+    if (!auth.ok) return { status: false, message: auth.message };
+    try {
+        await connectDB();
+        const id = (formData.get('_id') || '').toString();
+        const cfg = await ReportConfig.findById(id);
+        if (!cfg) return { status: false, message: 'Không tìm thấy cấu hình báo cáo.' };
+        const data = await prepareReportSend(cfg);
+        return { status: true, message: 'Sẵn sàng gửi tin.', data };
+    } catch (error) {
+        console.error('Prepare Report Send Error:', error);
+        return { status: false, message: error.message || 'Lỗi hệ thống, không thể chuẩn bị tin gửi.' };
+    }
+}
+
+export async function sendOneReportAction(_prevState, formData) {
+    const auth = await requireAuth();
+    if (!auth.ok) return { ok: false, message: auth.message };
+    try {
+        await connectDB();
+        const id = (formData.get('_id') || '').toString();
+        const phone = (formData.get('phone') || '').toString().trim();
+        const name = (formData.get('name') || '').toString();
+        const text = normalizeMessageText((formData.get('text') || '').toString());
+        if (!id || !phone || !text) return { ok: false, message: 'Thiếu dữ liệu gửi tin.' };
+        const cfg = await ReportConfig.findById(id).select('zaloAccountId createdBy').lean();
+        if (!cfg) return { ok: false, message: 'Không tìm thấy cấu hình báo cáo.' };
+        const zalo = await ZaloAccount.findById(cfg.zaloAccountId).lean();
+        if (!zalo || !zalo.botId) return { ok: false, message: 'Tài khoản Zalo chưa có botId (ZaloLite).' };
+        const settings = await getReportSendSettings();
+        const zaloId = zalo._id || cfg.zaloAccountId;
+        const sentCount = await countHourlySent(zaloId);
+        if (sentCount >= settings.hourlyLimit) {
+            return { ok: false, blocked: true, message: `Đã đạt giới hạn ${settings.hourlyLimit} tin/giờ.` };
+        }
+        const result = await sendSingleReport({
+            botId: zalo.botId,
+            zaloId,
+            createBy: auth.user.id || cfg.createdBy,
+            target: { phone, name },
+            text,
+        });
+        if (result.ok) {
+            await ReportConfig.findByIdAndUpdate(id, { $set: { lastSentAt: new Date() } });
+        }
+        return { ok: result.ok, message: result.ok ? 'Gửi thành công' : (result.errMsg || 'Gửi thất bại') };
+    } catch (error) {
+        console.error('Send One Report Error:', error);
+        return { ok: false, message: error.message || 'Lỗi hệ thống, không thể gửi tin.' };
+    }
+}
+
 export async function sendReportTestAction(_prevState, formData) {
     const auth = await requireAuth();
     if (!auth.ok) return { status: false, message: auth.message };
@@ -208,7 +269,7 @@ export async function saveReportTemplateAction(_prevState, formData) {
     const auth = await requireAuth();
     if (!auth.ok) return { status: false, message: auth.message };
     const name = (formData.get('name') || '').toString().trim();
-    const content = (formData.get('content') || '').toString().trim();
+    const content = normalizeMessageText((formData.get('content') || '').toString());
     const reportType = (formData.get('reportType') || 'all').toString();
     const messageType = (formData.get('messageType') || 'other').toString();
     if (!name) return { status: false, message: 'Vui lòng nhập tên mẫu.' };

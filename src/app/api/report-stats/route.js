@@ -31,6 +31,7 @@ export async function GET(request) {
         let start
         let labels
         let bucketSize
+        let todayIndex = -1
 
         if (range === 'day') {
             bucketSize = 'day'
@@ -52,14 +53,15 @@ export async function GET(request) {
                 labels.push(`${d.getMonth() + 1}/${d.getFullYear()}`)
             }
         } else {
-            bucketSize = 'week'
+            bucketSize = 'day'
             start = startOfWeek(now)
-            start.setDate(start.getDate() - 4 * 7)
             labels = []
-            for (let i = 0; i < 5; i++) {
+            const today = startOfDay(now)
+            for (let i = 0; i < 7; i++) {
                 const d = new Date(start)
-                d.setDate(start.getDate() + i * 7)
+                d.setDate(start.getDate() + i)
                 labels.push(`${d.getDate()}/${d.getMonth() + 1}`)
+                if (startOfDay(d).getTime() === today.getTime()) todayIndex = i
             }
         }
 
@@ -79,7 +81,7 @@ export async function GET(request) {
             }
             if (idx >= 0 && idx < counts.length) counts[idx]++
         }
-        return NextResponse.json({ success: true, data: { labels, data: counts } })
+        return NextResponse.json({ success: true, data: { labels, data: counts, todayIndex } })
     } catch (err) {
         console.error('Report Stats API Error:', err)
         return NextResponse.json({ success: false, error: err.message }, { status: 500 })

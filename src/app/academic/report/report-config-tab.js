@@ -10,11 +10,12 @@ import {
     saveReportConfigAction,
     deleteReportConfigAction,
     toggleReportConfigAction,
-    sendReportNowAction,
     sendReportTestAction,
     saveReportTemplateAction,
     deleteReportTemplateAction,
     saveReportSettingAction,
+    prepareReportSendAction,
+    sendOneReportAction,
 } from '@/app/actions/reportConfig.actions'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
@@ -40,6 +41,7 @@ const ATTENDANCE_OPTIONS = [
     ['studentTurns', 'Tổng lượt học sinh'],
     ['perClass', 'Chi tiết theo lớp (theo khu vực)'],
     ['violations', 'Lỗi vi phạm'],
+    ['checkinLate', 'Checkin trễ (điểm danh sau giờ bắt đầu)'],
 ]
 const MONTHLY_OPTIONS = [
     ['tuition', 'Học phí thu'],
@@ -52,7 +54,7 @@ const MONTHLY_OPTIONS = [
     ['trialRate', 'Tỉ lệ nhập học sau học thử'],
 ]
 const DEFAULT_REPORT_OPTIONS = {
-    attendance: { classes: true, present: true, absent: true, unchecked: false, lessonCount: false, studentTurns: false, perClass: true, violations: true },
+    attendance: { classes: true, present: true, absent: true, unchecked: false, lessonCount: false, studentTurns: false, perClass: true, violations: true, checkinLate: true },
     monthly: { tuition: true, enrollments: true, upgrades: true, quits: true, classesByArea: true, studentRank: true, trialCount: true, trialRate: true, comparePrevMonth: false },
 }
 
@@ -67,22 +69,19 @@ function logContent(l) {
     return l?.status?.data?.message || l?.message || ''
 }
 
-function logRecipients(l) {
-    if (l?._recipientNames?.length) return l._recipientNames
-    if (l?._recipients?.length) return l._recipients
-    const r = l?.status?.data?.recipients
-    return Array.isArray(r) ? r : []
-}
-
 function ReportStatsChart({ data }) {
+    const values = data?.data || []
+    const todayIndex = typeof data?.todayIndex === 'number' ? data.todayIndex : -1
     const chartData = {
         labels: data?.labels || [],
         datasets: [
             {
                 label: 'Số tin đã gửi',
-                data: data?.data || [],
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                data: values,
+                backgroundColor: values.map((_, i) =>
+                    i === todayIndex ? 'rgba(47, 111, 208, 0.9)' : 'rgba(54, 162, 235, 0.6)'),
+                borderColor: values.map((_, i) =>
+                    i === todayIndex ? 'rgba(26, 84, 165, 1)' : 'rgba(54, 162, 235, 1)'),
                 borderWidth: 1,
                 borderRadius: 4,
             },
@@ -148,6 +147,14 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
     const [statsRange, setStatsRange] = useState('week')
     const [statsLoading, setStatsLoading] = useState(false)
     const [setting, setSetting] = useState(null)
+    const [sendNowOpen, setSendNowOpen] = useState(false)
+    const [sendNowConfig, setSendNowConfig] = useState(null)
+    const [sendNowPrep, setSendNowPrep] = useState({ loading: false, error: '', data: null })
+    const [sendStep, setSendStep] = useState('confirm')
+    const [sendProgress, setSendProgress] = useState({ current: 0, total: 0 })
+    const [sendResults, setSendResults] = useState([])
+    const [sendBlocked, setSendBlocked] = useState(false)
+    const sendNowAbortRef = useRef(false)
 
     const eligibleUsers = users.filter(u => u.phone && u.status !== false)
     const eligibleZalo = zalo.filter(z => z.botId)
@@ -201,7 +208,7 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                     groups.set(key, g)
                 })
                 const merged = Array.from(groups.values()).map(g => {
-                    const logs = g.logs
+                    const logs = [...g.logs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                     const first = logs[0]
                     const allOk = logs.every(x => !!x.status?.status)
                     const recipients = logs.flatMap(x => x.status?.data?.recipients || [])
@@ -219,6 +226,7 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                         },
                         _recipients: recipients,
                         _recipientNames: recipientNames,
+                        _logs: logs,
                     }
                 })
                 setHistory(merged)
@@ -394,6 +402,74 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
         showNoti(res.status, res.message)
     }
 
+    const openSendNow = async (cfg) => {
+        sendNowAbortRef.current = false
+        setSendNowConfig(cfg)
+        setSendStep('confirm')
+        setSendBlocked(false)
+        setSendProgress({ current: 0, total: 0 })
+        setSendResults([])
+        setSendNowPrep({ loading: true, error: '', data: null })
+        setSendNowOpen(true)
+        const fd = new FormData()
+        fd.append('_id', cfg._id)
+        const res = await prepareReportSendAction(null, fd)
+        if (res.status && res.data) {
+            setSendNowPrep({ loading: false, error: '', data: res.data })
+            setSendResults(res.data.targets.map(t => ({ ...t, state: 'pending', ok: null, message: '' })))
+            setSendProgress({ current: 0, total: res.data.targets.length })
+        } else {
+            setSendNowPrep({ loading: false, error: res.message || 'Không thể chuẩn bị tin gửi.', data: null })
+        }
+    }
+
+    const closeSendNow = () => {
+        sendNowAbortRef.current = true
+        setSendNowOpen(false)
+        setSendNowConfig(null)
+        setSendNowPrep({ loading: false, error: '', data: null })
+        setSendStep('confirm')
+        setSendResults([])
+        setSendProgress({ current: 0, total: 0 })
+        setSendBlocked(false)
+    }
+
+    const startSendNow = async () => {
+        const d = sendNowPrep.data
+        if (!d || !sendNowConfig) return
+        sendNowAbortRef.current = false
+        setSendStep('sending')
+        setSendBlocked(false)
+        const targets = d.targets
+        setSendProgress({ current: 0, total: targets.length })
+        setSendResults(targets.map(t => ({ ...t, state: 'pending', ok: null, message: '' })))
+        let current = 0
+        for (let i = 0; i < targets.length; i++) {
+            const target = targets[i]
+            setSendResults(prev => prev.map((r, idx) => idx === i ? { ...r, state: 'sending' } : r))
+            const fd = new FormData()
+            fd.append('_id', sendNowConfig._id)
+            fd.append('phone', target.phone)
+            fd.append('name', target.name)
+            fd.append('text', d.text)
+            const res = await sendOneReportAction(null, fd)
+            current++
+            if (sendNowAbortRef.current) break
+            if (res.ok === false && res.blocked) {
+                setSendBlocked(true)
+                setSendResults(prev => prev.map((r, idx) => idx === i
+                    ? { ...r, state: 'done', ok: false, message: res.message || 'Hết giới hạn tin trong giờ' }
+                    : r))
+                setSendProgress({ current, total: targets.length })
+                break
+            }
+            setSendResults(prev => prev.map((r, idx) => idx === i ? { ...r, state: 'done', ok: res.ok, message: res.message || '' } : r))
+            setSendProgress({ current, total: targets.length })
+        }
+        setSendStep('done')
+        fetchStats(statsRange)
+    }
+
     return (
         <div className="flex flex-col gap-4 overflow-auto pb-6">
             <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.mes} />
@@ -485,12 +561,9 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                                                         {c.isActive ? 'Bật' : 'Tắt'}
                                                     </button>
                                                 </form>
-                                                <form action={sendReportNowAction} onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.target); await runConfigAction(sendReportNowAction, fd); }}>
-                                                    <input type="hidden" name="_id" value={c._id} />
-                                                    <button type="submit" className="px-2 py-1 rounded bg-blue-600 text-white text-xs cursor-pointer border-none hover:bg-blue-700">
-                                                        Gửi ngay
-                                                    </button>
-                                                </form>
+                                                <button onClick={() => openSendNow(c)} className="px-2 py-1 rounded bg-blue-600 text-white text-xs cursor-pointer border-none hover:bg-blue-700">
+                                                    Gửi ngay
+                                                </button>
                                                 <button onClick={() => startEdit(c)} className="px-2 py-1 rounded bg-gray-200 text-xs cursor-pointer border-none hover:bg-gray-300">
                                                     Sửa
                                                 </button>
@@ -1002,10 +1075,35 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                             <span className="text-[var(--text-secondary)]">Zalo gửi: <span className="text-[var(--text-primary)]">{selectedLog?.zalo?.name || '—'}</span></span>
                             <span className="text-[var(--text-secondary)]">Trạng thái: <span className={selectedLog?.status?.status ? 'text-green-600' : 'text-red-600'}>{selectedLog?.status?.status ? 'Thành công' : 'Thất bại'}</span></span>
                         </div>
-                        {logRecipients(selectedLog).length > 0 && (
-                            <div className="text-sm">
-                                <span className="text-[var(--text-secondary)]">Người nhận: </span>
-                                <span className="text-[var(--text-primary)]">{logRecipients(selectedLog).join(', ')}</span>
+                        {selectedLog?._logs?.length > 0 && (
+                            <div>
+                                <div className="text-sm text-[var(--text-secondary)] mb-1.5">Chi tiết từng người nhận:</div>
+                                <div className="overflow-x-auto max-h-64 overflow-y-auto border border-[var(--border-color)] rounded-lg">
+                                    <table className="w-full text-sm min-w-max">
+                                        <thead className="sticky top-0">
+                                            <tr className="bg-[var(--main_d)] text-white">
+                                                <th className="p-2 font-medium text-left">Họ tên</th>
+                                                <th className="p-2 font-medium text-left">SĐT</th>
+                                                <th className="p-2 font-medium text-left">Trạng thái</th>
+                                                <th className="p-2 font-medium text-left">Chi tiết</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedLog._logs.map((l, i) => (
+                                                <tr key={i} className="border-b border-[var(--border-color)] align-top">
+                                                    <td className="p-2">{l.status?.data?.recipientNames?.[0] || '—'}</td>
+                                                    <td className="p-2">{l.status?.data?.recipients?.[0] || '—'}</td>
+                                                    <td className="p-2">
+                                                        <span className={`px-2 py-0.5 rounded text-xs text-white ${l.status?.status ? 'bg-green-600' : 'bg-red-600'}`}>
+                                                            {l.status?.status ? 'Thành công' : 'Thất bại'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-2 text-xs text-[var(--text-secondary)]">{l.status?.message || '—'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                         {logContent(selectedLog) ? (
@@ -1019,6 +1117,145 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                                 Đóng
                             </button>
                         </div>
+                    </div>
+                )}
+            />
+
+            {/* ───── POPUP GỬI NGAY ───── */}
+            <FlexiblePopup
+                open={sendNowOpen}
+                onClose={closeSendNow}
+                title="Gửi báo cáo ngay"
+                width="720px"
+                renderItemList={() => (
+                    <div className="flex flex-col gap-3 p-4">
+                        {sendNowPrep.loading ? (
+                            <p className="text-sm text-[var(--text-secondary)] italic">Đang chuẩn bị tin gửi...</p>
+                        ) : sendNowPrep.error ? (
+                            <>
+                                <p className="text-sm text-red-600">{sendNowPrep.error}</p>
+                                <div className="flex justify-end pt-3 border-t border-[var(--border-color)]">
+                                    <button onClick={closeSendNow}
+                                        className="px-4 py-2 rounded bg-gray-200 text-sm cursor-pointer border-none hover:bg-gray-300">
+                                        Đóng
+                                    </button>
+                                </div>
+                            </>
+                        ) : sendNowPrep.data ? (
+                            <>
+                                <div className="flex items-center gap-4 flex-wrap text-sm">
+                                    <span className="text-[var(--text-secondary)]">Zalo gửi: <span className="text-[var(--text-primary)]">{sendNowPrep.data.zaloName || '—'}</span></span>
+                                    <span className="text-[var(--text-secondary)]">Số người nhận: <span className="text-[var(--text-primary)] font-medium">{sendNowPrep.data.targets.length}</span></span>
+                                </div>
+
+                                {sendStep === 'confirm' && (
+                                    <>
+                                        <div>
+                                            <div className="text-sm text-[var(--text-secondary)] mb-1.5">Danh sách người nhận:</div>
+                                            <div className="overflow-x-auto max-h-56 overflow-y-auto border border-[var(--border-color)] rounded-lg">
+                                                <table className="w-full text-sm min-w-max">
+                                                    <thead className="sticky top-0">
+                                                        <tr className="bg-[var(--main_d)] text-white">
+                                                            <th className="p-2 font-medium text-left">Họ tên</th>
+                                                            <th className="p-2 font-medium text-left">SĐT</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {sendNowPrep.data.targets.map((t, i) => (
+                                                            <tr key={i} className="border-b border-[var(--border-color)]">
+                                                                <td className="p-2">{t.name || '—'}</td>
+                                                                <td className="p-2">{t.phone}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {sendNowPrep.data.text ? (
+                                            <pre className="text-sm text-[var(--text-primary)] whitespace-pre-wrap bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 max-h-56 overflow-auto">{sendNowPrep.data.text}</pre>
+                                        ) : (
+                                            <p className="text-sm text-[var(--text-secondary)] italic">Không có nội dung tin.</p>
+                                        )}
+                                        <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+                                            <button onClick={closeSendNow}
+                                                className="px-4 py-2 rounded bg-gray-200 text-sm cursor-pointer border-none hover:bg-gray-300">
+                                                Hủy
+                                            </button>
+                                            <button onClick={startSendNow}
+                                                className="px-4 py-2 rounded bg-blue-600 text-white text-sm cursor-pointer border-none hover:bg-blue-700">
+                                                Tiến hành gửi
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+
+                                {(sendStep === 'sending' || sendStep === 'done') && (
+                                    <>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-[var(--text-primary)] font-medium">
+                                                {sendStep === 'sending'
+                                                    ? `Đang gửi: ${sendProgress.current}/${sendProgress.total}`
+                                                    : `Đã gửi xong: ${sendProgress.current}/${sendProgress.total}`}
+                                            </span>
+                                            {sendBlocked && (
+                                                <span className="text-sm text-amber-600">Đạt giới hạn tin/giờ, dừng gửi.</span>
+                                            )}
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-600 transition-all duration-300"
+                                                style={{ width: `${sendProgress.total > 0 ? Math.round((sendProgress.current / sendProgress.total) * 100) : 0}%` }} />
+                                        </div>
+                                        {sendStep === 'done' && (
+                                            <div className="flex items-center gap-3 text-sm flex-wrap">
+                                                <span className="px-2 py-1 rounded text-xs text-white bg-green-600">Thành công: {sendResults.filter(r => r.ok).length}</span>
+                                                <span className="px-2 py-1 rounded text-xs text-white bg-red-600">Thất bại: {sendResults.filter(r => r.ok === false && !sendBlocked).length}</span>
+                                                {sendBlocked && <span className="px-2 py-1 rounded text-xs text-white bg-amber-500">Chưa gửi: {sendResults.filter(r => r.state === 'pending').length}</span>}
+                                            </div>
+                                        )}
+                                        <div className="overflow-x-auto max-h-64 overflow-y-auto border border-[var(--border-color)] rounded-lg">
+                                            <table className="w-full text-sm min-w-max">
+                                                <thead className="sticky top-0">
+                                                    <tr className="bg-[var(--main_d)] text-white">
+                                                        <th className="p-2 font-medium text-left">Họ tên</th>
+                                                        <th className="p-2 font-medium text-left">SĐT</th>
+                                                        <th className="p-2 font-medium text-left">Trạng thái</th>
+                                                        <th className="p-2 font-medium text-left">Chi tiết</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {sendResults.map((r, i) => (
+                                                        <tr key={i} className="border-b border-[var(--border-color)] align-top">
+                                                            <td className="p-2">{r.name || '—'}</td>
+                                                            <td className="p-2">{r.phone}</td>
+                                                            <td className="p-2">
+                                                                {r.state === 'sending' ? (
+                                                                    <span className="text-xs text-blue-600">Đang gửi...</span>
+                                                                ) : r.state === 'pending' ? (
+                                                                    <span className="text-xs text-[var(--text-secondary)]">Chờ gửi</span>
+                                                                ) : r.ok ? (
+                                                                    <span className="px-2 py-0.5 rounded text-xs text-white bg-green-600">Thành công</span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded text-xs text-white bg-red-600">Thất bại</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="p-2 text-xs text-[var(--text-secondary)]">{r.message || '—'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {sendStep === 'done' && (
+                                            <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border-color)]">
+                                                <button onClick={closeSendNow}
+                                                    className="px-4 py-2 rounded bg-gray-200 text-sm cursor-pointer border-none hover:bg-gray-300">
+                                                    Đóng
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        ) : null}
                     </div>
                 )}
             />
