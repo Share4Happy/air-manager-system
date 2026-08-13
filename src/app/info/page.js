@@ -1,8 +1,12 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
+import GuideView from './ui/guide-view';
+import QuizView from './ui/quiz-view';
 
 const TABS = [
+    { key: 'guide', label: 'Hướng dẫn' },
+    { key: 'quiz', label: 'Bài kiểm tra' },
     { key: 'info', label: 'Thông tin', src: 'https://docs.google.com/document/d/138s-w91Sa2DtbatlEJpQH4k9eISLVJHP7qoLl218rrw/edit?tab=t.0' },
     { key: 'feedback', label: 'Feedback', src: 'https://docs.google.com/document/d/18ApttvJfGK_GZEvKzAAApqlaSSXRh9wQJf2GSPRYwSA/edit?usp=sharing' },
 ];
@@ -10,7 +14,7 @@ const TABS = [
 export default function InfoPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const activeTab = searchParams.get('tab') || 'info';
+    const activeTab = searchParams.get('tab') || 'guide';
     const current = TABS.find(t => t.key === activeTab) || TABS[0];
 
     return (
@@ -29,12 +33,18 @@ export default function InfoPage() {
                     </button>
                 ))}
             </div>
-            <iframe
-                key={current.key}
-                src={current.src}
-                className="w-full h-full border-none"
-                title={current.label}
-            />
+            {current.key === 'guide' ? (
+                <GuideView />
+            ) : current.key === 'quiz' ? (
+                <QuizView />
+            ) : (
+                <iframe
+                    key={current.key}
+                    src={current.src}
+                    className="w-full h-full border-none"
+                    title={current.label}
+                />
+            )}
         </div>
     );
 }

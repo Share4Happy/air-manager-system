@@ -1,0 +1,41 @@
+import mongoose from 'mongoose'
+import fs from 'fs'
+import { GUIDE_SEED } from '../src/data/seedDefaults.mjs'
+
+const env = fs.readFileSync('.env.development', 'utf8')
+const uri = (env.match(/^MongoDB_URI=(.*)$/m) || [])[1].trim()
+
+const GuideStep = mongoose.Schema({
+    content: String,
+}, { _id: false })
+
+const GuideSection = mongoose.Schema({
+    title: String,
+    steps: [GuideStep],
+}, { _id: false })
+
+const GuideFaq = mongoose.Schema({
+    question: String,
+    answer: String,
+}, { _id: false })
+
+const GuideSchema = mongoose.Schema({
+    role: { type: String, required: true, unique: true },
+    sections: [GuideSection],
+    faqs: [GuideFaq],
+    updatedBy: mongoose.Schema.Types.ObjectId,
+}, { timestamps: true })
+
+const Guide = mongoose.models.guide || mongoose.model('guide', GuideSchema)
+
+await mongoose.connect(uri)
+for (const seed of GUIDE_SEED) {
+    await Guide.updateOne(
+        { role: seed.role },
+        { $set: { sections: seed.sections, faqs: seed.faqs } },
+        { upsert: true }
+    )
+    console.log(`Seeded: ${seed.role} (${seed.sections.length} sections, ${seed.faqs.length} faqs)`)
+}
+await mongoose.disconnect()
+console.log('Done')
