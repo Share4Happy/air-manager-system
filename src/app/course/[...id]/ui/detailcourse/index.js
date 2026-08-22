@@ -21,7 +21,7 @@ import Export from '../exportStudents';
 import CancelLessonPopup from '@/components/(features)/(popup)/cancel_lesson_popup';
 import { getEportfolioUrl } from '@/utils/env'
 
-function Detail({ data = [], params, book, users, studentsx, children }) {
+function Detail({ data = [], params, initialLessonId, book, users, studentsx, children }) {
     const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState({
         open: false,
@@ -35,18 +35,20 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     const [showCompletePopup, setShowCompletePopup] = useState(false);
     const [showForceConfirm, setShowForceConfirm] = useState(false);
     const [completeIssues, setCompleteIssues] = useState([]);
-    const [activeLessonTab, setActiveLessonTab] = useState(null);
+    const [activeLessonTab, setActiveLessonTab] = useState(initialLessonId || (params.length > 1 ? params[1] : null));
     const [showNotePopup, setShowNotePopup] = useState(false);
     const [showTimelinePopup, setShowTimelinePopup] = useState(false);
     const [showCancelLessonPopup, setShowCancelLessonPopup] = useState(false);
 
     useEffect(() => {
-        if (params.length > 1) {
+        if (initialLessonId) {
+            setActiveLessonTab(initialLessonId);
+        } else if (params.length > 1) {
             setActiveLessonTab(params[1]);
         } else {
             setActiveLessonTab(null);
         }
-    }, [params[0], params[1]]);
+    }, [initialLessonId, params[0], params[1]]);
 
     const lessonFilterId = activeLessonTab || (params.length > 1 ? params[1] : null);
 
@@ -279,7 +281,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     )}
                 </div>
                 <div style={{ flex: 1 }}>
-                    <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>{lessonId ? `Thông tin buổi học (${lesson.Type || 'Chính thức'})` : 'Thông tin khóa học'}</p>
+                    <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>
+                        {lessonId ? `Thông tin buổi học (${lesson?.Type === 'Báo nghỉ' ? 'Báo nghỉ' : lesson?.Type === 'Học bù' ? 'Học bù' : (new Date(lesson?.Day) < new Date().setHours(0,0,0,0) ? 'Đã diễn ra' : 'Chưa diễn ra')})` : 'Thông tin khóa học'}
+                    </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                         {!lessonId ?
                             <>
@@ -457,6 +461,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                             }}
                             onClick={() => {
                                 setActiveLessonTab(null);
+                                if (typeof window !== 'undefined') {
+                                    window.history.pushState(null, '', `/course/${data.ID || params[0]}`);
+                                }
                             }}
                         >
                             Tổng quan
@@ -477,6 +484,9 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                                 }}
                                 onClick={() => {
                                     setActiveLessonTab(lesson._id);
+                                    if (typeof window !== 'undefined') {
+                                        window.history.pushState(null, '', `/course/${data.ID || params[0]}?lesson=${idx + 1}`);
+                                    }
                                 }}
                             >
                                 Buổi {idx + 1}

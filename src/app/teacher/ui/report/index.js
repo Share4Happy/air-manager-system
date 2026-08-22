@@ -300,7 +300,7 @@ const EnhancedViolationsReport = ({ initialReports }) => {
                                     {visibleTeacher === report.teacherInfo._id && (
                                         <div className={'p-[0.25rem_0] border-t border-[#f0f0f0] bg-[#fafbfd]'}>
                                             {report.lessonsToDisplay.map(lesson => (
-                                                <Link href={`/course/${lesson.courseId}/${lesson.lessonId}`} key={lesson.lessonId} className={`${'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-[0.75rem_1.25rem] border-b border-[#f0f0f0] cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} ${lesson.isViolation ? 'border-l-4 border-[var(--main_d)]' : 'border-l-4 border-[var(--green)]'}`}>
+                                                <Link href={`/course/${lesson.courseId}?lesson=${lesson.lessonId}`} key={lesson.lessonId} className={`${'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-[0.75rem_1.25rem] border-b border-[#f0f0f0] cursor-pointer transition-colors duration-200 hover:bg-[var(--bg-secondary)]'} ${lesson.isViolation ? 'border-l-4 border-[var(--main_d)]' : 'border-l-4 border-[var(--green)]'}`}>
                                                     <div className={'flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-[var(--text-primary)]'}>
                                                         <span className={'font-medium text-[var(--text-primary)]'}>{lesson.courseId}</span>
                                                         <span className='text-xs sm:text-sm text-gray-600'>{new Date(lesson.day).toLocaleDateString('vi-VN')}</span>

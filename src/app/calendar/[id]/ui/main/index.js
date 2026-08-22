@@ -249,7 +249,7 @@ export default function Main({ data }) {
                 <header className="flex flex-col md:flex-row md:items-center justify-between bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 md:px-6 py-3 border-b border-[var(--border-color)] gap-2">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <p className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{course.ID ?? '-'} – Chủ đề: {session.Topic.Name ?? '-'}</p>
-                        <Link href={`/course/${course._id}`} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 self-start sm:self-auto' >
+                        <Link href={`/course/${course.ID || course._id}`} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 self-start sm:self-auto' >
                             <Svg_Detail w={16} h={16} c={'var(--main_d)'} />
                             <h5>Chi tiết khóa học</h5>
                         </Link>

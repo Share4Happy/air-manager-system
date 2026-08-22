@@ -101,7 +101,7 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
                 </div>
             )}
 
-        <Link href={`/course/${data._id}`} className={'no-underline'}>
+        <Link href={`/course/${data.ID || data._id}`} className={'no-underline'}>
             <div>
                     <div className={'flex items-center mb-4'}>
                         <div className={'w-11 h-11 rounded-md bg-[var(--main_d)] text-white flex items-center justify-center font-medium mr-3 shrink-0'}>

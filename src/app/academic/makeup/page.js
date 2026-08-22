@@ -249,7 +249,7 @@ export default function MakeupPage() {
                                         <span className="text-xs text-[var(--text-secondary)]">
                                             {c.students.reduce((sum, s) => sum + s.missingLessons, 0)} buổi thiếu / {c.students.length} học sinh
                                         </span>
-                                        <Link href={`/course/${c.course._id}`} className="text-xs px-2 py-1 rounded bg-[#e3f2fd] text-[#1565c0] hover:opacity-80">
+                                        <Link href={`/course/${c.course.ID || c.course._id}`} className="text-xs px-2 py-1 rounded bg-[#e3f2fd] text-[#1565c0] hover:opacity-80">
                                             Xem khóa học
                                         </Link>
                                     </div>
@@ -354,8 +354,8 @@ export default function MakeupPage() {
                                                         )}
                                                         <button onClick={() => handleDelete(s._id)}
                                                             className="text-xs px-2 py-1 rounded bg-[#eceff1] text-[#607d8b]">Xóa</button>
-                                                        {s.course?._id && (
-                                                            <Link href={`/course/${s.course._id}`} className="text-xs px-2 py-1 rounded bg-[#f1f3f5] text-[#6c757d]">
+                                                        {s.course && (
+                                                            <Link href={`/course/${s.course.ID || s.course._id}`} className="text-xs px-2 py-1 rounded bg-[#f1f3f5] text-[#6c757d]">
                                                                 Khóa học
                                                             </Link>
                                                         )}

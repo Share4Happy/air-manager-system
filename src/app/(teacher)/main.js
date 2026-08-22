@@ -254,7 +254,7 @@ export default function TeacherDashboard({ currentUser: currentUserArray, course
                 <div className="flex flex-col bg-[var(--bg-primary)] p-4 rounded border border-[var(--border-color)]">
                     <p className='text-sm font-semibold text-[var(--text-primary)]' style={{ paddingBottom: 8, marginBottom: 3, borderBottom: 'thin dashed var(--border-color)' }}>Các lớp đang chủ nhiệm</p>
                     {personalStats.homeroomClasses.length > 0 ? personalStats.homeroomClasses.map((course, i) =>
-                        <Link href={`/course/${course._id}`} key={i} className="flex justify-between items-center text-sm p-2 transition-all duration-200 bg-[var(--bg-primary)] rounded">
+                        <Link href={`/course/${course.ID || course._id}`} key={i} className="flex justify-between items-center text-sm p-2 transition-all duration-200 bg-[var(--bg-primary)] rounded">
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 <p className='text-sm font-semibold text-[var(--text-primary)]'>{course.Name || course.ID}</p>
                                 <p className='text-xs font-normal text-[var(--text-primary)]' style={{ color: 'white', padding: '3px 8px', borderRadius: 5, background: course.Status ? 'var(--green)' : 'var(--yellow)' }}>{course.Status ? 'Đã hoàn thành' : 'Đang học'}</p>
