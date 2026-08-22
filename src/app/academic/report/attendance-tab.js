@@ -20,6 +20,12 @@ function getDateContext(selected) {
 
 const ITEMS_PER_PAGE = 10
 
+function getTeacherCheckin(checkin) {
+    if (!checkin || !checkin.time) return { text: 'Chưa checkin', cls: 'bg-rose-500' }
+    if (checkin.status === 'tre') return { text: 'Checkin trễ', cls: 'bg-amber-500' }
+    return { text: 'Checkin đúng giờ', cls: 'bg-emerald-600' }
+}
+
 export default function AttendanceTab() {
     const today = new Date()
     const [selectedDate, setSelectedDate] = useState(toDateStr(today))
@@ -123,14 +129,15 @@ export default function AttendanceTab() {
                             <table className="w-full text-sm">
                                 <colgroup>
                                     <col style={{ width: '6%' }} />
-                                    <col style={{ width: '18%' }} />
-                                    <col style={{ width: '16%' }} />
+                                    <col style={{ width: '17%' }} />
+                                    <col style={{ width: '14%' }} />
+                                    <col style={{ width: '9%' }} />
                                     <col style={{ width: '10%' }} />
                                     <col style={{ width: '12%' }} />
-                                    <col style={{ width: '14%' }} />
-                                    <col style={{ width: '8%' }} />
-                                    <col style={{ width: '8%' }} />
-                                    <col style={{ width: '8%' }} />
+                                    <col style={{ width: '7%' }} />
+                                    <col style={{ width: '7%' }} />
+                                    <col style={{ width: '7%' }} />
+                                    <col style={{ width: '11%' }} />
                                 </colgroup>
                                 <thead className="sticky top-0 z-10">
                                     <tr className="bg-[var(--main_d)] text-white">
@@ -143,6 +150,7 @@ export default function AttendanceTab() {
                                         <th className="p-2 font-medium text-center">Sĩ số</th>
                                         <th className="p-2 font-medium text-center">Có mặt</th>
                                         <th className="p-2 font-medium text-center">Vắng</th>
+                                        <th className="p-2 font-medium text-center">Điểm danh GV</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -177,6 +185,11 @@ export default function AttendanceTab() {
                                                 <td className="p-2 text-center text-[var(--text-primary)] font-medium">{l.totalStudents}</td>
                                                 <td className="p-2 text-center text-green-600 font-bold">{l.present}</td>
                                                 <td className="p-2 text-center text-red-600 font-bold">{l.absent}</td>
+                                                <td className="p-2 text-center">
+                                                    <span className={`inline-block px-1.5 py-0.5 rounded font-semibold text-white text-xs ${getTeacherCheckin(l.checkin).cls}`}>
+                                                        {getTeacherCheckin(l.checkin).text}
+                                                    </span>
+                                                </td>
                                             </tr>
                                         )
                                     })}
@@ -223,6 +236,10 @@ export default function AttendanceTab() {
                                         <span className="text-green-600 font-bold">{l.present}</span>
                                         <span className="text-[var(--text-secondary)]">Vắng:</span>
                                         <span className="text-red-600 font-bold">{l.absent}</span>
+                                        <span className="text-[var(--text-secondary)]">Điểm danh GV:</span>
+                                        <span className={`inline-block px-1.5 py-0.5 rounded font-semibold text-white text-xs ${getTeacherCheckin(l.checkin).cls}`}>
+                                            {getTeacherCheckin(l.checkin).text}
+                                        </span>
                                     </div>
                                 </div>
                             )

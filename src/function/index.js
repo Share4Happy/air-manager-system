@@ -1,8 +1,10 @@
 export function formatDate(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    if (day == 'NaN' || month == 'NaN' || year == 'NaN') return 'Thiếu thông tin'
+    if (!date) return 'Thiếu thông tin';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return 'Thiếu thông tin';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
     return `${day}/${month}/${year}`;
 }
 export function countStudentsWithLesson(lessonId, data) {

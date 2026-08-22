@@ -261,9 +261,9 @@ export default function Student({ course, autoOpen = false, footer = null, initi
     return (
         <>
             {!autoOpenAdd && (
-            <div className={'flex items-center flex-col justify-center gap-2 rounded-md cursor-pointer w-full h-full bg-[#eafff8] transition-all duration-100 hover:bg-[#e1fff6] hover:-translate-y-0.5'} onClick={() => setOpen(true)}>
-                <Svg_Student w={24} h={24} c="var(--text-primary)" />
-                <p className="text-xs font-semibold text-[var(--text-primary)]">Học sinh</p>
+            <div className={'flex items-center flex-row lg:flex-col justify-center gap-2 rounded-md cursor-pointer w-full h-full bg-[#eafff8] transition-all duration-100 hover:bg-[#e1fff6] hover:-translate-y-0.5 px-3 py-2 border-none'} onClick={() => setOpen(true)}>
+                <Svg_Student w={20} h={20} c="var(--text-primary)" />
+                <p className="text-xs sm:text-sm lg:text-xs font-semibold text-[var(--text-primary)]">Học sinh</p>
             </div>
             )}
 

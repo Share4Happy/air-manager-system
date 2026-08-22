@@ -18,7 +18,7 @@ import WrapIcon from '@/components/(ui)/(button)/hoveIcon';
 import { reloadCourse } from '@/data/actions/reload';
 import Pay from '@/app/student/list/ui/pay';
 import Export from '../exportStudents';
-import SendCmt from '../sencmt';
+import CancelLessonPopup from '@/components/(features)/(popup)/cancel_lesson_popup';
 import { getEportfolioUrl } from '@/utils/env'
 
 function Detail({ data = [], params, book, users, studentsx, children }) {
@@ -38,6 +38,7 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
     const [activeLessonTab, setActiveLessonTab] = useState(null);
     const [showNotePopup, setShowNotePopup] = useState(false);
     const [showTimelinePopup, setShowTimelinePopup] = useState(false);
+    const [showCancelLessonPopup, setShowCancelLessonPopup] = useState(false);
 
     useEffect(() => {
         if (params.length > 1) {
@@ -369,13 +370,22 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                                 <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Tải lại dữ liệu</p>
                             </div>
                             {lessonId && <div className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ marginTop: 8, borderRadius: 5, background: '#f59e0b' }} onClick={() => router.push(`/calendar/${lessonId}`)}>
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill='white'>
-                                    <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={14} height={14} fill='white'>
+                                    <path d="M152 24c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 112 0 0-40c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 48 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l48 0 0-40zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-47-47c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l30.1 30.1L303.1 175.1c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
                                 </svg>
                                 <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Điểm danh bù</p>
                             </div>}
                             {(lessonId && !data.Status) &&
-                                <SendCmt data={data} lesson={lessonId}/>}
+                                <div
+                                    className='px-2.5 py-1.5 bg-red-600 flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-red-700 hover:-translate-y-0.5'
+                                    style={{ marginTop: 8, borderRadius: 5, background: '#dc2626' }}
+                                    onClick={() => setShowCancelLessonPopup(true)}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill='white'>
+                                        <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+                                    </svg>
+                                    <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Báo nghỉ</p>
+                                </div>}
                             {!lessonId &&
                                 <>
                                     {data.Status ?
@@ -423,10 +433,11 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     </div>
                 </div>
                 <div className="w-full lg:w-[220px]">
-                    <div className="flex flex-col items-end gap-2 lg:gap-3">
-                        <div className="aspect-square w-[104px]"><Student course={data} student={sortedStudents} /></div>
-                        <div className="aspect-square w-[104px]"><Calendar course={data} student={sortedStudents} /></div>
-                    </div></div>
+                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-2 lg:gap-3 w-full">
+                        <div className="w-full flex-1 h-12 lg:h-auto lg:aspect-square lg:w-[104px]"><Student course={data} student={sortedStudents} /></div>
+                        <div className="w-full flex-1 h-12 lg:h-auto lg:aspect-square lg:w-[104px]"><Calendar course={data} student={sortedStudents} /></div>
+                    </div>
+                </div>
             </div>
 
             <div className={'bg-white rounded flex justify-between border border-[var(--border-color)] w-full min-w-0'}>
@@ -708,6 +719,17 @@ function Detail({ data = [], params, book, users, studentsx, children }) {
                     {children}
                 </div>
             </CenterPopup>
+
+            <CancelLessonPopup
+                open={showCancelLessonPopup}
+                onClose={() => setShowCancelLessonPopup(false)}
+                courseId={data?._id}
+                lessonId={lessonFilterId}
+                lessonData={data?.Detail?.find(l => l._id === lessonFilterId)}
+                courseData={data}
+                onSuccess={reload}
+                showNoti={(status, mes) => setNotification({ open: true, status, mes })}
+            />
         </div>
     )
 }

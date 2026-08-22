@@ -36,7 +36,7 @@ export async function GET(req) {
       { $set: { roomDoc: { $arrayElemAt: [{ $filter: { input: '$ar.rooms', as: 'r', cond: { $eq: ['$$r._id', '$Detail.Room'] } } }, 0] } } },
       {
         $project: {
-          _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', day: { $dayOfMonth: '$Detail.Day' }, month: { $month: '$Detail.Day' }, year: { $year: '$Detail.Day' }, time: '$Detail.Time', room: { _id: { $ifNull: ['$roomDoc._id', null] }, name: { $ifNull: ['$roomDoc.name', null] }, area: '$ar.name', color: '$ar.color' }, image: '$Detail.Image', topic: '$topic', teacher: { $arrayElemAt: ['$teacher', 0] }, teachingAs: { $arrayElemAt: ['$teachingAs', 0] }, students: '$students'
+          _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', day: { $dayOfMonth: '$Detail.Day' }, month: { $month: '$Detail.Day' }, year: { $year: '$Detail.Day' }, time: '$Detail.Time', room: { _id: { $ifNull: ['$roomDoc._id', null] }, name: { $ifNull: ['$roomDoc.name', null] }, area: '$ar.name', color: '$ar.color' }, image: '$Detail.Image', topic: '$topic', teacher: { $arrayElemAt: ['$teacher', 0] }, teachingAs: { $arrayElemAt: ['$teachingAs', 0] }, checkin: '$Detail.Checkin', students: '$students'
         }
       }
     ])
@@ -53,7 +53,7 @@ export async function GET(req) {
       { $set: { rd: { $arrayElemAt: ['$rd', 0] } } },
       {
         $project: {
-          _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', day: { $dayOfMonth: '$sessions.day' }, month: { $month: '$sessions.day' }, year: { $year: '$sessions.day' }, time: '$sessions.time', room: { _id: { $ifNull: ['$rd.room._id', null] }, name: { $ifNull: ['$rd.room.name', null] }, area: '$rd.areaName', color: '$rd.areaColor' }, image: null, topic: '$topic', teacher: { $arrayElemAt: ['$teacher', 0] }, teachingAs: { $arrayElemAt: ['$teachingAs', 0] }, students: '$sessions.students'
+          _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', day: { $dayOfMonth: '$sessions.day' }, month: { $month: '$sessions.day' }, year: { $year: '$sessions.day' }, time: '$sessions.time', room: { _id: { $ifNull: ['$rd.room._id', null] }, name: { $ifNull: ['$rd.room.name', null] }, area: '$rd.areaName', color: '$rd.areaColor' }, image: null, topic: '$topic', teacher: { $arrayElemAt: ['$teacher', 0] }, teachingAs: { $arrayElemAt: ['$teachingAs', 0] }, checkin: '$sessions.checkin', students: '$sessions.students'
         }
       }
     ])

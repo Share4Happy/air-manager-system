@@ -28,7 +28,9 @@ export async function reloadBook(_id) {
 }
 
 export async function reloadCoursetry() {
-    revalidateTag('coursetry', 'max'); clearCacheByTag('coursetry')
+    console.log('[reloadCoursetry] CALLED')
+    revalidateTag('data_coursetry', 'max'); clearCacheByTag('data_coursetry')
+    console.log('[reloadCoursetry] DONE')
 }
 
 export async function reloadUser(_id) {

@@ -6,6 +6,7 @@ import { cacheData } from '@/lib/cache'
 import { Types } from 'mongoose'
 
 async function dataCourseTry() {
+    console.log('[dataCourseTry] CALLED')
     try {
         await connectDB()
         const course = await TrialCourse.findById('6871bc14ada3650715efc786').populate('sessions.teacher', 'name phone').populate('sessions.teachingAs', 'name phone').populate('sessions.book', 'Name Topics').lean()

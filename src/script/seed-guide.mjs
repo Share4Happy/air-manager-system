@@ -1,9 +1,14 @@
 import mongoose from 'mongoose'
 import fs from 'fs'
-import { GUIDE_SEED } from '../src/data/seedDefaults.mjs'
+import path from 'path'
+import { GUIDE_SEED } from '../data/seedDefaults.mjs'
 
-const env = fs.readFileSync('.env.development', 'utf8')
-const uri = (env.match(/^MongoDB_URI=(.*)$/m) || [])[1].trim()
+const envPath = fs.existsSync('.env.development')
+    ? '.env.development'
+    : path.resolve(process.cwd(), '.env.development')
+
+const env = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : ''
+const uri = (env.match(/^MongoDB_URI=(.*)$/m) || [])[1]?.trim() || process.env.MongoDB_URI || 'mongodb://127.0.0.1:27017/air'
 
 const GuideStep = mongoose.Schema({
     content: String,
