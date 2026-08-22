@@ -6,6 +6,7 @@ import PostStudent from '@/models/student';
 import PostBook from '@/models/book';
 import TrialCourse from '@/models/coursetry';
 import DriveFileSize from '@/models/driveFileSize';
+import Area from '@/models/area';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -35,12 +36,13 @@ export async function GET() {
     try {
         await connectDB();
 
-        const [courses, students, books, trials, sizeDocs] = await Promise.all([
-            PostCourse.find({}).select('ID Detail Student').lean(),
+        const [courses, students, books, trials, sizeDocs, allAreas] = await Promise.all([
+            PostCourse.find({}).select('ID Detail Student Area').populate('Area', 'name color').lean(),
             PostStudent.find({ Avt: { $exists: true, $ne: '' } }).select('AvtSize Avt').lean(),
             PostBook.find({}).select('ImageSize BadgeSize Image Badge').lean(),
             TrialCourse.find({}).select('sessions.images sessions.students.images').lean(),
             DriveFileSize.find({}).lean(),
+            Area.find({}).select('name color').lean(),
         ]);
 
         const sizeMap = {};
@@ -59,7 +61,11 @@ export async function GET() {
                     for (const img of l.Image || []) addFile(stats, sizeMap[img.id] || img.size || 0, img.type);
                 }
             }
-            mongoMap[c.ID] = { id: c._id, ...stats };
+            mongoMap[c.ID] = {
+                id: c._id,
+                area: c.Area ? { _id: c.Area._id, name: c.Area.name, color: c.Area.color } : null,
+                ...stats,
+            };
         }
 
         const drive = await getDriveClient();
@@ -86,8 +92,11 @@ export async function GET() {
             seen.add(name);
             const m = mongoMap[name];
             mergedList.push({
-                id: m?.id || df.id,
+                id: df.id || (m?.id ? String(m.id) : name),
+                driveFolderId: df.id,
+                mongoId: m?.id || null,
                 name,
+                area: m?.area || null,
                 totalSize: m?.totalSize || 0,
                 totalFiles: m?.totalFiles || 0,
                 imageSize: m?.imageSize || 0,
@@ -101,7 +110,12 @@ export async function GET() {
             if (!seen.has(c.ID)) {
                 const m = mongoMap[c.ID];
                 mergedList.push({
-                    id: c._id, name: c.ID, ...m, inMongo: true,
+                    id: String(c._id),
+                    mongoId: c._id,
+                    name: c.ID,
+                    area: m?.area || null,
+                    ...m,
+                    inMongo: true,
                 });
             }
         }
@@ -161,6 +175,7 @@ export async function GET() {
                 bookSize, bookFiles,
             },
             courses: mergedList,
+            areas: allAreas || [],
             lastUpdated: new Date().toISOString(),
         });
     } catch (error) {

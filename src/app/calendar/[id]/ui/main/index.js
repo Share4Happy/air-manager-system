@@ -248,11 +248,15 @@ export default function Main({ data }) {
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-center justify-between bg-[var(--bg-primary)] text-[var(--text-primary)] px-4 md:px-6 py-3 border-b border-[var(--border-color)] gap-2">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <p className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{course.ID ?? '-'} – Chủ đề: {session.Topic.Name ?? '-'}</p>
-                        <Link href={`/course/${course.ID || course._id}`} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 self-start sm:self-auto' >
-                            <Svg_Detail w={16} h={16} c={'var(--main_d)'} />
-                            <h5>Chi tiết khóa học</h5>
+                        <Link href={`/course/${course.ID || course._id}?lesson=${session?.buoi || (course?.Detail?.findIndex(d => String(d._id) === String(session?._id)) + 1) || 1}`} className='px-3 py-1.5 rounded bg-gray-100 flex items-center gap-2 justify-center cursor-pointer border border-gray-200 transition-all duration-200 hover:bg-gray-200 self-start sm:self-auto text-gray-700 font-medium text-xs sm:text-sm no-underline' >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={12} height={12} fill="currentColor">
+                                <path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/>
+                            </svg>
+                            <span>Quay lại khóa học</span>
                         </Link>
+                        <p className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">
+                            {course.ID ?? '-'} – Buổi {session?.buoi || (course?.Detail?.findIndex(d => String(d._id) === String(session?._id)) + 1) || 1}: {session.Topic?.Name ?? '-'}
+                        </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <h5 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded border-2 border-[#43a300] bg-[#e6f4e6] text-[#1f4d1f] text-sm sm:text-base`}>Có mặt: {cm}</h5>

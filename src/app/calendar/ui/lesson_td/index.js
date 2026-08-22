@@ -31,8 +31,10 @@ const CalendarCourse = ({ data = {} }) => {
         statusLesson = [0, 0, 0];
     }
 
+    const lessonUrl = data.courseId ? `/course/${data.courseId}/lesson/${data.buoi || data._id}` : `/calendar/${data._id}`;
+
     return (
-        <Link href={`/calendar/${data._id}`} className="group flex justify-between relative mx-4 my-2 cursor-pointer no-underline" >
+        <Link href={lessonUrl} className="group flex justify-between relative mx-4 my-2 cursor-pointer no-underline" >
             <div className="h-full w-[3px] bg-[var(--main_b)] absolute top-0 left-0 transition-all duration-200 group-hover:w-full group-hover:rounded-r-lg group-hover:z-0" style={{ background: data.type == "trial" ? 'var(--yellow)' : data.type == "Báo nghỉ" ? '#dc2626' : 'var(--main_b)' }} />
             <div className="px-4 py-3 pl-6 z-[1] transition-all duration-100 w-full group-hover:text-white group-hover:mr-4" style={{ opacity: isCancelled ? 0.6 : 1 }}>
                 {isCancelled && (

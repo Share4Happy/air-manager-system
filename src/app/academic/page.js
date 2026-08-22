@@ -115,7 +115,7 @@ export default function AcademicDashboardPage() {
                                 </td>
                                 <td className="p-3 text-[var(--text-primary)]">{s.checkedStudents}/{s.totalStudents}</td>
                                 <td className="p-3">
-                                    <Link href={`/calendar/${s._id}`} className="text-xs text-[#1565c0] hover:underline">Xem chi tiết</Link>
+                                    <Link href={s.courseId || s.courseCode ? `/course/${s.courseId || s.courseCode}/lesson/${s._id}` : `/calendar/${s._id}`} className="text-xs text-[#1565c0] hover:underline">Xem chi tiết</Link>
                                 </td>
                             </tr>
                         ))}

@@ -60,8 +60,9 @@ function DayLessons({ lessons }) {
     <div className="flex flex-col gap-1">
       {lessons.map((item, idx) => {
         const isCancelled = item.type === 'Báo nghỉ'
+        const lessonUrl = item.courseId ? `/course/${item.courseId}/lesson/${item.buoi || item._id}` : `/calendar/${item._id}`
         return (
-          <Link key={item._id || idx} href={`/calendar/${item._id}`}
+          <Link key={item._id || idx} href={lessonUrl}
             className="block p-2 rounded text-sm leading-snug hover:opacity-90 transition-all border shadow-sm text-gray-800"
             style={{
               opacity: isCancelled ? 0.6 : 1,
@@ -129,8 +130,9 @@ function MonthList({ data }) {
             {lessons.map((item, idx) => {
               const makeup = item.type === 'Học bù'
               const cancelled = item.type === 'Báo nghỉ'
+              const lessonUrl = item.courseId ? `/course/${item.courseId}/lesson/${item.buoi || item._id}` : `/calendar/${item._id}`
               return (
-                <Link key={item._id || idx} href={`/calendar/${item._id}`}
+                <Link key={item._id || idx} href={lessonUrl}
                   className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-[var(--hover)] transition-colors border-b border-[var(--border-color)] last:border-b-0"
                   style={{ opacity: cancelled ? 0.6 : 1 }}>
                   <div className="w-14 shrink-0 text-[var(--text-secondary)] font-medium">{item.time || '—'}</div>

@@ -1,10 +1,44 @@
 import Timeline from "./ui/timeline";
 import Detail from "./ui/detailcourse";
 import { course_data, student_data, user_data } from "@/data/actions/get";
+import { Data_lesson } from "@/data/course";
+import { redirect } from "next/navigation";
+import LessonMain from "@/app/calendar/[id]/ui/main";
 
 export default async function OverviewTab({ params, searchParams }) {
     const { id } = await params;
     const sParams = await searchParams;
+
+    // Support clean URL: /course/[code]/lesson/[buoi] (e.g. /course/26FZ1012/lesson/7)
+    if (id.length >= 3 && id[1] === 'lesson') {
+        const courseCode = id[0];
+        const lessonParam = id[2];
+        const data = await course_data(courseCode);
+        if (!data) return <div className="flex items-center justify-center h-full text-sm text-[var(--text-secondary)]">Không tìm thấy khóa học {courseCode}</div>;
+
+        let session = null;
+        let buoiNum = parseInt(lessonParam, 10);
+        if (!isNaN(buoiNum) && buoiNum > 0 && buoiNum <= (data.Detail?.length || 0)) {
+            session = data.Detail[buoiNum - 1];
+        } else {
+            // Nếu truy cập bằng hash ID cũ (ví dụ 6a65e94928ef1c467d7b94c1), redirect sang số buổi chuẩn!
+            const foundIdx = (data.Detail || []).findIndex(d => String(d._id) === String(lessonParam));
+            if (foundIdx >= 0) {
+                buoiNum = foundIdx + 1;
+                redirect(`/course/${courseCode}/lesson/${buoiNum}`);
+            } else {
+                session = data.Detail?.find(d => String(d._id) === String(lessonParam));
+            }
+        }
+
+        if (!session?._id) {
+            return <div className="flex items-center justify-center h-full text-sm text-[var(--text-secondary)]">Không tìm thấy buổi học {lessonParam} của lớp {courseCode}</div>;
+        }
+
+        const lessonData = await Data_lesson(session._id);
+        return <LessonMain data={lessonData} />;
+    }
+
     const data = await course_data(id[0]);
     if (!data) return <div className="flex items-center justify-center h-full text-sm text-[var(--text-secondary)]">Không tìm thấy khóa học</div>
     let students = await student_data();

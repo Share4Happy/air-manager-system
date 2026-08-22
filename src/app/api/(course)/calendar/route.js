@@ -29,6 +29,22 @@ export async function GET(req) {
       : {}
 
     const officialAgg = PostCourse.aggregate([
+      {
+        $addFields: {
+          Detail: {
+            $map: {
+              input: { $range: [0, { $size: '$Detail' }] },
+              as: 'idx',
+              in: {
+                $mergeObjects: [
+                  { $arrayElemAt: ['$Detail', '$$idx'] },
+                  { buoi: { $add: ['$$idx', 1] } }
+                ]
+              }
+            }
+          }
+        }
+      },
       { $unwind: '$Detail' },
       { $match: { 'Detail.Day': { $gte: start, $lt: end }, ...teacherMatch } },
       {
@@ -87,6 +103,7 @@ export async function GET(req) {
       {
         $project: {
           _id: '$Detail._id',
+          buoi: '$Detail.buoi',
           courseId: '$ID',
           courseName: '$Name',
           type: '$Detail.Type',
@@ -119,6 +136,22 @@ export async function GET(req) {
       : {}
 
     const trialAgg = TrialCourse.aggregate([
+      {
+        $addFields: {
+          sessions: {
+            $map: {
+              input: { $range: [0, { $size: '$sessions' }] },
+              as: 'idx',
+              in: {
+                $mergeObjects: [
+                  { $arrayElemAt: ['$sessions', '$$idx'] },
+                  { buoi: { $add: ['$$idx', 1] } }
+                ]
+              }
+            }
+          }
+        }
+      },
       { $unwind: '$sessions' },
       { $match: { 'sessions.day': { $gte: start, $lt: end }, ...trialTeacherMatch } },
       { $lookup: { from: 'books', localField: 'sessions.book', foreignField: '_id', as: 'b' } },
@@ -151,6 +184,7 @@ export async function GET(req) {
       {
         $project: {
           _id: '$sessions._id',
+          buoi: '$sessions.buoi',
           courseId: '$name',
           courseName: '$name',
           type: { $literal: 'trial' },

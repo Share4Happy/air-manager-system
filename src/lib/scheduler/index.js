@@ -3,6 +3,7 @@ import { pollPendingCampaignsJob } from './jobs/poll-campaign.job';
 import { processReportsJob } from './jobs/report.job';
 import { processCareSendsJob } from './jobs/care-lesson.job';
 import { processZaloCampaignsJob } from './jobs/zalo-campaign.job';
+import { processDriveScanJob } from './jobs/drive-scan.job';
 
 let isTickRunning = false;
 
@@ -34,6 +35,11 @@ export async function runSchedulerTick() {
         const dueResult = await processZaloCampaignsJob().catch(err => {
             console.error('[Scheduler] Zalo campaigns job error:', err);
             return { count: 0 };
+        });
+
+        // 5. Xử lý lịch quét dung lượng Google Drive tự động
+        await processDriveScanJob().catch(err => {
+            console.error('[Scheduler] Drive scan job error:', err);
         });
 
         return { success: true, processedTasks: dueResult?.count || 0 };
