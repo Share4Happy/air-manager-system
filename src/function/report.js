@@ -92,40 +92,56 @@ export function parseSendTime(sendTime) {
     }
 }
 
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+
 export function computeNextRunAt({ frequency, sendTime, weekday, monthDay, after = new Date() }) {
-    const { hour, minute } = parseSendTime(sendTime)
-    const now = new Date(after)
+    const { hour, minute } = parseSendTime(sendTime);
+    const now = new Date(after);
+    // Chuyển 'now' sang mốc thời gian Việt Nam (UTC+7)
+    const nowVN = new Date(now.getTime() + VN_OFFSET_MS);
+
+    const vnYear = nowVN.getUTCFullYear();
+    const vnMonth = nowVN.getUTCMonth();
+    const vnDate = nowVN.getUTCDate();
+    const vnDay = nowVN.getUTCDay(); // 0 = CN, 1 = T2, ..., 6 = T7
 
     if (frequency === 'daily') {
-        const d = new Date(now)
-        d.setHours(hour, minute, 0, 0)
-        if (d <= now) d.setDate(d.getDate() + 1)
-        return d
+        let targetVN = new Date(Date.UTC(vnYear, vnMonth, vnDate, hour, minute, 0, 0));
+        let targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
+
+        if (targetUTC <= now) {
+            targetVN.setUTCDate(targetVN.getUTCDate() + 1);
+            targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
+        }
+        return targetUTC;
     }
 
     if (frequency === 'weekly') {
         // weekday: 1 = Thứ 2 ... 7 = Chủ nhật
-        const target = weekday >= 1 && weekday <= 7 ? weekday : 1
-        const jsDay = target % 7 // 0 = CN
-        const d = new Date(now)
-        d.setHours(hour, minute, 0, 0)
-        let diff = jsDay - d.getDay()
-        if (diff < 0 || (diff === 0 && d <= now)) diff += 7
-        d.setDate(d.getDate() + diff)
-        return d
+        const target = weekday >= 1 && weekday <= 7 ? weekday : 1;
+        const targetJsDay = target % 7; // 0 = CN, 1 = T2...
+        let diff = targetJsDay - vnDay;
+        let targetVN = new Date(Date.UTC(vnYear, vnMonth, vnDate + diff, hour, minute, 0, 0));
+        let targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
+
+        if (targetUTC <= now) {
+            targetVN.setUTCDate(targetVN.getUTCDate() + 7);
+            targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
+        }
+        return targetUTC;
     }
 
     // monthly
-    const day = monthDay >= 1 && monthDay <= 31 ? monthDay : 1
-    const d = new Date(now)
-    d.setDate(day)
-    d.setHours(hour, minute, 0, 0)
-    if (d <= now) {
-        d.setMonth(d.getMonth() + 1)
-        d.setDate(day)
-        d.setHours(hour, minute, 0, 0)
+    const targetDay = monthDay >= 1 && monthDay <= 31 ? monthDay : 1;
+    let targetVN = new Date(Date.UTC(vnYear, vnMonth, targetDay, hour, minute, 0, 0));
+    let targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
+
+    if (targetUTC <= now) {
+        targetVN.setUTCMonth(targetVN.getUTCMonth() + 1);
+        targetVN.setUTCDate(targetDay);
+        targetUTC = new Date(targetVN.getTime() - VN_OFFSET_MS);
     }
-    return d
+    return targetUTC;
 }
 
 export function getReportPeriod(cfg, now = new Date()) {
