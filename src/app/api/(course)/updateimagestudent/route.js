@@ -35,7 +35,15 @@ export async function POST(req) {
 
         const lessonIdObj = new mongoose.Types.ObjectId(lessonId);
 
-        // --- Trường hợp 1: Cập nhật cho Khóa học chính thức ---
+        // --- Cập nhật trực tiếp vào Collection Attendance (LMS) ---
+        const Attendance = (await import('@/models/attendance')).default;
+        await Attendance.updateOne(
+            { session: lessonIdObj, studentId: studentId },
+            { $set: { images: newImages } },
+            { upsert: true }
+        );
+
+        // Fallback cập nhật vào CSDL cũ nếu còn trường nhúng
         let result = await PostCourse.updateOne(
             { "Detail._id": lessonIdObj, "Student.ID": studentId },
             {
@@ -49,54 +57,12 @@ export async function POST(req) {
                     { "learnElem.Lesson": lessonIdObj }
                 ]
             }
-        );
+        ).catch(() => ({ matchedCount: 0 }));
 
-        // --- Trường hợp 2: Nếu không tìm thấy trong khóa chính thức, thử cập nhật cho Khóa học thử ---
-        if (result.matchedCount === 0) {
-            const studentDoc = await PostStudent.findOne({ ID: studentId }).select('_id').lean();
-
-            if (!studentDoc) {
-                return NextResponse.json(
-                    { success: false, message: `Học sinh với ID: ${studentId} không tồn tại.` },
-                    { status: 404 }
-                );
-            }
-            const studentObjectId = studentDoc._id;
-
-            result = await TrialCourse.updateOne(
-                { 'sessions._id': lessonIdObj },
-                {
-                    $set: {
-                        'sessions.$[sesElem].students.$[stuElem].images': newImages
-                    }
-                },
-                {
-                    arrayFilters: [
-                        { 'sesElem._id': lessonIdObj },
-                        { 'stuElem.studentId': studentObjectId }
-                    ]
-                }
-            );
-
-            if (result.matchedCount === 0) {
-                return NextResponse.json(
-                    { success: false, message: `Không tìm thấy khóa học thử nào phù hợp.` },
-                    { status: 404 }
-                );
-            }
-        }
-
-        if (result.modifiedCount === 0 && result.matchedCount > 0) {
-            return NextResponse.json(
-                { success: true, message: 'Dữ liệu không thay đổi.' },
-                { status: 200 }
-            );
-        }
-        Re_coursetry();
-        return NextResponse.json(
-            { success: true, message: `Cập nhật ảnh cho học sinh ${studentId} thành công.` },
-            { status: 200 }
-        );
+        return NextResponse.json({
+            success: true,
+            message: `Cập nhật ảnh cho học sinh ${studentId} thành công.`
+        }, { status: 200 });
 
     } catch (error) {
         console.error('API Error [add-lesson-images]:', error);

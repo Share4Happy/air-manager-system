@@ -29,15 +29,25 @@ export async function PATCH(req, { params }) {
         }
 
         if (body.makeupStatus) {
-            await PostCourse.updateOne(
-                {
-                    _id: session.course,
-                    'Student.ID': session.studentId,
-                    'Student.Learn.Lesson': session.lesson
-                },
-                { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': body.makeupStatus } },
-                { arrayFilters: [{ 'stu.ID': session.studentId }, { 'les.Lesson': session.lesson }] }
-            )
+            const Attendance = (await import('@/models/attendance')).default;
+            await Promise.all([
+                Attendance.updateOne(
+                    {
+                        session: session.lesson,
+                        studentId: session.studentId
+                    },
+                    { $set: { makeupStatus: body.makeupStatus } }
+                ).catch(() => {}),
+                PostCourse.updateOne(
+                    {
+                        _id: session.course,
+                        'Student.ID': session.studentId,
+                        'Student.Learn.Lesson': session.lesson
+                    },
+                    { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': body.makeupStatus } },
+                    { arrayFilters: [{ 'stu.ID': session.studentId }, { 'les.Lesson': session.lesson }] }
+                ).catch(() => {})
+            ]);
         }
 
         return NextResponse.json({ session })

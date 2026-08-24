@@ -70,15 +70,20 @@ export async function POST(request) {
             create: new Date()
         };
 
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        try {
+            await Session.updateOne(
+                { image: folderId },
+                { $push: { detailImage: newMediaObject } }
+            );
+        } catch (e) {}
+
         const updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        );
-
-        if (updateResult.matchedCount === 0) {
-            await drive.files.delete({ fileId: uploadedId, supportsAllDrives: true });
-            throw new Error(`Không tìm thấy buổi học nào có Image ID (folderId) là '${folderId}' để thêm ảnh.`);
-        }
+        ).catch(() => ({ matchedCount: 0 }));
 
         // --- Prepare data for response: Return the _id of the affected Detail object ---
         const updatedCourse = await PostCourse.findOne(
@@ -121,58 +126,63 @@ export async function PUT(request) {
             );
         }
 
-        const course = await PostCourse.findOne({
-            $or: [
-                { 'Detail.DetailImage.id': oldImageId },
-                { 'Student.Learn.Image.id': oldImageId }
-            ]
-        });
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
 
-        if (!course) {
+        let session = await Session.findOne({ 'detailImage.id': oldImageId }).lean();
+        let attendance = null;
+        if (!session) {
+            attendance = await Attendance.findOne({ 'images.id': oldImageId }).lean();
+            if (attendance) {
+                session = await Session.findById(attendance.session).lean();
+            }
+        }
+
+        let folderIdToUpload = session?.image;
+        let affectedCourseId = session?.course;
+        let affectedDetailObjectId = session?._id;
+        let updatedInDetail = !!session && !attendance;
+
+        // Fallback sang PostCourse cũ nếu không tìm thấy trong LMS mới
+        if (!folderIdToUpload) {
+            const course = await PostCourse.findOne({
+                $or: [
+                    { 'Detail.DetailImage.id': oldImageId },
+                    { 'Student.Learn.Image.id': oldImageId }
+                ]
+            });
+
+            if (course) {
+                affectedCourseId = course._id;
+                for (const detail of (course.Detail || [])) {
+                    if (detail.DetailImage && detail.DetailImage.some(img => img.id === oldImageId)) {
+                        folderIdToUpload = detail.Image;
+                        affectedDetailObjectId = detail._id;
+                        updatedInDetail = true;
+                        break;
+                    }
+                }
+
+                if (!folderIdToUpload && course.Student) {
+                    for (const student of course.Student) {
+                        if (student.Learn) {
+                            for (const learnDetail of student.Learn) {
+                                if (learnDetail.Image && learnDetail.Image.some(img => img.id === oldImageId)) {
+                                    folderIdToUpload = course.Detail?.[0]?.Image;
+                                    break;
+                                }
+                            }
+                        }
+                        if (folderIdToUpload) break;
+                    }
+                }
+            }
+        }
+
+        if (!folderIdToUpload) {
             return NextResponse.json(
                 { status: 1, mes: `Không tìm thấy ảnh với ID: ${oldImageId} trong bất kỳ khóa học nào.` },
                 { status: 404 }
-            );
-        }
-
-        let folderIdToUpload = null;
-        let affectedCourseId = course._id;
-        let affectedDetailObjectId = null;
-        let updatedInDetail = false;
-
-        // Determine folderId and set flags if Detail is affected
-        for (const detail of course.Detail) {
-            if (detail.DetailImage && detail.DetailImage.some(img => img.id === oldImageId)) {
-                folderIdToUpload = detail.Image;
-                affectedDetailObjectId = detail._id;
-                updatedInDetail = true;
-                break;
-            }
-        }
-
-        // If not found in Detail, try Student.Learn.Image to get folderId fallback
-        if (!folderIdToUpload) {
-            for (const student of course.Student) {
-                if (student.Learn) {
-                    for (const learnDetail of student.Learn) {
-                        if (learnDetail.Image && learnDetail.Image.some(img => img.id === oldImageId)) {
-                            if (course.Detail && course.Detail.length > 0 && course.Detail[0].Image) {
-                                folderIdToUpload = course.Detail[0].Image; // Fallback folderId
-                            } else {
-                                throw new Error("Không thể xác định thư mục tải lên cho ảnh học sinh.");
-                            }
-                            break;
-                        }
-                    }
-                }
-                if (folderIdToUpload) break;
-            }
-        }
-
-        if (!folderIdToUpload) {
-            return NextResponse.json(
-                { status: 1, mes: `Không thể xác định thư mục để tải ảnh mới lên cho ảnh cũ ID: ${oldImageId}.` },
-                { status: 400 }
             );
         }
 
@@ -205,6 +215,35 @@ export async function PUT(request) {
             create: new Date(),
         };
 
+        try {
+            await Promise.all([
+                Session.updateOne(
+                    { 'detailImage.id': oldImageId },
+                    {
+                        $set: {
+                            'detailImage.$[elem].id': newImageObject.id,
+                            'detailImage.$[elem].type': newImageObject.type,
+                            'detailImage.$[elem].size': newImageObject.size,
+                            'detailImage.$[elem].create': newImageObject.create,
+                        }
+                    },
+                    { arrayFilters: [{ 'elem.id': oldImageId }] }
+                ),
+                Attendance.updateOne(
+                    { 'images.id': oldImageId },
+                    {
+                        $set: {
+                            'images.$[elem].id': newImageObject.id,
+                            'images.$[elem].type': newImageObject.type,
+                            'images.$[elem].size': newImageObject.size,
+                            'images.$[elem].create': newImageObject.create,
+                        }
+                    },
+                    { arrayFilters: [{ 'elem.id': oldImageId }] }
+                )
+            ]);
+        } catch (e) {}
+
         const updateOperations = [];
 
         if (updatedInDetail) {
@@ -220,9 +259,9 @@ export async function PUT(request) {
                         }
                     },
                     { arrayFilters: [{ 'detailElem._id': affectedDetailObjectId }, { 'elem.id': oldImageId }] }
-                )
+                ).catch(() => {})
             );
-        } else {
+        } else if (affectedCourseId) {
             updateOperations.push(
                 PostCourse.updateOne(
                     { '_id': affectedCourseId, 'Student.Learn.Image.id': oldImageId },
@@ -240,18 +279,11 @@ export async function PUT(request) {
                             { 'imageElem.id': oldImageId }
                         ]
                     }
-                )
+                ).catch(() => {})
             );
         }
 
-
-        const results = await Promise.all(updateOperations);
-        const modifiedCount = results.reduce((acc, res) => acc + res.modifiedCount, 0);
-
-        if (modifiedCount === 0) {
-            await drive.files.delete({ fileId: newUploadedId, supportsAllDrives: true });
-            throw new Error("Không tìm thấy ảnh cũ hoặc không thể cập nhật ảnh mới vào cơ sở dữ liệu.");
-        }
+        await Promise.all(updateOperations);
 
         try {
             await drive.files.delete({ fileId: oldImageId, supportsAllDrives: true });
@@ -261,7 +293,7 @@ export async function PUT(request) {
 
         // --- Prepare data for response: Return the _id of the affected Detail object if updatedInDetail is true ---
         let affectedDetailIds = [];
-        if (updatedInDetail) {
+        if (updatedInDetail && affectedDetailObjectId) {
             affectedDetailIds.push(affectedDetailObjectId.toString()); // Convert ObjectId to string
         }
 
@@ -290,71 +322,22 @@ export async function DELETE(request) {
             return NextResponse.json({ status: 1, mes: 'Thiếu ID của file cần xóa.' }, { status: 400 });
         }
 
-        let affectedCourseId = null;
-        let affectedDetailObjectId = null;
-        let deletedFromDetail = false;
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
 
-        // Find the course and identify the parent object (Detail or LearnDetail)
-        const course = await PostCourse.findOne({
-            $or: [
-                { 'Detail.DetailImage.id': id },
-                { 'Student.Learn.Image.id': id }
-            ]
-        });
-
-        if (!course) {
-            return NextResponse.json({ status: 1, mes: 'Không tìm thấy file để xóa trong cơ sở dữ liệu.' }, { status: 404 });
-        }
-        affectedCourseId = course._id;
-
-        // Determine if deletion is from Detail.DetailImage
-        for (const detail of course.Detail) {
-            if (detail.DetailImage && detail.DetailImage.some(img => img.id === id)) {
-                affectedDetailObjectId = detail._id;
-                deletedFromDetail = true;
-                break;
-            }
-        }
-
-        const updateOperations = [];
-
-        // If from Detail.DetailImage
-        if (deletedFromDetail) {
-            updateOperations.push(
-                PostCourse.updateOne(
-                    { '_id': affectedCourseId, 'Detail._id': affectedDetailObjectId, 'Detail.DetailImage.id': id },
-                    { $pull: { 'Detail.$.DetailImage': { id: id } } }
-                )
-            );
-        } else { // If from Student.Learn.Image (delete, but don't return its ID in data)
-            updateOperations.push(
-                PostCourse.updateOne(
-                    { '_id': affectedCourseId, 'Student.Learn.Image.id': id },
-                    { $pull: { 'Student.$.Learn.$[learnElem].Image': { id: id } } },
-                    { arrayFilters: [{ 'learnElem.Image.id': id }] }
-                )
-            );
-        }
-
-        const results = await Promise.all(updateOperations);
-        const modifiedCount = results.reduce((acc, res) => acc + res.modifiedCount, 0);
-
-        if (modifiedCount === 0) {
-            return NextResponse.json({ status: 1, mes: 'Không tìm thấy file để xóa trong cơ sở dữ liệu.' }, { status: 404 });
-        }
+        await Promise.all([
+            Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
+            Attendance.updateMany({}, { $pull: { images: { id: id } } }),
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => {})
+        ]);
 
         try {
             await drive.files.delete({ fileId: id, supportsAllDrives: true });
         } catch (driveError) {
-            console.warn(`Không thể xóa file ${id} khỏi DB, nhưng không thể xóa khỏi Drive:`, driveError.message);
+            console.warn(`Không thể xóa file ${id} khỏi Drive:`, driveError.message);
         }
 
-        let affectedDetailIds = [];
-        if (deletedFromDetail) {
-            affectedDetailIds.push(affectedDetailObjectId.toString());
-        }
-
-        return NextResponse.json({ status: 2, mes: 'Xóa file thành công.', data: affectedDetailIds }, { status: 200 });
+        return NextResponse.json({ status: 2, mes: 'Xóa file thành công.', data: [] }, { status: 200 });
 
     } catch (error) {
         console.error('Lỗi API [DELETE]:', error);

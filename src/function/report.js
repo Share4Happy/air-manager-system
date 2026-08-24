@@ -158,26 +158,84 @@ export function getReportPeriod(cfg, now = new Date()) {
 }
 
 async function getLessonsInRange(start, end) {
+    const Session = (await import('@/models/session')).default;
+    const Attendance = (await import('@/models/attendance')).default;
+    const Course = (await import('@/models/course')).default;
+
+    const sessions = await Session.find({ day: { $gte: start, $lt: end } })
+        .populate('topic', 'Name')
+        .lean();
+
+    if (sessions.length > 0) {
+        const sessionIds = sessions.map(s => s._id);
+        const courseIds = [...new Set(sessions.map(s => s.course).filter(Boolean))];
+
+        const [attendances, courses] = await Promise.all([
+            Attendance.find({ session: { $in: sessionIds } }).lean(),
+            Course.find({ _id: { $in: courseIds } }).populate('Area', 'name').lean()
+        ]);
+
+        const courseMap = new Map();
+        courses.forEach(c => courseMap.set(String(c._id), c));
+
+        const attBySession = new Map();
+        attendances.forEach(a => {
+            const sid = String(a.session);
+            if (!attBySession.has(sid)) attBySession.set(sid, []);
+            attBySession.get(sid).push({
+                ID: a.studentId,
+                Learn: [{
+                    Lesson: a.session,
+                    Checkin: a.checkin,
+                    absenceReason: a.absenceReason,
+                    Note: a.note,
+                    Image: a.images
+                }]
+            });
+        });
+
+        return sessions.map(s => {
+            const c = courseMap.get(String(s.course));
+            const isTrial = s.type === 'Học thử' || !s.course;
+            return {
+                _id: s._id,
+                courseId: s.courseCode,
+                courseName: c?.Name || s.courseCode,
+                type: isTrial ? 'trial' : 'official',
+                date: s.day,
+                lessonIdx: (s.buoi || 1) - 1,
+                teacher: s.teacher,
+                area: c?.Area?._id || null,
+                areaName: isTrial ? 'Học thử' : (c?.Area?.name || 'Khác'),
+                enrolled: attBySession.get(String(s._id))?.length || 0,
+                image: s.image,
+                detailImage: s.detailImage || [],
+                checkin: s.checkin,
+                students: attBySession.get(String(s._id)) || []
+            };
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
     const officialAgg = PostCourse.aggregate([
         { $unwind: { path: '$Detail', includeArrayIndex: 'lessonIdx' } },
         { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
-        { $addFields: { students: { $map: { input: { $filter: { input: '$Student', as: 'st', cond: { $anyElementTrue: [{ $map: { input: '$$st.Learn', as: 'lr', in: { $eq: ['$$lr.Lesson', '$Detail._id'] } } }] } } }, as: 'st', in: { $mergeObjects: ['$$st', { Learn: { $filter: { input: '$$st.Learn', as: 'lr', cond: { $eq: ['$$lr.Lesson', '$Detail._id'] } } } }] } } } } },
+        { $addFields: { students: { $map: { input: { $filter: { input: { $ifNull: ['$Student', []] }, as: 'st', cond: { $anyElementTrue: [{ $map: { input: { $ifNull: ['$$st.Learn', []] }, as: 'lr', in: { $eq: ['$$lr.Lesson', '$Detail._id'] } } }] } } }, as: 'st', in: { $mergeObjects: ['$$st', { Learn: { $filter: { input: { $ifNull: ['$$st.Learn', []] }, as: 'lr', cond: { $eq: ['$$lr.Lesson', '$Detail._id'] } } } }] } } } } },
         { $lookup: { from: 'books', localField: 'Book', foreignField: '_id', as: 'bk' } },
         { $set: { bk: { $arrayElemAt: ['$bk', 0] } } },
-        { $set: { topic: { $arrayElemAt: [{ $filter: { input: '$bk.Topics', as: 'tp', cond: { $eq: ['$$tp._id', '$Detail.Topic'] } } }, 0] } } },
+        { $set: { topic: { $arrayElemAt: [{ $filter: { input: { $ifNull: ['$bk.Topics', []] }, as: 'tp', cond: { $eq: ['$$tp._id', '$Detail.Topic'] } } }, 0] } } },
         { $lookup: { from: 'areas', localField: 'Area', foreignField: '_id', as: 'areaDoc' } },
         { $set: { areaName: { $arrayElemAt: ['$areaDoc.name', 0] }, area: '$Area' } },
-        { $project: { _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', lessonIdx: 1, teacher: '$Detail.Teacher', area: 1, areaName: 1, enrolled: { $size: '$Student' }, image: '$Detail.Image', detailImage: '$Detail.DetailImage', checkin: '$Detail.Checkin', students: '$students' } },
-    ])
+        { $project: { _id: '$Detail._id', courseId: '$ID', courseName: '$Name', type: { $literal: 'official' }, date: '$Detail.Day', lessonIdx: 1, teacher: '$Detail.Teacher', area: 1, areaName: 1, enrolled: { $size: { $ifNull: ['$Student', []] } }, image: '$Detail.Image', detailImage: '$Detail.DetailImage', checkin: '$Detail.Checkin', students: '$students' } },
+    ]);
 
     const trialAgg = TrialCourse.aggregate([
         { $unwind: { path: '$sessions', includeArrayIndex: 'lessonIdx' } },
         { $match: { 'sessions.day': { $gte: start, $lt: end } } },
-        { $project: { _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', lessonIdx: 1, teacher: '$sessions.teacher', area: null, areaName: { $literal: 'Học thử' }, enrolled: { $size: '$sessions.students' }, image: '$sessions.images', detailImage: { $literal: [] }, checkin: '$sessions.checkin', students: '$sessions.students' } },
-    ])
+        { $project: { _id: '$sessions._id', courseId: '$name', courseName: '$name', type: { $literal: 'trial' }, date: '$sessions.day', lessonIdx: 1, teacher: '$sessions.teacher', area: null, areaName: { $literal: 'Học thử' }, enrolled: { $size: { $ifNull: ['$sessions.students', []] } }, image: '$sessions.images', detailImage: { $literal: [] }, checkin: '$sessions.checkin', students: '$sessions.students' } },
+    ]);
 
-    const [official, trial] = await Promise.all([officialAgg, trialAgg])
-    return [...official, ...trial].sort((a, b) => new Date(a.date) - new Date(b.date))
+    const [official, trial] = await Promise.all([officialAgg, trialAgg]);
+    return [...official, ...trial].sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
 export async function generateAttendanceReport({ start, end, options }) {

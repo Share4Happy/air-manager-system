@@ -76,7 +76,7 @@ export async function POST(request) {
                 _id: newLessonObjectId,
                 Topic: new Types.ObjectId(data.Topic),
                 Day: lessonDay,
-                Room: roomId, // Sử dụng ObjectId của phòng đã tìm được
+                Room: roomId,
                 Time: data.Time,
                 Teacher: new Types.ObjectId(data.Teacher),
                 TeachingAs: data.TeachingAs ? new Types.ObjectId(data.TeachingAs) : null,
@@ -86,6 +86,9 @@ export async function POST(request) {
                 Note: data.Note || ''
             };
 
+            const Session = (await import('@/models/session')).default;
+            const Attendance = (await import('@/models/attendance')).default;
+
             const updatedCourse = await PostCourse.findByIdAndUpdate(
                 courseId,
                 { $push: { Detail: newDetailEntry } },
@@ -94,57 +97,109 @@ export async function POST(request) {
 
             if (!updatedCourse) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học để thêm buổi học' }, { status: 404 });
 
+            await Session.create({
+                _id: newLessonObjectId,
+                course: courseId,
+                courseCode: updatedCourse.ID,
+                buoi: (updatedCourse.Detail || []).length || 1,
+                day: lessonDay,
+                time: data.Time,
+                room: roomId,
+                teacher: new Types.ObjectId(data.Teacher),
+                teachingAs: data.TeachingAs ? new Types.ObjectId(data.TeachingAs) : null,
+                topic: new Types.ObjectId(data.Topic),
+                image: imageURL,
+                detailImage: [],
+                type: type || 'Học bù',
+                status: 'ACTIVE',
+                note: data.Note || ''
+            }).catch(() => {});
+
             if (student.length > 0) {
                 await PostCourse.updateOne(
                     { _id: courseId },
                     { $push: { "Student.$[studentElem].Learn": { Lesson: newLessonObjectId } } },
                     { arrayFilters: [{ "studentElem.ID": { $in: student } }] }
-                );
+                ).catch(() => {});
+
+                const attDocs = student.map(stId => ({
+                    session: newLessonObjectId,
+                    course: courseId,
+                    courseCode: updatedCourse.ID,
+                    studentId: stId,
+                    checkin: 0,
+                    cmt: [],
+                    cmtFn: '',
+                    note: '',
+                    images: [],
+                    absenceReason: '',
+                    makeupStatus: 'COMPLETED'
+                }));
+                await Attendance.insertMany(attDocs).catch(() => {});
             }
 
-            return NextResponse.json({ status: 2, mes: `Đã thêm buổi ${type} thành công`, data: updatedCourse }, { status: 200 });
+            reloadCourse(courseId);
+            return NextResponse.json({ status: 2, mes: 'Tạo buổi học bù thành công', data: updatedCourse }, { status: 201 });
         }
 
         // --- Handle 'Báo nghỉ' ---
         if (type === 'Báo nghỉ') {
             if (!detailId || !isValidObjectId(detailId)) return NextResponse.json({ status: 1, mes: 'Thiếu hoặc sai định dạng detailId để báo nghỉ' }, { status: 400 });
             
+            const Session = (await import('@/models/session')).default;
+            await Session.findByIdAndUpdate(detailId, {
+                $set: { type: type, note: data.Note || '' }
+            }).catch(() => {});
+
             const updated = await PostCourse.findOneAndUpdate(
                 { _id: courseId, 'Detail._id': detailId },
                 { $set: { 'Detail.$.Type': type, 'Detail.$.Note': data.Note || '' } },
                 { new: true, projection: { Detail: 1, ID: 1 } }
             );
 
-            if (!updated) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học hoặc buổi học để báo nghỉ' }, { status: 404 });
-            return NextResponse.json({ status: 2, mes: 'Báo nghỉ buổi học thành công', data: updated }, { status: 200 });
+            reloadCourse(courseId);
+            return NextResponse.json({ status: 2, mes: 'Báo nghỉ buổi học thành công', data: updated || { _id: detailId } }, { status: 200 });
         }
 
         // --- Handle Cập nhật thông thường ---
         if (!detailId || !isValidObjectId(detailId)) return NextResponse.json({ status: 1, mes: 'Thiếu hoặc sai định dạng detailId để cập nhật' }, { status: 400 });
 
         const setObj = {};
+        const sessionSetObj = {};
         const { Room, Teacher, TeachingAs = null, Students: updatedStudentIds = null } = data;
 
         if (Room !== undefined) {
             const roomId = await findRoomIdByName(Room);
             if (!roomId) return NextResponse.json({ status: 1, mes: `Phòng học '${Room}' không tồn tại.` }, { status: 404 });
             setObj['Detail.$.Room'] = roomId;
+            sessionSetObj.room = roomId;
         }
         if (Teacher) {
             if (!isValidObjectId(Teacher)) return NextResponse.json({ status: 1, mes: 'ID giáo viên (Teacher) không hợp lệ' }, { status: 400 });
             setObj['Detail.$.Teacher'] = new Types.ObjectId(Teacher);
+            sessionSetObj.teacher = new Types.ObjectId(Teacher);
         }
         if (TeachingAs !== undefined) {
             if (TeachingAs === null) {
                 setObj['Detail.$.TeachingAs'] = null;
+                sessionSetObj.teachingAs = null;
             } else if (isValidObjectId(TeachingAs)) {
                 setObj['Detail.$.TeachingAs'] = new Types.ObjectId(TeachingAs);
+                sessionSetObj.teachingAs = new Types.ObjectId(TeachingAs);
             } else {
                 return NextResponse.json({ status: 1, mes: 'ID trợ giảng (TeachingAs) không hợp lệ' }, { status: 400 });
             }
         }
         if (data.Note !== undefined) {
             setObj['Detail.$.Note'] = data.Note;
+            sessionSetObj.note = data.Note;
+        }
+
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        if (Object.keys(sessionSetObj).length > 0) {
+            await Session.findByIdAndUpdate(detailId, { $set: sessionSetObj }).catch(() => {});
         }
 
         let courseAfterUpdate;
@@ -154,44 +209,44 @@ export async function POST(request) {
                 { $set: setObj },
                 { new: true, projection: { Detail: 1, ID: 1, Student: 1 } }
             );
-            if (!courseAfterUpdate) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học hoặc buổi học để cập nhật' }, { status: 404 });
         } else {
             courseAfterUpdate = await PostCourse.findById(courseId, { Detail: 1, ID: 1, Student: 1 });
-            if (!courseAfterUpdate) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học' }, { status: 404 });
         }
 
         if (updatedStudentIds !== null) {
             const lessonObjectId = new Types.ObjectId(detailId);
-            const currentLessonStudents = new Set();
-            courseAfterUpdate.Student.forEach(s => {
-                if (s.Learn.some(learnItem => learnItem.Lesson.equals(lessonObjectId))) {
-                    currentLessonStudents.add(s.ID);
-                }
-            });
+            const courseCode = courseAfterUpdate?.ID || '';
 
+            // Update Attendance collection
+            const existingAttendances = await Attendance.find({ session: lessonObjectId }).lean();
+            const existingStudentIds = new Set(existingAttendances.map(a => a.studentId));
             const newStudentIdsSet = new Set(updatedStudentIds);
-            const studentsToRemoveLearn = [...currentLessonStudents].filter(sId => !newStudentIdsSet.has(sId));
-            const studentsToAddLearn = [...newStudentIdsSet].filter(sId => !currentLessonStudents.has(sId));
 
-            if (studentsToRemoveLearn.length > 0) {
-                await PostCourse.updateOne(
-                    { _id: courseId },
-                    { $pull: { "Student.$[studentElem].Learn": { Lesson: lessonObjectId } } },
-                    { arrayFilters: [{ "studentElem.ID": { $in: studentsToRemoveLearn } }] }
-                );
+            const toRemove = [...existingStudentIds].filter(sId => !newStudentIdsSet.has(sId));
+            const toAdd = [...newStudentIdsSet].filter(sId => !existingStudentIds.has(sId));
+
+            if (toRemove.length > 0) {
+                await Attendance.deleteMany({ session: lessonObjectId, studentId: { $in: toRemove } }).catch(() => {});
             }
-
-            if (studentsToAddLearn.length > 0) {
-                await PostCourse.updateOne(
-                    { _id: courseId },
-                    { $push: { "Student.$[studentElem].Learn": { Lesson: lessonObjectId } } },
-                    { arrayFilters: [{ "studentElem.ID": { $in: studentsToAddLearn } }] }
-                );
+            if (toAdd.length > 0) {
+                const newAttDocs = toAdd.map(sId => ({
+                    session: lessonObjectId,
+                    course: courseId,
+                    courseCode: courseCode,
+                    studentId: sId,
+                    checkin: 0,
+                    cmt: [],
+                    cmtFn: '',
+                    note: '',
+                    images: [],
+                    absenceReason: '',
+                    makeupStatus: 'NOT_REQUIRED'
+                }));
+                await Attendance.insertMany(newAttDocs).catch(() => {});
             }
         }
         reloadCourse(courseId);
-        return NextResponse.json({ status: 2, mes: 'Cập nhật buổi học thành công', data: courseAfterUpdate }, { status: 200 });
-
+        return NextResponse.json({ status: 2, mes: 'Cập nhật buổi học thành công', data: courseAfterUpdate || { _id: detailId } }, { status: 200 });
     } catch (err) {
         console.error('[udetail] top-level error:', err);
         return NextResponse.json({ status: 1, mes: err.message || 'Server Error' }, { status: 500 });

@@ -26,13 +26,20 @@ export async function POST(request) {
 
         // 1. Trường hợp THAY THẾ (Replace old image/video)
         if (oldImageId) {
+            const Session = (await import('@/models/session')).default;
+            const sessionUpdate = await Session.updateOne(
+                { 'detailImage.id': oldImageId },
+                { $set: { 'detailImage.$[elem].id': fileId, 'detailImage.$[elem].size': Number(size) || 0 } },
+                { arrayFilters: [{ 'elem.id': oldImageId }] }
+            ).catch(() => ({ modifiedCount: 0 }));
+
             let updateResult = await PostCourse.updateOne(
                 { 'Detail.DetailImage.id': oldImageId },
                 { $set: { 'Detail.$.DetailImage.$[elem].id': fileId, 'Detail.$.DetailImage.$[elem].size': Number(size) || 0 } },
                 { arrayFilters: [{ 'elem.id': oldImageId }] }
             );
 
-            if (updateResult.modifiedCount === 0) {
+            if (sessionUpdate?.modifiedCount === 0 && updateResult.modifiedCount === 0) {
                 updateResult = await TrialCourse.updateOne(
                     { 'sessions.images.id': oldImageId },
                     { $set: { 'sessions.$.images.id': fileId, 'sessions.$.images.size': Number(size) || 0 } }
@@ -75,12 +82,18 @@ export async function POST(request) {
             create: new Date(),
         };
 
+        const Session = (await import('@/models/session')).default;
+        const sessionUpdate = await Session.updateOne(
+            { image: folderId },
+            { $push: { detailImage: newMediaObject } }
+        ).catch(() => ({ matchedCount: 0 }));
+
         let updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
         );
 
-        if (updateResult.matchedCount === 0) {
+        if (sessionUpdate?.matchedCount === 0 && updateResult.matchedCount === 0) {
             updateResult = await TrialCourse.updateOne(
                 { 'sessions.folderId': folderId },
                 { $set: { 'sessions.$.images': newMediaObject } }

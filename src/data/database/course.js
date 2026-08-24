@@ -11,58 +11,107 @@ import mongoose from 'mongoose';
 export async function dataCourse(_id) {
     try {
         await connectDB();
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
         if (!_id) {
             const courses = await Course.find({ Type: 'AI Robotic' })
                 .populate({ path: 'Book', select: 'Name' })
                 .populate({ path: 'TeacherHR', select: 'name' })
                 .populate({ path: 'Area', select: 'name color rooms' })
-                .populate({ path: 'Detail', populate: [{ path: 'Teacher', select: 'name phone' }] })
                 .lean();
 
+            const courseIds = courses.map(c => c._id);
+            const courseCodes = courses.map(c => c.ID).filter(Boolean);
 
-        //    if (courses && courses.length > 0 && courses[0].Detail && courses[0].Detail.length > 0) {
-        //         ("\n=== CHI TIẾT 1 OBJECT TRONG DETAIL ĐỂ DEBUG ===");
-        //         (JSON.stringify(courses[0].Detail[0], null, 2)); 
-        //         (`=> Khóa học này đang chứa ${courses[0].Detail.length} object Detail như trên.\n`);
-        //     }
+            const allSessions = await Session.find({
+                $or: [{ course: { $in: courseIds } }, { courseCode: { $in: courseCodes } }]
+            }).populate('teacher', 'name phone').populate('teachingAs', 'name phone').lean();
 
-            
-            const idSet = new Set();
+            const sessionGroup = new Map();
+            allSessions.forEach(s => {
+                const key = s.course ? String(s.course) : s.courseCode;
+                if (!sessionGroup.has(key)) sessionGroup.set(key, []);
+                sessionGroup.get(key).push(s);
+            });
+
             courses.forEach(course => {
-                (course.Detail || []).forEach(detail => {
-                    const id = typeof detail.TeachingAs === 'string' ? detail.TeachingAs : detail.TeachingAs?._id;
-                    if (mongoose.Types.ObjectId.isValid(id)) idSet.add(id);
-                });
+                const sList = sessionGroup.get(String(course._id)) || sessionGroup.get(course.ID) || (course.Detail || []);
+                sList.sort((a, b) => (a.buoi || 0) - (b.buoi || 0));
+                course.Detail = sList.map(s => ({
+                    _id: s._id,
+                    Day: s.day || s.Day,
+                    Time: s.time || s.Time,
+                    Room: s.room || s.Room,
+                    Teacher: s.teacher || s.Teacher,
+                    TeachingAs: s.teachingAs || s.TeachingAs,
+                    Topic: s.topic || s.Topic,
+                    Image: s.image || s.Image,
+                    DetailImage: s.detailImage || s.DetailImage || [],
+                    Checkin: s.checkin || s.Checkin || null,
+                    Type: s.type || s.Type || ''
+                }));
             });
-            const userMap = {};
-            const idList = Array.from(idSet);
-            if (idList.length) {
-                const users = await User.find({ _id: { $in: idList } }, 'name phone').lean();
-                users.forEach(u => { userMap[String(u._id)] = u; });
-            }
-            const cleaned = courses.map(course => {
-                (course.Detail || []).forEach(detail => {
-                    const id = typeof detail.TeachingAs === 'string' ? detail.TeachingAs : detail.TeachingAs?._id;
-                    if (userMap[id]) detail.TeachingAs = userMap[id];
-                    else delete detail.TeachingAs;
-                });
-                return course;
-            });
-            return JSON.parse(JSON.stringify(cleaned));
+
+            return JSON.parse(JSON.stringify(courses));
         }
-        const query = mongoose.Types.ObjectId.isValid(_id) ? { _id } : { ID: _id }
+
+        const query = mongoose.Types.ObjectId.isValid(_id) ? { _id } : { ID: _id };
         const course = await Course.findOne(query)
             .populate([{ path: 'Book' }, { path: 'TeacherHR', select: 'name phone' }, { path: 'Area', select: 'name rooms color' }])
             .lean();
         if (!course) return null;
 
+        const [sessions, attendances] = await Promise.all([
+            Session.find({ $or: [{ course: course._id }, { courseCode: course.ID }] }).sort({ buoi: 1 }).lean(),
+            Attendance.find({ $or: [{ course: course._id }, { courseCode: course.ID }] }).lean()
+        ]);
+
+        if (sessions.length > 0) {
+            course.Detail = sessions.map(s => ({
+                _id: s._id,
+                Day: s.day,
+                Time: s.time,
+                Room: s.room,
+                Teacher: s.teacher,
+                TeachingAs: s.teachingAs,
+                Topic: s.topic,
+                Image: s.image,
+                DetailImage: s.detailImage || [],
+                Checkin: s.checkin || null,
+                Type: s.type || ''
+            }));
+        }
+
+        const attMap = new Map();
+        attendances.forEach(a => {
+            const key = String(a.studentId);
+            if (!attMap.has(key)) attMap.set(key, []);
+            attMap.get(key).push({
+                Lesson: a.session,
+                Checkin: a.checkin,
+                Cmt: a.cmt || [],
+                CmtFn: a.cmtFn || '',
+                Note: a.note || '',
+                Image: a.images || [],
+                absenceReason: a.absenceReason || ''
+            });
+        });
+
+        if (course.Student && Array.isArray(course.Student)) {
+            course.Student.forEach(st => {
+                const learnList = attMap.get(st.ID) || attMap.get(String(st._id)) || (st.Learn || []);
+                st.Learn = learnList;
+            });
+        }
+
         const userIds = new Set();
-        course.Detail?.forEach(d => {
+        (course.Detail || []).forEach(d => {
             if (d.Teacher && mongoose.Types.ObjectId.isValid(d.Teacher)) userIds.add(d.Teacher.toString());
             if (d.TeachingAs && mongoose.Types.ObjectId.isValid(d.TeachingAs)) userIds.add(d.TeachingAs.toString());
         });
-        const lessonIds = [...new Set(course.Detail?.map(d => d.Topic?.toString()).filter(Boolean) || [])];
-        const studentIds = course.Student?.map(s => s.ID) || [];
+        const lessonIds = [...new Set((course.Detail || []).map(d => d.Topic?.toString()).filter(Boolean))];
+        const studentIds = (course.Student || []).map(s => s.ID);
 
         const [usersData, relevantBooks, studentsData] = await Promise.all([
             userIds.size > 0 ? User.find({ _id: { $in: Array.from(userIds) } }).select('name phone').lean() : Promise.resolve([]),
@@ -86,12 +135,12 @@ export async function dataCourse(_id) {
                 item.LessonDetails = lessonDetailsMap.get(item.Topic?.toString()) || null;
                 item.Teacher = userDetailsMap.get(item.Teacher?.toString()) || null;
                 item.TeachingAs = userDetailsMap.get(item.TeachingAs?.toString()) || null;
-                const rawRoom = item.Room?.toString()
+                const rawRoom = item.Room?.toString();
                 if (rawRoom && !mongoose.Types.ObjectId.isValid(rawRoom)) {
                 } else if (roomMap && rawRoom) {
-                    item.Room = roomMap.get(rawRoom) || null
+                    item.Room = roomMap.get(rawRoom) || null;
                 } else if (rawRoom) {
-                    item.Room = null
+                    item.Room = null;
                 }
             });
         }

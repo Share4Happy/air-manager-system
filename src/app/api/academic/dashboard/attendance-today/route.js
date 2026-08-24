@@ -16,66 +16,128 @@ export async function GET() {
         await connectDB()
         const { start, end } = getTodayRange()
 
-        const agg = PostCourse.aggregate([
-            { $unwind: '$Detail' },
-            { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
-            { $unwind: '$Student' },
-            { $unwind: '$Student.Learn' },
-            {
-                $match: {
-                    $expr: { $eq: ['$Student.Learn.Lesson', '$Detail._id'] }
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalTurns: { $sum: 1 },
-                    presentTurns: {
-                        $sum: { $cond: [{ $eq: ['$Student.Learn.Checkin', 1] }, 1, 0] }
-                    },
-                    absentTurns: {
-                        $sum: {
-                            $cond: [
-                                { $in: ['$Student.Learn.Checkin', [2, 3]] },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    uncheckedTurns: {
-                        $sum: { $cond: [{ $eq: ['$Student.Learn.Checkin', 0] }, 1, 0] }
-                    },
-                    absentWithReason: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $in: ['$Student.Learn.Checkin', [2, 3]] },
-                                        { $ne: [{ $ifNull: ['$Student.Learn.absenceReason', ''] }, ''] }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
-                        }
-                    },
-                    absentWithoutReason: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $and: [
-                                        { $in: ['$Student.Learn.Checkin', [2, 3]] },
-                                        { $eq: [{ $ifNull: ['$Student.Learn.absenceReason', ''] }, ''] }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const todaySessions = await Session.find({ day: { $gte: start, $lt: end } }).select('_id').lean();
+        const sessionIds = todaySessions.map(s => s._id);
+
+        let attendanceResult = [];
+        if (sessionIds.length > 0) {
+            attendanceResult = await Attendance.aggregate([
+                { $match: { session: { $in: sessionIds } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalTurns: { $sum: 1 },
+                        presentTurns: {
+                            $sum: { $cond: [{ $eq: ['$checkin', 1] }, 1, 0] }
+                        },
+                        absentTurns: {
+                            $sum: {
+                                $cond: [
+                                    { $in: ['$checkin', [2, 3]] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        uncheckedTurns: {
+                            $sum: { $cond: [{ $eq: ['$checkin', 0] }, 1, 0] }
+                        },
+                        absentWithReason: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            { $in: ['$checkin', [2, 3]] },
+                                            { $ne: [{ $ifNull: ['$absenceReason', ''] }, ''] }
+                                        ]
+                                    },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        absentWithoutReason: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            { $in: ['$checkin', [2, 3]] },
+                                            { $eq: [{ $ifNull: ['$absenceReason', ''] }, ''] }
+                                        ]
+                                    },
+                                    1,
+                                    0
+                                ]
+                            }
                         }
                     }
                 }
-            }
-        ])
+            ]);
+        } else {
+            attendanceResult = await PostCourse.aggregate([
+                { $unwind: '$Detail' },
+                { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
+                { $unwind: '$Student' },
+                { $unwind: '$Student.Learn' },
+                {
+                    $match: {
+                        $expr: { $eq: ['$Student.Learn.Lesson', '$Detail._id'] }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalTurns: { $sum: 1 },
+                        presentTurns: {
+                            $sum: { $cond: [{ $eq: ['$Student.Learn.Checkin', 1] }, 1, 0] }
+                        },
+                        absentTurns: {
+                            $sum: {
+                                $cond: [
+                                    { $in: ['$Student.Learn.Checkin', [2, 3]] },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        uncheckedTurns: {
+                            $sum: { $cond: [{ $eq: ['$Student.Learn.Checkin', 0] }, 1, 0] }
+                        },
+                        absentWithReason: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            { $in: ['$Student.Learn.Checkin', [2, 3]] },
+                                            { $ne: [{ $ifNull: ['$Student.Learn.absenceReason', ''] }, ''] }
+                                        ]
+                                    },
+                                    1,
+                                    0
+                                ]
+                            }
+                        },
+                        absentWithoutReason: {
+                            $sum: {
+                                $cond: [
+                                    {
+                                        $and: [
+                                            { $in: ['$Student.Learn.Checkin', [2, 3]] },
+                                            { $eq: [{ $ifNull: ['$Student.Learn.absenceReason', ''] }, ''] }
+                                        ]
+                                    },
+                                    1,
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+        }
 
         const makeupAgg = MakeupSession.aggregate([
             {
@@ -118,11 +180,11 @@ export async function GET() {
             }
         ])
 
-        const [attendanceResult, makeupResult] = await Promise.all([agg, makeupAgg])
+        const makeupResult = await makeupAgg;
         const stats = attendanceResult[0] || {
             totalTurns: 0, presentTurns: 0, absentTurns: 0,
             uncheckedTurns: 0, absentWithReason: 0, absentWithoutReason: 0
-        }
+        };
         const makeup = makeupResult[0] || {
             makeupRequired: 0, makeupScheduled: 0, makeupCompleted: 0, makeupExpired: 0
         }

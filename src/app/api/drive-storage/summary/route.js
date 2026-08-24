@@ -50,9 +50,39 @@ export async function GET() {
             sizeMap[doc.fileId] = doc.size;
         }
 
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const [allSessions, allAttendances] = await Promise.all([
+            Session.find({}).select('course courseCode detailImage').lean(),
+            Attendance.find({}).select('course courseCode images').lean()
+        ]);
+
+        const sessionMap = new Map();
+        allSessions.forEach(s => {
+            const k = s.courseCode || String(s.course);
+            if (!sessionMap.has(k)) sessionMap.set(k, []);
+            sessionMap.get(k).push(s);
+        });
+
+        const attMap = new Map();
+        allAttendances.forEach(a => {
+            const k = a.courseCode || String(a.course);
+            if (!attMap.has(k)) attMap.set(k, []);
+            attMap.get(k).push(a);
+        });
+
         const mongoMap = {};
         for (const c of courses) {
             const stats = { totalSize: 0, totalFiles: 0, imageSize: 0, imageFiles: 0, videoSize: 0, videoFiles: 0 };
+            const sList = sessionMap.get(c.ID) || sessionMap.get(String(c._id)) || [];
+            for (const d of sList) {
+                for (const img of d.detailImage || []) addFile(stats, sizeMap[img.id] || img.size || 0, img.type);
+            }
+            const aList = attMap.get(c.ID) || attMap.get(String(c._id)) || [];
+            for (const a of aList) {
+                for (const img of a.images || []) addFile(stats, sizeMap[img.id] || img.size || 0, img.type);
+            }
             for (const d of c.Detail || []) {
                 for (const img of d.DetailImage || []) addFile(stats, sizeMap[img.id] || img.size || 0, img.type);
             }

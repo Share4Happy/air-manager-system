@@ -29,15 +29,21 @@ export async function POST(request) {
         if (!targetFolderId && oldImageId) {
             try {
                 await connectDB();
-                const course = await PostCourse.findOne({ 'Detail.DetailImage.id': oldImageId });
-                if (course) {
-                    const detail = course.Detail.find(d => d.DetailImage?.some(img => img.id === oldImageId));
-                    targetFolderId = detail?.Image;
+                const Session = (await import('@/models/session')).default;
+                const ses = await Session.findOne({ 'detailImage.id': oldImageId }).lean();
+                if (ses) {
+                    targetFolderId = ses.image;
                 } else {
-                    const trial = await TrialCourse.findOne({ 'sessions.images.id': oldImageId });
-                    if (trial) {
-                        const ses = trial.sessions.find(s => s.images?.id === oldImageId);
-                        targetFolderId = ses?.folderId;
+                    const course = await PostCourse.findOne({ 'Detail.DetailImage.id': oldImageId });
+                    if (course) {
+                        const detail = course.Detail?.find(d => d.DetailImage?.some(img => img.id === oldImageId));
+                        targetFolderId = detail?.Image;
+                    } else {
+                        const trial = await TrialCourse.findOne({ 'sessions.images.id': oldImageId });
+                        if (trial) {
+                            const trialSes = trial.sessions.find(s => s.images?.id === oldImageId);
+                            targetFolderId = trialSes?.folderId;
+                        }
                     }
                 }
             } catch (findErr) {

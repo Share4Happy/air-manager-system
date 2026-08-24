@@ -76,21 +76,24 @@ export async function POST(request) {
         const newMediaObject = { id: uploadedId, type: fileType, size: fileBuffer.length, create: new Date() };
 
         // --- 3. Cập nhật vào MongoDB ---
+        try {
+            const Session = (await import('@/models/session')).default;
+            await Session.updateOne(
+                { image: folderId },
+                { $push: { detailImage: newMediaObject } }
+            );
+        } catch (e) {}
+
         let updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        );
+        ).catch(() => ({ matchedCount: 0 }));
 
         if (updateResult.matchedCount === 0) {
-            updateResult = await TrialCourse.updateOne(
+            await TrialCourse.updateOne(
                 { 'sessions.folderId': folderId },
                 { $push: { 'sessions.$.images': newMediaObject } }
-            );
-
-            if (updateResult.matchedCount === 0) {
-                await drive.files.delete({ fileId: uploadedId, supportsAllDrives: true });
-                throw new Error(`Không tìm thấy buổi học nào có Image ID (folderId) là '${folderId}'.`);
-            }
+            ).catch(() => {});
         }
 
         // --- 4. Trả về thành công ---
@@ -140,29 +143,32 @@ export async function PUT(request) {
         // --- 1. Tìm khóa học và buổi học chứa ảnh cũ ---
         let course = await PostCourse.findOne({ 'Detail.DetailImage.id': oldImageId });
         let isTrial = false;
-
-        if (!course) {
-            course = await TrialCourse.findOne({ 'sessions.images.id': oldImageId });
-            if (!course) {
-                return NextResponse.json(
-                    { status: 1, mes: `Không tìm thấy buổi học nào chứa ảnh với ID: ${oldImageId}` },
-                    { status: 404 }
-                );
-            }
-            isTrial = true;
-        }
-
         let folderId;
-        if (!isTrial) {
+
+        if (course) {
             const lessonDetail = course.Detail.find(detail =>
                 detail.DetailImage.some(img => img.id === oldImageId)
             );
-            folderId = lessonDetail.Image;
+            folderId = lessonDetail?.Image;
         } else {
-            const ses = course.sessions.find(s =>
-                s.images?.some(img => img.id === oldImageId)
-            );
-            folderId = ses?.folderId;
+            const trialCourse = await TrialCourse.findOne({ 'sessions.images.id': oldImageId });
+            if (trialCourse) {
+                const ses = trialCourse.sessions.find(s =>
+                    s.images?.some(img => img.id === oldImageId)
+                );
+                folderId = ses?.folderId;
+            } else {
+                const Session = (await import('@/models/session')).default;
+                const ses = await Session.findOne({ 'detailImage.id': oldImageId }).lean();
+                if (ses) {
+                    folderId = ses.image;
+                } else {
+                    return NextResponse.json(
+                        { status: 1, mes: `Không tìm thấy buổi học nào chứa ảnh với ID: ${oldImageId}` },
+                        { status: 404 }
+                    );
+                }
+            }
         }
 
         if (!folderId) {
@@ -204,24 +210,24 @@ export async function PUT(request) {
         }
 
         // --- 3. Cập nhật ID mới + size vào MongoDB ---
-        let updateResult = await PostCourse.updateOne(
+        const Session = (await import('@/models/session')).default;
+        await Session.updateOne(
+            { 'detailImage.id': oldImageId },
+            { $set: { 'detailImage.$[elem].id': newImageId, 'detailImage.$[elem].size': fileBuffer.length } },
+            { arrayFilters: [{ 'elem.id': oldImageId }] }
+        ).catch(() => {});
+
+        await PostCourse.updateOne(
             { 'Detail.DetailImage.id': oldImageId },
             { $set: { 'Detail.$.DetailImage.$[elem].id': newImageId, 'Detail.$.DetailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
-        );
+        ).catch(() => {});
 
-        if (updateResult.modifiedCount === 0) {
-            updateResult = await TrialCourse.updateOne(
-                { 'sessions.images.id': oldImageId },
-                { $set: { 'sessions.$[ses].images.$[img].id': newImageId, 'sessions.$[ses].images.$[img].size': fileBuffer.length } },
-                { arrayFilters: [{ 'ses.images.id': oldImageId }, { 'img.id': oldImageId }] }
-            );
-
-            if (updateResult.modifiedCount === 0) {
-                await drive.files.delete({ fileId: newImageId, supportsAllDrives: true });
-                throw new Error("Không thể cập nhật ID ảnh mới vào cơ sở dữ liệu.");
-            }
-        }
+        await TrialCourse.updateOne(
+            { 'sessions.images.id': oldImageId },
+            { $set: { 'sessions.$[ses].images.$[img].id': newImageId, 'sessions.$[ses].images.$[img].size': fileBuffer.length } },
+            { arrayFilters: [{ 'ses.images.id': oldImageId }, { 'img.id': oldImageId }] }
+        ).catch(() => {});
 
         // --- 4. Xóa file cũ khỏi Google Drive ---
         try {
@@ -256,30 +262,15 @@ export async function DELETE(request) {
             return NextResponse.json({ status: 1, mes: 'Thiếu ID của file cần xóa.' }, { status: 400 });
         }
 
-        let updateResult = await PostCourse.updateOne(
-            { 'Detail.DetailImage.id': id },
-            { $pull: { 'Detail.$.DetailImage': { id: id } } }
-        );
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
 
-        if (updateResult.matchedCount === 0) {
-            updateResult = await TrialCourse.updateOne(
-                { 'sessions.images.id': id },
-                { $pull: { 'sessions.$[].images': { id: id } } }
-            );
-            if (updateResult.matchedCount === 0) {
-                return NextResponse.json({ status: 1, mes: 'Không tìm thấy file để xóa trong cơ sở dữ liệu.' }, { status: 404 });
-            }
-        }
-
-        await PostCourse.updateMany(
-            {},
-            { $pull: { 'Student.$[].Learn.$[].Image': { id: id } } }
-        );
-
-        await TrialCourse.updateMany(
-            {},
-            { $pull: { 'sessions.$[].students.$[].images': { id: id } } }
-        );
+        await Promise.all([
+            Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
+            Attendance.updateMany({}, { $pull: { images: { id: id } } }),
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => {}),
+            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(() => {})
+        ]);
 
         try {
             await drive.files.delete({ fileId: id, supportsAllDrives: true });

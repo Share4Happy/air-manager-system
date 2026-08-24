@@ -56,7 +56,21 @@ export async function POST() {
                     TrialCourse.find({}).select('sessions.images sessions.students.images').lean(),
                 ]);
 
+                const Session = (await import('@/models/session')).default;
+                const Attendance = (await import('@/models/attendance')).default;
+
+                const [allSessions, allAttendances] = await Promise.all([
+                    Session.find({}).select('detailImage').lean(),
+                    Attendance.find({}).select('images').lean()
+                ]);
+
                 const fileIds = new Set();
+                for (const ses of allSessions) {
+                    for (const img of ses.detailImage || []) if (img.id) fileIds.add(img.id);
+                }
+                for (const att of allAttendances) {
+                    for (const img of att.images || []) if (img.id) fileIds.add(img.id);
+                }
                 for (const c of courses) {
                     for (const d of c.Detail || []) for (const img of d.DetailImage || []) if (img.id) fileIds.add(img.id);
                     for (const s of c.Student || []) for (const l of s.Learn || []) for (const img of l.Image || []) if (img.id) fileIds.add(img.id);

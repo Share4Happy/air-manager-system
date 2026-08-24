@@ -75,11 +75,18 @@ export async function POST(req) {
             makeupStatus: rest.makeupStatus || 'MAKEUP_PENDING'
         })
 
-        await PostCourse.updateOne(
-            { _id: new mongoose.Types.ObjectId(courseId), 'Student.ID': studentId, 'Student.Learn.Lesson': new mongoose.Types.ObjectId(lessonId) },
-            { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': session.makeupStatus } },
-            { arrayFilters: [{ 'stu.ID': studentId }, { 'les.Lesson': new mongoose.Types.ObjectId(lessonId) }] }
-        )
+        const Attendance = (await import('@/models/attendance')).default;
+        await Promise.all([
+            Attendance.updateOne(
+                { session: new mongoose.Types.ObjectId(lessonId), studentId },
+                { $set: { makeupStatus: session.makeupStatus } }
+            ).catch(() => {}),
+            PostCourse.updateOne(
+                { _id: new mongoose.Types.ObjectId(courseId), 'Student.ID': studentId, 'Student.Learn.Lesson': new mongoose.Types.ObjectId(lessonId) },
+                { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': session.makeupStatus } },
+                { arrayFilters: [{ 'stu.ID': studentId }, { 'les.Lesson': new mongoose.Types.ObjectId(lessonId) }] }
+            ).catch(() => {})
+        ]);
 
         return NextResponse.json({ session }, { status: 201 })
     } catch (err) {

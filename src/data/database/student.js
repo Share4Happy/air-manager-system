@@ -35,36 +35,75 @@ async function dataStudent(_id) {
         }
         const students = await studentQuery.lean()
         if (_id && students.length === 0) return null
-        const processedStudents = students.map((student) => {
-            const hasPaid = student.Course?.some(c => c.tuition != null) ?? false
-            const unpaidCount = student.Course?.filter(c => c.tuition == null).length ?? 0
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const processedStudents = [];
+        for (const student of students) {
+            const hasPaid = student.Course?.some(c => c.tuition != null) ?? false;
+            const unpaidCount = student.Course?.filter(c => c.tuition == null).length ?? 0;
             if (_id && student.Course?.length) {
-                const studentBusinessId = student.ID
+                const studentBusinessId = student.ID;
+                const courseObjectIds = student.Course.map(e => e.course?._id).filter(Boolean);
+                const [allSessions, allAttendances] = await Promise.all([
+                    Session.find({ course: { $in: courseObjectIds } }).sort({ buoi: 1 }).lean(),
+                    Attendance.find({
+                        $or: [{ studentId: studentBusinessId }, { studentId: String(student._id) }]
+                    }).lean()
+                ]);
+
+                const sessionGroup = new Map();
+                allSessions.forEach(s => {
+                    const k = String(s.course);
+                    if (!sessionGroup.has(k)) sessionGroup.set(k, []);
+                    sessionGroup.get(k).push(s);
+                });
+
+                const attGroup = new Map();
+                allAttendances.forEach(a => {
+                    attGroup.set(String(a.session), a);
+                });
+
                 student.Course = student.Course.map(enrollment => {
-                    if (!enrollment.course) return null
-                    const { course } = enrollment
-                    const studentInCourse = course.Student?.find(s => s.ID === studentBusinessId)
-                    let mergedDetails = course.Detail
-                    if (studentInCourse?.Learn?.length) {
-                        const learnDataMap = new Map(studentInCourse.Learn.map(item => [String(item.Lesson), item]))
-                        mergedDetails = course.Detail.map(detail => {
-                            const learnRecord = learnDataMap.get(String(detail._id))
-                            if (learnRecord) {
-                                const { Image: studentImage, Lesson, ...restOfLearn } = learnRecord
-                                return { ...detail, ...restOfLearn, ImageStudent: studentImage }
-                            }
-                            return detail
-                        })
-                    }
-                    return { _id: course._id, ID: course.ID, Book: course.Book, Detail: mergedDetails, enrollmentStatus: enrollment.status, tuition: enrollment.tuition }
-                }).filter(Boolean)
+                    if (!enrollment.course) return null;
+                    const { course } = enrollment;
+                    const sList = sessionGroup.get(String(course._id)) || course.Detail || [];
+                    const mergedDetails = sList.map(session => {
+                        const att = attGroup.get(String(session._id));
+                        return {
+                            _id: session._id,
+                            Day: session.day || session.Day,
+                            Time: session.time || session.Time,
+                            Room: session.room || session.Room,
+                            Teacher: session.teacher || session.Teacher,
+                            TeachingAs: session.teachingAs || session.TeachingAs,
+                            Topic: session.topic || session.Topic,
+                            Image: session.image || session.Image,
+                            DetailImage: session.detailImage || session.DetailImage || [],
+                            Checkin: att ? att.checkin : 0,
+                            Cmt: att?.cmt || [],
+                            CmtFn: att?.cmtFn || '',
+                            Note: att?.note || '',
+                            ImageStudent: att?.images || [],
+                            absenceReason: att?.absenceReason || ''
+                        };
+                    });
+                    return {
+                        _id: course._id,
+                        ID: course.ID,
+                        Book: course.Book,
+                        Detail: mergedDetails,
+                        enrollmentStatus: enrollment.status,
+                        tuition: enrollment.tuition
+                    };
+                }).filter(Boolean);
             }
-    const createdAt = student._id ? new mongoose.Types.ObjectId(student._id).getTimestamp() : null
-            const courseCount = student.Course?.length ?? 0
-            const rank = getStudentRank(createdAt, courseCount)
-            return { ...student, hasPaid, unpaidCount, createdAt, courseCount, rank, statusProfile: CheckProfileDone(student) }
-        })
-        return JSON.parse(JSON.stringify(processedStudents))
+            const createdAt = student._id ? new mongoose.Types.ObjectId(student._id).getTimestamp() : null;
+            const courseCount = student.Course?.length ?? 0;
+            const rank = getStudentRank(createdAt, courseCount);
+            processedStudents.push({ ...student, hasPaid, unpaidCount, createdAt, courseCount, rank, statusProfile: CheckProfileDone(student) });
+        }
+        return JSON.parse(JSON.stringify(processedStudents));
     } catch (error) {
         console.error('Lỗi trong dataStudent:', error)
         return null

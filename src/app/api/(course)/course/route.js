@@ -76,7 +76,35 @@ export async function POST(request) {
         if (Type) newCourseData.Type = Type;
         if (typeof Status === 'boolean') newCourseData.Status = Status;
         const createdCourse = await PostCourse.create(newCourseData);
-        reloadCourse()
+
+        try {
+            const Session = (await import('@/models/session')).default;
+            const sessionDocs = normalizedDetail.map((d, i) => ({
+                _id: d._id || new mongoose.Types.ObjectId(),
+                course: createdCourse._id,
+                courseCode: newCourseID,
+                courseType: Type || 'AI Robotic',
+                buoi: i + 1,
+                day: d.Day,
+                time: d.Time || '',
+                room: d.Room || null,
+                teacher: d.Teacher || null,
+                teachingAs: d.TeachingAs || null,
+                topic: d.Topic || null,
+                book: Book || null,
+                image: d.Image || '',
+                detailImage: [],
+                type: 'official',
+                status: 'ACTIVE'
+            }));
+            if (sessionDocs.length > 0) {
+                await Session.insertMany(sessionDocs);
+            }
+        } catch (sessionErr) {
+            console.error('[COURSE_CREATE_SESSION_ERROR]', sessionErr.message);
+        }
+
+        reloadCourse();
         return NextResponse.json({ status: 2, mes: `Tạo khóa học ${newCourseID} thành công!`, data: createdCourse }, { status: 201 });
     } catch (error) {
         console.error('[COURSE_CREATE_ERROR]', error);

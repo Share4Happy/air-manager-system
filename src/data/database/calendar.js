@@ -24,37 +24,28 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
     const hasTeacherFilter = teacherId && mongoose.Types.ObjectId.isValid(teacherId);
     const teacherObjId = hasTeacherFilter ? new mongoose.Types.ObjectId(teacherId) : null;
 
-    // 1. Query Course và TrialCourse có buổi học trong khoảng thời gian
-    const courseQuery = {
-        'Detail.Day': { $gte: start, $lt: end }
+    const Session = (await import('@/models/session')).default;
+    const Attendance = (await import('@/models/attendance')).default;
+
+    const sessionQuery = {
+        day: { $gte: start, $lt: end }
     };
     if (hasTeacherFilter) {
-        courseQuery.$or = [
-            { 'Detail.Teacher': teacherObjId },
-            { 'Detail.TeachingAs': teacherObjId }
+        sessionQuery.$or = [
+            { teacher: teacherObjId },
+            { teachingAs: teacherObjId }
         ];
     }
 
-    const trialQuery = {
-        'sessions.day': { $gte: start, $lt: end }
-    };
-    if (hasTeacherFilter) {
-        trialQuery.$or = [
-            { 'sessions.teacher': teacherObjId },
-            { 'sessions.teachingAs': teacherObjId }
-        ];
-    }
-
-    // 2. Tải song song dữ liệu tham chiếu
-    const [courses, trialCourses, books, areas, users] = await Promise.all([
-        Course.find(courseQuery).lean(),
-        TrialCourse.find(trialQuery).lean(),
+    // 1. Tải song song Session và các bảng tham chiếu
+    const [sessions, books, areas, users] = await Promise.all([
+        Session.find(sessionQuery).sort({ day: 1 }).lean(),
         Book.find({}, 'Name Topics').lean(),
         Area.find({}, 'name color rooms').lean(),
         User.find({}, 'name phone email').lean()
     ]);
 
-    // 3. Xây dựng Hash Map phục vụ tra cứu O(1) nhanh chóng
+    // 2. Xây dựng Hash Map phục vụ tra cứu O(1) nhanh chóng
     const userMap = new Map();
     users.forEach(u => userMap.set(String(u._id), u));
 
@@ -75,7 +66,79 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
         });
     });
 
-    const results = [];
+    // 3. Nếu đã có dữ liệu trong Session collection (LMS mới), trả về ngay
+    if (sessions.length > 0) {
+        const sessionIds = sessions.map(s => s._id);
+        const attendances = await Attendance.find({ session: { $in: sessionIds } }).lean();
+
+        const attMap = new Map();
+        attendances.forEach(a => {
+            const key = String(a.session);
+            if (!attMap.has(key)) attMap.set(key, []);
+            attMap.get(key).push({
+                ID: a.studentId,
+                Checkin: a.checkin,
+                Cmt: a.cmt || [],
+                CmtFn: a.cmtFn || '',
+                Note: a.note || '',
+                Image: a.images || [],
+                absenceReason: a.absenceReason || ''
+            });
+        });
+
+        const results = sessions.map(s => {
+            const sessionDate = new Date(s.day);
+            const roomInfo = s.room ? roomMap.get(String(s.room)) : null;
+
+            return {
+                _id: s._id,
+                buoi: s.buoi,
+                courseId: s.courseCode,
+                courseName: s.courseCode,
+                status: true,
+                type: s.type || 'official',
+                date: s.day,
+                day: sessionDate.getUTCDate(),
+                month: sessionDate.getUTCMonth() + 1,
+                year: sessionDate.getUTCFullYear(),
+                time: s.time || '',
+                room: roomInfo || { _id: null, name: null, area: null, color: null },
+                image: s.image || null,
+                topic: s.topic ? topicMap.get(String(s.topic)) || null : null,
+                teacher: s.teacher ? userMap.get(String(s.teacher)) || null : null,
+                teachingAs: s.teachingAs ? userMap.get(String(s.teachingAs)) || null : null,
+                students: attMap.get(String(s._id)) || []
+            };
+        });
+
+        return results.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    // 4. Fallback sang CSDL nhúng cũ nếu chưa chuyển đổi
+    const courseQuery = {
+        'Detail.Day': { $gte: start, $lt: end }
+    };
+    if (hasTeacherFilter) {
+        courseQuery.$or = [
+            { 'Detail.Teacher': teacherObjId },
+            { 'Detail.TeachingAs': teacherObjId }
+        ];
+    }
+
+    const trialQuery = {
+        'sessions.day': { $gte: start, $lt: end }
+    };
+    if (hasTeacherFilter) {
+        trialQuery.$or = [
+            { 'sessions.teacher': teacherObjId },
+            { 'sessions.teachingAs': teacherObjId }
+        ];
+    }
+
+    const [courses, trialCourses] = await Promise.all([
+        Course.find(courseQuery).lean(),
+        TrialCourse.find(trialQuery).lean()
+    ]);
 
     // 4. Định dạng các buổi học chính quy
     for (const course of courses) {

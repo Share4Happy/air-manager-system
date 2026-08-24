@@ -110,37 +110,53 @@ export async function POST(request) {
     const now = new Date();
     const drive = getDriveClient();
 
-    const course = await PostCourse.findOne({ 'Detail._id': sessionId }).lean();
+    const Session = (await import('@/models/session')).default;
+    const sessionDoc = await Session.findById(sessionId).lean();
+
     let ctx;
-    if (course) {
-        const idx = course.Detail.findIndex(d => d._id.toString() === sessionId);
-        const lesson = course.Detail[idx];
-        if (!lesson) return NextResponse.json({ status: 1, mes: 'Không tìm thấy buổi học.' }, { status: 404 });
+    if (sessionDoc) {
         ctx = {
             kind: 'official',
-            courseId: course._id,
-            code: course.ID,
-            buoi: idx + 1,
-            day: lesson.Day,
-            startTime: (lesson.Time || '').split('-')[0]?.trim() || '',
-            lessonFolderId: lesson.Image || '',
-            existing: lesson.Checkin?.id || null,
+            courseId: sessionDoc.course,
+            code: sessionDoc.courseCode,
+            buoi: sessionDoc.buoi || 1,
+            day: sessionDoc.day,
+            startTime: (sessionDoc.time || '').split('-')[0]?.trim() || '',
+            lessonFolderId: sessionDoc.image || '',
+            existing: sessionDoc.checkin?.id || null,
         };
     } else {
-        const trial = await TrialCourse.findOne({ 'sessions._id': sessionId }).lean();
-        if (!trial) return NextResponse.json({ status: 1, mes: 'Không tìm thấy buổi học.' }, { status: 404 });
-        const idx = trial.sessions.findIndex(s => s._id.toString() === sessionId);
-        const ses = trial.sessions[idx];
-        ctx = {
-            kind: 'trial',
-            trialId: trial._id,
-            code: trial.name,
-            buoi: idx + 1,
-            day: ses.day,
-            startTime: (ses.time || '').split('-')[0]?.trim() || '',
-            rootFolderId: trial.rootFolderId || '',
-            existing: ses.checkin?.id || null,
-        };
+        const course = await PostCourse.findOne({ 'Detail._id': sessionId }).lean();
+        if (course) {
+            const idx = course.Detail.findIndex(d => d._id.toString() === sessionId);
+            const lesson = course.Detail[idx];
+            if (!lesson) return NextResponse.json({ status: 1, mes: 'Không tìm thấy buổi học.' }, { status: 404 });
+            ctx = {
+                kind: 'official',
+                courseId: course._id,
+                code: course.ID,
+                buoi: idx + 1,
+                day: lesson.Day,
+                startTime: (lesson.Time || '').split('-')[0]?.trim() || '',
+                lessonFolderId: lesson.Image || '',
+                existing: lesson.Checkin?.id || null,
+            };
+        } else {
+            const trial = await TrialCourse.findOne({ 'sessions._id': sessionId }).lean();
+            if (!trial) return NextResponse.json({ status: 1, mes: 'Không tìm thấy buổi học.' }, { status: 404 });
+            const idx = trial.sessions.findIndex(s => s._id.toString() === sessionId);
+            const ses = trial.sessions[idx];
+            ctx = {
+                kind: 'trial',
+                trialId: trial._id,
+                code: trial.name,
+                buoi: idx + 1,
+                day: ses.day,
+                startTime: (ses.time || '').split('-')[0]?.trim() || '',
+                rootFolderId: trial.rootFolderId || '',
+                existing: ses.checkin?.id || null,
+            };
+        }
     }
 
     if (ctx.existing) {

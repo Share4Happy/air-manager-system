@@ -19,13 +19,22 @@ export async function POST(request) {
     }
 
     await connectDB()
-    const courses = await PostCourse.find({}).lean()
-    let checked = 0
+    const Session = (await import('@/models/session')).default;
+    const allSessions = await Session.find({ type: 'official' }).lean();
+    let checked = 0;
 
-    for (const course of courses) {
-      for (const lesson of (course.Detail || [])) {
-        await checkLessonAfterEnd(course._id.toString(), lesson._id.toString())
-        checked++
+    if (allSessions.length > 0) {
+      for (const ses of allSessions) {
+        await checkLessonAfterEnd(ses.course ? ses.course.toString() : ses.courseCode, ses._id.toString());
+        checked++;
+      }
+    } else {
+      const courses = await PostCourse.find({}).lean()
+      for (const course of courses) {
+        for (const lesson of (course.Detail || [])) {
+          await checkLessonAfterEnd(course._id.toString(), lesson._id.toString())
+          checked++
+        }
       }
     }
 

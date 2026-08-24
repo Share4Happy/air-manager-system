@@ -43,7 +43,25 @@ export async function executeDriveStorageScan({ areas = [] } = {}) {
         TrialCourse.find({}).select('sessions.images sessions.students.images').lean(),
     ]);
 
+    const Session = (await import('@/models/session')).default;
+    const Attendance = (await import('@/models/attendance')).default;
+
+    const courseIds = courses.map(c => c._id);
+    const sessionFilter = courseIds.length > 0 ? { course: { $in: courseIds } } : {};
+    const attFilter = courseIds.length > 0 ? { course: { $in: courseIds } } : {};
+
+    const [allSessions, allAttendances] = await Promise.all([
+        Session.find(sessionFilter).select('detailImage').lean(),
+        Attendance.find(attFilter).select('images').lean()
+    ]);
+
     const fileIds = new Set();
+    for (const ses of allSessions) {
+        for (const img of ses.detailImage || []) if (img?.id) fileIds.add(img.id);
+    }
+    for (const att of allAttendances) {
+        for (const img of att.images || []) if (img?.id) fileIds.add(img.id);
+    }
     for (const c of courses) {
         for (const d of c.Detail || []) {
             for (const img of d.DetailImage || []) if (img?.id) fileIds.add(img.id);

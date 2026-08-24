@@ -44,7 +44,7 @@ export async function GET(request, { params }) {
             );
         }
 
-        const studentInCourseData = course.Student.find(s => s.ID === student.ID);
+        const studentInCourseData = (course.Student || []).find(s => s.ID === student.ID);
         if (!studentInCourseData) {
             return NextResponse.json(
                 { status: false, mes: 'Học sinh không thuộc khóa học này', data: null },
@@ -52,7 +52,47 @@ export async function GET(request, { params }) {
             );
         }
 
-        const learnMap = new Map(studentInCourseData.Learn.map(l => [l.Lesson.toString(), l]));
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const [sessions, attendances] = await Promise.all([
+            Session.find({ $or: [{ course: courseId }, { courseCode: course.ID }] }).sort({ buoi: 1 }).populate('teacher', 'name phone').populate('teachingAs', 'name phone').lean(),
+            Attendance.find({ $or: [{ course: courseId }, { courseCode: course.ID }], studentId: student.ID }).lean()
+        ]);
+
+        const effectiveDetails = (sessions.length > 0)
+            ? sessions.map(s => ({
+                _id: s._id,
+                Day: s.day,
+                Time: s.time,
+                Room: s.room,
+                Teacher: s.teacher,
+                TeachingAs: s.teachingAs,
+                Topic: s.topic,
+                Image: s.image,
+                Type: s.type || ''
+            }))
+            : (course.Detail || []);
+
+        const learnMap = new Map();
+        if (attendances.length > 0) {
+            attendances.forEach(a => {
+                learnMap.set(String(a.session), {
+                    Lesson: a.session,
+                    Checkin: a.checkin,
+                    Cmt: a.cmt || [],
+                    CmtFn: a.cmtFn || '',
+                    Note: a.note || '',
+                    Image: a.images || [],
+                    absenceReason: a.absenceReason || ''
+                });
+            });
+        } else if (studentInCourseData.Learn) {
+            studentInCourseData.Learn.forEach(l => {
+                learnMap.set(String(l.Lesson), l);
+            });
+        }
+
         const topicMap = new Map(course.Book?.Topics?.map(t => [t._id.toString(), t.Name]) || []);
 
         let stats = {
@@ -60,7 +100,7 @@ export async function GET(request, { params }) {
             makeup: { total: 0, attended: 0, absent_K: 0, absent_P: 0, unchecked: 0 }
         };
 
-        const lessonsWithLearnData = course.Detail.map(lessonDetail => {
+        const lessonsWithLearnData = effectiveDetails.map(lessonDetail => {
             const lessonIdStr = lessonDetail._id.toString();
             const learnProgress = learnMap.get(lessonIdStr);
             const checkinStatus = learnProgress?.Checkin ?? 0;
@@ -87,13 +127,13 @@ export async function GET(request, { params }) {
                 combinedLesson.ImageStudent = learnProgress.Image;
                 delete combinedLesson.Learn.Image;
             }
-            delete combinedLesson.DetailImage
+            delete combinedLesson.DetailImage;
             return combinedLesson;
         });
 
-        const totalLessons = course.Detail.length;
-        const startDate = totalLessons > 0 ? course.Detail[0].Day : null;
-        const endDate = totalLessons > 0 ? course.Detail[totalLessons - 1].Day : null;
+        const totalLessons = effectiveDetails.length;
+        const startDate = totalLessons > 0 ? effectiveDetails[0].Day : null;
+        const endDate = totalLessons > 0 ? effectiveDetails[totalLessons - 1].Day : null;
 
         const formattedData = {
             studentInfo: {

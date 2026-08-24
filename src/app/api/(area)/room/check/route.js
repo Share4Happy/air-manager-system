@@ -34,46 +34,67 @@ export async function GET(req) {
     const timeStart = timeRange[0]?.trim()
     const timeEnd = timeRange[1]?.trim()
 
-    const officialConflicts = await PostCourse.aggregate([
-      { $unwind: '$Detail' },
-      {
-        $match: {
-          'Detail.Day': { $gte: dayStart, $lte: dayEnd },
-          'Detail.Room': roomOid,
-          ...(excludeId ? { 'Detail._id': { $ne: new mongoose.Types.ObjectId(excludeId) } } : {})
-        }
-      },
-      {
-        $project: {
-          _id: '$Detail._id',
-          courseId: '$ID',
-          time: '$Detail.Time',
-          teacher: 1,
-          timeStart: { $arrayElemAt: [{ $split: ['$Detail.Time', '-'] }, 0] },
-          timeEnd: { $arrayElemAt: [{ $split: ['$Detail.Time', '-'] }, 1] }
-        }
-      }
-    ])
+    const Session = (await import('@/models/session')).default;
+    const sessionQuery = {
+      day: { $gte: dayStart, $lte: dayEnd },
+      room: roomOid,
+      ...(excludeId ? { _id: { $ne: new mongoose.Types.ObjectId(excludeId) } } : {})
+    };
+    const sessionConflicts = await Session.find(sessionQuery).select('_id courseCode time teacher').lean();
 
-    const trialConflicts = await TrialCourse.aggregate([
-      { $unwind: '$sessions' },
-      {
-        $match: {
-          'sessions.day': { $gte: dayStart, $lte: dayEnd },
-          'sessions.room': roomOid,
-          ...(excludeId ? { 'sessions._id': { $ne: new mongoose.Types.ObjectId(excludeId) } } : {})
+    let allConflicts = [];
+    if (sessionConflicts.length > 0) {
+      allConflicts = sessionConflicts.map(s => ({
+        _id: s._id,
+        courseId: s.courseCode,
+        time: s.time,
+        timeStart: s.time?.split('-')[0]?.trim(),
+        timeEnd: s.time?.split('-')[1]?.trim()
+      }));
+    } else {
+      const officialConflicts = await PostCourse.aggregate([
+        { $unwind: '$Detail' },
+        {
+          $match: {
+            'Detail.Day': { $gte: dayStart, $lte: dayEnd },
+            'Detail.Room': roomOid,
+            ...(excludeId ? { 'Detail._id': { $ne: new mongoose.Types.ObjectId(excludeId) } } : {})
+          }
+        },
+        {
+          $project: {
+            _id: '$Detail._id',
+            courseId: '$ID',
+            time: '$Detail.Time',
+            teacher: 1,
+            timeStart: { $arrayElemAt: [{ $split: ['$Detail.Time', '-'] }, 0] },
+            timeEnd: { $arrayElemAt: [{ $split: ['$Detail.Time', '-'] }, 1] }
+          }
         }
-      },
-      {
-        $project: {
-          _id: '$sessions._id',
-          courseId: '$name',
-          time: '$sessions.time',
-          timeStart: { $arrayElemAt: [{ $split: ['$sessions.time', '-'] }, 0] },
-          timeEnd: { $arrayElemAt: [{ $split: ['$sessions.time', '-'] }, 1] }
+      ]);
+
+      const trialConflicts = await TrialCourse.aggregate([
+        { $unwind: '$sessions' },
+        {
+          $match: {
+            'sessions.day': { $gte: dayStart, $lte: dayEnd },
+            'sessions.room': roomOid,
+            ...(excludeId ? { 'sessions._id': { $ne: new mongoose.Types.ObjectId(excludeId) } } : {})
+          }
+        },
+        {
+          $project: {
+            _id: '$sessions._id',
+            courseId: '$name',
+            time: '$sessions.time',
+            timeStart: { $arrayElemAt: [{ $split: ['$sessions.time', '-'] }, 0] },
+            timeEnd: { $arrayElemAt: [{ $split: ['$sessions.time', '-'] }, 1] }
+          }
         }
-      }
-    ])
+      ]);
+
+      allConflicts = [...officialConflicts, ...trialConflicts];
+    }
 
     function timeToMins(t) {
       if (!t) return null

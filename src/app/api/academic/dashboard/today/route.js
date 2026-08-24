@@ -16,103 +16,139 @@ export async function GET() {
         await connectDB()
         const { start, end, now } = getTodayRange()
 
-        const agg = PostCourse.aggregate([
-            { $unwind: '$Detail' },
-            { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'Detail.Teacher',
-                    foreignField: '_id',
-                    as: 'teacher'
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const todaySessions = await Session.find({ day: { $gte: start, $lt: end } }).populate('teacher', 'name').lean();
+        let sessions = [];
+
+        if (todaySessions.length > 0) {
+            const sessionIds = todaySessions.map(s => s._id);
+            const attendances = await Attendance.find({ session: { $in: sessionIds } }).lean();
+
+            const attCountMap = new Map();
+            const checkedCountMap = new Map();
+            attendances.forEach(a => {
+                const k = String(a.session);
+                attCountMap.set(k, (attCountMap.get(k) || 0) + 1);
+                if (a.checkin > 0) {
+                    checkedCountMap.set(k, (checkedCountMap.get(k) || 0) + 1);
                 }
-            },
-            { $set: { teacher: { $arrayElemAt: ['$teacher', 0] } } },
-            {
-                $addFields: {
-                    lessonStart: '$Detail.Day',
-                    lessonEnd: {
-                        $dateAdd: {
-                            startDate: '$Detail.Day',
-                            unit: 'minute',
-                            amount: 90
+            });
+
+            sessions = todaySessions.map(s => ({
+                _id: s.course || s._id,
+                ID: s.courseCode,
+                Name: s.courseCode,
+                lessonId: s._id,
+                lessonDay: s.day,
+                lessonTime: s.time,
+                lessonType: s.type,
+                lessonNote: s.note,
+                teacherName: s.teacher?.name,
+                teacherId: s.teacher?._id || s.teacher,
+                totalStudents: attCountMap.get(String(s._id)) || 0,
+                checkedStudents: checkedCountMap.get(String(s._id)) || 0
+            }));
+        } else {
+            const agg = PostCourse.aggregate([
+                { $unwind: '$Detail' },
+                { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'Detail.Teacher',
+                        foreignField: '_id',
+                        as: 'teacher'
+                    }
+                },
+                { $set: { teacher: { $arrayElemAt: ['$teacher', 0] } } },
+                {
+                    $addFields: {
+                        lessonStart: '$Detail.Day',
+                        lessonEnd: {
+                            $dateAdd: {
+                                startDate: '$Detail.Day',
+                                unit: 'minute',
+                                amount: 90
+                            }
+                        },
+                        studentCount: { $size: { $ifNull: ['$Student', []] } },
+                        checkedStudents: {
+                            $size: {
+                                $filter: {
+                                    input: { $ifNull: ['$Student', []] },
+                                    as: 'st',
+                                    cond: {
+                                        $gt: [
+                                            { $size: { $ifNull: ['$$st.Learn', []] } },
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
                         }
-                    },
-                    studentCount: { $size: '$Student' },
-                    checkedStudents: {
-                        $size: {
-                            $filter: {
-                                input: '$Student',
-                                as: 'st',
-                                cond: {
-                                    $gt: [
-                                        { $size: { $ifNull: ['$$st.Learn', []] } },
-                                        0
-                                    ]
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        ID: 1,
+                        Name: 1,
+                        lessonId: '$Detail._id',
+                        lessonDay: '$Detail.Day',
+                        lessonTime: '$Detail.Time',
+                        lessonType: '$Detail.Type',
+                        lessonNote: '$Detail.Note',
+                        teacherName: '$teacher.name',
+                        teacherId: '$Detail.Teacher',
+                        totalStudents: '$studentCount',
+                        checkedStudents: 1
+                    }
+                }
+            ]);
+
+            const trialAgg = TrialCourse.aggregate([
+                { $unwind: '$sessions' },
+                { $match: { 'sessions.day': { $gte: start, $lt: end } } },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'sessions.teacher',
+                        foreignField: '_id',
+                        as: 'teacher'
+                    }
+                },
+                { $set: { teacher: { $arrayElemAt: ['$teacher', 0] } } },
+                {
+                    $project: {
+                        _id: 1,
+                        ID: '$name',
+                        Name: '$name',
+                        lessonId: '$sessions._id',
+                        lessonDay: '$sessions.day',
+                        lessonTime: '$sessions.time',
+                        lessonType: { $literal: null },
+                        lessonNote: { $literal: null },
+                        teacherName: '$teacher.name',
+                        teacherId: '$sessions.teacher',
+                        totalStudents: { $size: { $ifNull: ['$sessions.students', []] } },
+                        checkedStudents: {
+                            $size: {
+                                $filter: {
+                                    input: { $ifNull: ['$sessions.students', []] },
+                                    as: 'st',
+                                    cond: { $eq: ['$$st.checkin', true] }
                                 }
                             }
                         }
                     }
                 }
-            },
-            {
-                $project: {
-                    _id: 1,
-                    ID: 1,
-                    Name: 1,
-                    lessonId: '$Detail._id',
-                    lessonDay: '$Detail.Day',
-                    lessonTime: '$Detail.Time',
-                    lessonType: '$Detail.Type',
-                    lessonNote: '$Detail.Note',
-                    teacherName: '$teacher.name',
-                    teacherId: '$Detail.Teacher',
-                    totalStudents: '$studentCount',
-                    checkedStudents: 1
-                }
-            }
-        ])
+            ]);
 
-        const trialAgg = TrialCourse.aggregate([
-            { $unwind: '$sessions' },
-            { $match: { 'sessions.day': { $gte: start, $lt: end } } },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'sessions.teacher',
-                    foreignField: '_id',
-                    as: 'teacher'
-                }
-            },
-            { $set: { teacher: { $arrayElemAt: ['$teacher', 0] } } },
-            {
-                $project: {
-                    _id: 1,
-                    ID: '$name',
-                    Name: '$name',
-                    lessonId: '$sessions._id',
-                    lessonDay: '$sessions.day',
-                    lessonTime: '$sessions.time',
-                    lessonType: { $literal: null },
-                    lessonNote: { $literal: null },
-                    teacherName: '$teacher.name',
-                    teacherId: '$sessions.teacher',
-                    totalStudents: { $size: { $ifNull: ['$sessions.students', []] } },
-                    checkedStudents: {
-                        $size: {
-                            $filter: {
-                                input: { $ifNull: ['$sessions.students', []] },
-                                as: 'st',
-                                cond: { $eq: ['$$st.checkin', true] }
-                            }
-                        }
-                    }
-                }
-            }
-        ])
-
-        const [official, trial] = await Promise.all([agg, trialAgg])
-        const sessions = [...official, ...trial]
+            const [official, trial] = await Promise.all([agg, trialAgg]);
+            sessions = [...official, ...trial];
+        }
 
         let total = sessions.length
         let scheduled = 0, inProgress = 0, ended = 0

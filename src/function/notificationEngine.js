@@ -12,10 +12,26 @@ async function getSetting(key) {
 
 export async function checkLessonAfterEnd(courseId, lessonId) {
   await connectDB()
+  const Session = (await import('@/models/session')).default;
   const course = await PostCourse.findById(courseId).lean()
   if (!course) return
 
-  const lesson = course.Detail?.find(d => d._id?.toString() === lessonId)
+  let lesson = course.Detail?.find(d => d._id?.toString() === lessonId)
+  if (!lesson) {
+    const ses = await Session.findById(lessonId).lean()
+    if (ses) {
+      lesson = {
+        _id: ses._id,
+        Day: ses.day,
+        Teacher: ses.teacher,
+        TeachingAs: ses.teachingAs,
+        Type: ses.type,
+        Note: ses.note,
+        Image: ses.image,
+        DetailImage: ses.detailImage || []
+      }
+    }
+  }
   if (!lesson) return
 
   const minutesSinceEnd = dayjs().diff(dayjs(lesson.Day), 'minute')
@@ -86,13 +102,23 @@ export async function checkLessonAfterEnd(courseId, lessonId) {
 
 export async function checkStudentAbsent(courseId, studentId) {
   await connectDB()
+  const Attendance = (await import('@/models/attendance')).default;
   const course = await PostCourse.findById(courseId).lean()
   if (!course) return
 
   const student = course.Student?.find(s => s.ID === studentId || s._id?.toString() === studentId)
   if (!student) return
 
-  const absentCount = student.Learn?.filter(l => l.Checkin === 1).length || 0
+  let absentCount = 0;
+  if (student.Learn && student.Learn.length > 0) {
+    absentCount = student.Learn?.filter(l => l.Checkin === 2 || l.Checkin === 3).length || 0
+  } else {
+    absentCount = await Attendance.countDocuments({
+      $or: [{ course: courseId }, { courseCode: course.ID }],
+      studentId: student.ID || studentId,
+      checkin: { $in: [2, 3] }
+    });
+  }
   const threshold = await getSetting('student_absent_threshold') || 3
 
   if (absentCount >= threshold) {

@@ -45,10 +45,18 @@ export async function PATCH(request, { params }) {
                 const activeCourseIds = activeCourses.map(c => c._id);
 
                 if (activeCourseIds.length > 0) {
-                    await PostCourse.updateMany(
-                        { _id: { $in: activeCourseIds }, 'Student.ID': student.ID },
-                        { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
-                    );
+                    const Attendance = (await import('@/models/attendance')).default;
+                    await Promise.all([
+                        Attendance.deleteMany({
+                            course: { $in: activeCourseIds },
+                            studentId: student.ID,
+                            checkin: 0
+                        }).catch(() => {}),
+                        PostCourse.updateMany(
+                            { _id: { $in: activeCourseIds }, 'Student.ID': student.ID },
+                            { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
+                        ).catch(() => {})
+                    ]);
                 }
 
                 const leaveStatus = { status: 0, act: 'nghỉ', date: new Date(), note };
@@ -68,6 +76,38 @@ export async function PATCH(request, { params }) {
                     .map(c => c.course);
 
                 if (preservedCourseIds.length > 0) {
+                    const Session = (await import('@/models/session')).default;
+                    const Attendance = (await import('@/models/attendance')).default;
+
+                    const [sessions, existingAtts] = await Promise.all([
+                        Session.find({ course: { $in: preservedCourseIds } }).lean(),
+                        Attendance.find({ course: { $in: preservedCourseIds }, studentId: student.ID }).lean()
+                    ]);
+
+                    const existingSessionIds = new Set(existingAtts.map(a => String(a.session)));
+                    const missingDocs = [];
+                    sessions.forEach(s => {
+                        if (!existingSessionIds.has(String(s._id))) {
+                            missingDocs.push({
+                                session: s._id,
+                                course: s.course,
+                                courseCode: s.courseCode,
+                                studentId: student.ID,
+                                checkin: 0,
+                                cmt: [],
+                                cmtFn: '',
+                                note: '',
+                                images: [],
+                                absenceReason: '',
+                                makeupStatus: 'NOT_REQUIRED'
+                            });
+                        }
+                    });
+
+                    if (missingDocs.length > 0) {
+                        await Attendance.insertMany(missingDocs, { ordered: false }).catch(() => {});
+                    }
+
                     await PostStudent.updateOne(
                         { _id: studentId },
                         { $set: { 'Course.$[elem].status': 0 } },
@@ -89,10 +129,18 @@ export async function PATCH(request, { params }) {
                     throw new Error('ID khóa học không hợp lệ hoặc bị thiếu.');
                 }
 
-                await PostCourse.updateOne(
-                    { _id: courseId, 'Student.ID': student.ID },
-                    { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
-                );
+                const Attendance = (await import('@/models/attendance')).default;
+                await Promise.all([
+                    Attendance.deleteMany({
+                        course: courseId,
+                        studentId: student.ID,
+                        checkin: 0
+                    }).catch(() => {}),
+                    PostCourse.updateOne(
+                        { _id: courseId, 'Student.ID': student.ID },
+                        { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
+                    ).catch(() => {})
+                ]);
 
                 const studentUpdateOps = { $set: { 'Course.$[elem].status': 1 } };
                 const studentUpdateOptions = {

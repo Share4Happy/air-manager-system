@@ -122,54 +122,103 @@ export async function GET(request) {
             }
         }
 
-        const courses = await Course.find({
+        const Session = (await import('@/models/session')).default;
+        const sessions = await Session.find({
             $or: [
-                { 'Detail.Type': 'Báo nghỉ' },
-                { 'Detail.Day': { $gte: todayStart, $lt: todayEnd } },
+                { type: 'Báo nghỉ' },
+                { day: { $gte: todayStart, $lt: todayEnd } },
             ],
-        })
-            .populate('Area', 'name')
-            .lean()
+        }).populate('course', 'ID Name Area').lean();
 
-        const rows = []
-        courses.forEach(course => {
-            ;(course.Detail || []).forEach(d => {
-                const isCancel = d.Type === 'Báo nghỉ'
-                const day = d.Day ? new Date(d.Day) : null
-                const inDay = dayStart ? (!!day && day >= dayStart && day < dayEnd) : false
-                const isToday = !!day && day >= todayStart && day < todayEnd
+        const rows = [];
+
+        if (sessions.length > 0) {
+            sessions.forEach(s => {
+                const isCancel = s.type === 'Báo nghỉ';
+                const day = s.day ? new Date(s.day) : null;
+                const inDay = dayStart ? (!!day && day >= dayStart && day < dayEnd) : false;
+                const isToday = !!day && day >= todayStart && day < todayEnd;
 
                 if (isCancel) {
                     if (history) {
-                        // hiển thị toàn bộ lịch sử lớp nghỉ
                     } else if (dayStart) {
-                        if (!inDay) return
+                        if (!inDay) return;
                     } else {
-                        if (!day || day < todayStart || day >= windowEnd) return
+                        if (!day || day < todayStart || day >= windowEnd) return;
                     }
                 } else {
-                    if (history) return
+                    if (history) return;
                     if (dayStart) {
-                        if (!inDay) return
+                        if (!inDay) return;
                     } else {
-                        if (!isToday) return
+                        if (!isToday) return;
                     }
                 }
                 rows.push({
                     kind: isCancel ? 'cancel' : 'today',
-                    courseId: String(course._id),
-                    courseID: course.ID,
-                    courseName: course.Name || course.ID,
-                    areaName: course.Area?.name || 'Khác',
-                    detailId: String(d._id),
-                    day,
-                    reason: d.Note || '',
-                    teacher: d.Teacher ? String(d.Teacher) : null,
-                    students: (course.Student || []).map(s => s.ID).filter(Boolean),
-                    lesson: isCancel ? null : buildLessonData(course, d),
+                    courseId: s.course ? String(s.course._id || s.course) : '',
+                    courseCode: s.courseCode || (s.course && s.course.ID) || '',
+                    areaId: s.course?.Area ? String(s.course.Area) : '',
+                    detailId: String(s._id),
+                    day: s.day || null,
+                    time: s.time || '',
+                    room: s.room ? String(s.room) : '',
+                    reason: s.note || '',
+                    statusType: s.type || '',
+                    teacher: s.teacher ? String(s.teacher) : null,
+                    students: (s.students || []).map(x => x.ID || x).filter(Boolean),
+                    lesson: isCancel ? null : null, // To be fetched/linked if needed
+                });
+            });
+        } else {
+            const courses = await Course.find({
+                $or: [
+                    { 'Detail.Type': 'Báo nghỉ' },
+                    { 'Detail.Day': { $gte: todayStart, $lt: todayEnd } },
+                ],
+            })
+                .populate('Area', 'name')
+                .lean();
+
+            courses.forEach(course => {
+                ;(course.Detail || []).forEach(d => {
+                    const isCancel = d.Type === 'Báo nghỉ'
+                    const day = d.Day ? new Date(d.Day) : null
+                    const inDay = dayStart ? (!!day && day >= dayStart && day < dayEnd) : false
+                    const isToday = !!day && day >= todayStart && day < todayEnd
+
+                    if (isCancel) {
+                        if (history) {
+                            // hiển thị toàn bộ lịch sử lớp nghỉ
+                        } else if (dayStart) {
+                            if (!inDay) return
+                        } else {
+                            if (!day || day < todayStart || day >= windowEnd) return
+                        }
+                    } else {
+                        if (history) return
+                        if (dayStart) {
+                            if (!inDay) return
+                        } else {
+                            if (!isToday) return
+                        }
+                    }
+                    rows.push({
+                        kind: isCancel ? 'cancel' : 'today',
+                        courseId: String(course._id),
+                        courseID: course.ID,
+                        courseName: course.Name || course.ID,
+                        areaName: course.Area?.name || 'Khác',
+                        detailId: String(d._id),
+                        day,
+                        reason: d.Note || '',
+                        teacher: d.Teacher ? String(d.Teacher) : null,
+                        students: (course.Student || []).map(s => s.ID).filter(Boolean),
+                        lesson: isCancel ? null : buildLessonData(course, d),
+                    })
                 })
             })
-        })
+        }
 
         rows.sort((a, b) => (a.day ? a.day - 0 : 0) - (b.day ? b.day - 0 : 0))
 

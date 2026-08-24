@@ -16,7 +16,18 @@ export async function POST(req) {
 
         await connectDB()
 
-        let result = await PostCourse.updateOne(
+        const Attendance = (await import('@/models/attendance')).default;
+        await Attendance.updateOne(
+            {
+                session: new mongoose.Types.ObjectId(lessonId),
+                studentId: studentId
+            },
+            { $set: { cmtFn: commentText } },
+            { upsert: true }
+        );
+
+        // Fallback cập nhật vào CSDL cũ nếu còn
+        await PostCourse.updateOne(
             { _id: courseId },
             { $set: { 'Student.$[stu].Learn.$[les].CmtFn': commentText } },
             {
@@ -25,22 +36,14 @@ export async function POST(req) {
                     { 'les.Lesson': new mongoose.Types.ObjectId(lessonId) }
                 ]
             }
-        );
+        ).catch(() => {});
 
-        if (result.matchedCount === 0) {
-            result = await TrialCourse.updateOne(
-                { _id: courseId },
-                { $set: { 'sessions.$[ses].students.$[stu].cmt': commentText } },
-                { arrayFilters: [{ 'ses._id': new mongoose.Types.ObjectId(lessonId) }, { 'stu.studentId': studentId }] }
-            );
-            if (result.matchedCount === 0)
-                return jsonRes(404, { status: false, mes: 'Course or student not found.', data: null })
-            if (result.modifiedCount === 0)
-                return jsonRes(404, { status: false, mes: 'Lesson not found for given student.', data: null })
-        } else if (result.modifiedCount === 0) {
-            return jsonRes(404, { status: false, mes: 'Lesson not found for given student.', data: null })
-        }
-        Re_coursetry();
+        await TrialCourse.updateOne(
+            { _id: courseId },
+            { $set: { 'sessions.$[ses].students.$[stu].cmt': commentText } },
+            { arrayFilters: [{ 'ses._id': new mongoose.Types.ObjectId(lessonId) }, { 'stu.studentId': studentId }] }
+        ).catch(() => {});
+
         return jsonRes(200, { status: true, mes: 'Comment updated successfully.', data: null })
 
     } catch (error) {

@@ -83,7 +83,16 @@ async function getFolder(drive, folderId) {
 }
 
 async function repointDb(ref, newId) {
-    if (ref.kind === 'course-detail') {
+    if (ref.kind === 'session-image') {
+        const Session = (await import('@/models/session')).default;
+        await Session.updateOne({ _id: ref._id }, { $set: { image: newId } });
+        if (ref.courseId) {
+            await PostCourse.updateOne(
+                { _id: ref.courseId, 'Detail.Image': ref.folderId },
+                { $set: { 'Detail.$.Image': newId } }
+            ).catch(() => {});
+        }
+    } else if (ref.kind === 'course-detail') {
         await PostCourse.updateOne(
             { _id: ref._id, 'Detail.Image': ref.folderId },
             { $set: { 'Detail.$.Image': newId } }
@@ -113,24 +122,43 @@ export async function POST() {
                 await connectDB();
                 const drive = await getDriveClient();
                 const rootId = process.env.DRIVE_COURSE_FOLDER_ID;
+                const Session = (await import('@/models/session')).default;
 
                 send({ type: 'progress', current: 0, total: 1, label: 'Đang quét dữ liệu từ MongoDB...' });
 
-                const [courses, trials] = await Promise.all([
+                const [courses, trials, sessions] = await Promise.all([
                     PostCourse.find({}).select('ID Detail').lean(),
                     TrialCourse.find({}).select('name rootFolderId sessions').lean(),
+                    Session.find({}).select('_id course courseCode image day type').lean(),
                 ]);
 
                 const refs = [];
+                const seenFolders = new Set();
+
+                for (const s of sessions) {
+                    if (s.image && !seenFolders.has(s.image)) {
+                        seenFolders.add(s.image);
+                        refs.push({ folderId: s.image, kind: 'session-image', _id: s._id, courseId: s.course, name: s.courseCode, date: s.day });
+                    }
+                }
                 for (const c of courses) {
                     for (const d of c.Detail || []) {
-                        if (d.Image) refs.push({ folderId: d.Image, kind: 'course-detail', _id: c._id, name: c.ID, date: d.Day });
+                        if (d.Image && !seenFolders.has(d.Image)) {
+                            seenFolders.add(d.Image);
+                            refs.push({ folderId: d.Image, kind: 'course-detail', _id: c._id, name: c.ID, date: d.Day });
+                        }
                     }
                 }
                 for (const t of trials) {
-                    if (t.rootFolderId) refs.push({ folderId: t.rootFolderId, kind: 'trial-root', _id: t._id, name: t.name });
+                    if (t.rootFolderId && !seenFolders.has(t.rootFolderId)) {
+                        seenFolders.add(t.rootFolderId);
+                        refs.push({ folderId: t.rootFolderId, kind: 'trial-root', _id: t._id, name: t.name });
+                    }
                     for (const s of t.sessions || []) {
-                        if (s.folderId) refs.push({ folderId: s.folderId, kind: 'trial-session', _id: t._id, name: t.name, date: s.day, rootId: t.rootFolderId });
+                        if (s.folderId && !seenFolders.has(s.folderId)) {
+                            seenFolders.add(s.folderId);
+                            refs.push({ folderId: s.folderId, kind: 'trial-session', _id: t._id, name: t.name, date: s.day, rootId: t.rootFolderId });
+                        }
                     }
                 }
 

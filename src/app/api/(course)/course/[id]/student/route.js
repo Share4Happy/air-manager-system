@@ -30,21 +30,47 @@ export async function POST(request, { params }) {
         if (!course) {
             return jsonRes(404, { status: false, mes: 'Không tìm thấy khóa học.' });
         }
-        const learnEntriesForNewStudent = course.Detail.filter(d => !d.Type || d.Type === '').map(d => ({ Lesson: d._id, Checkin: 0, Cmt: [], CmtFn: '', Note: '', Image: [] }));
-        const existingStudentIDsInCourse = new Set(course.Student.map(s => s.ID));
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const sessions = await Session.find({ $or: [{ course: id }, { courseCode: course.ID }] }).lean();
+        const existingStudentIDsInCourse = new Set((course.Student || []).map(s => s.ID));
         const newStudentIDsToAdd = students.filter(studentIdString => !existingStudentIDsInCourse.has(studentIdString));
         if (newStudentIDsToAdd.length === 0) {
             return jsonRes(200, { status: true, mes: 'Tất cả học sinh đã có trong khóa học.' });
         }
-        const newStudentDocs = newStudentIDsToAdd.map(studentId => ({ ID: studentId, Learn: learnEntriesForNewStudent }));
+
+        const newStudentDocs = newStudentIDsToAdd.map(studentId => ({ ID: studentId, Learn: [] }));
         const studentBulkUpdateOps = newStudentIDsToAdd.map(studentId => {
             const newCourseEntry = { course: id, tuition: null, status: 0 };
             const newLearningStatus = { status: 2, act: 'học', note: `Tham gia khóa học ${course.ID}`, date: new Date() };
             return { updateOne: { filter: { ID: studentId }, update: { $push: { Course: newCourseEntry, Status: newLearningStatus } } } };
         });
+
+        // Insert Attendances into LMS collection
+        const attDocs = [];
+        newStudentIDsToAdd.forEach(studentId => {
+            sessions.forEach(ses => {
+                attDocs.push({
+                    session: ses._id,
+                    course: id,
+                    courseCode: course.ID,
+                    studentId: studentId,
+                    checkin: 0,
+                    cmt: [],
+                    cmtFn: '',
+                    note: '',
+                    images: [],
+                    absenceReason: '',
+                    makeupStatus: 'NOT_REQUIRED'
+                });
+            });
+        });
+
         await Promise.all([
             PostStudent.bulkWrite(studentBulkUpdateOps),
-            PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudentDocs } } })
+            PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudentDocs } } }),
+            attDocs.length > 0 ? Attendance.insertMany(attDocs, { ordered: false }).catch(() => {}) : Promise.resolve()
         ]);
         reloadStudent();
         reloadCourse(id);
