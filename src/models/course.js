@@ -89,6 +89,12 @@ const postCourseSchema = new Schema({
     }
 }, { versionKey: false });
 
+postCourseSchema.index({ 'Detail.Day': 1 });
+postCourseSchema.index({ 'Detail.Teacher': 1 });
+postCourseSchema.index({ 'Detail.TeachingAs': 1 });
+postCourseSchema.index({ 'Student.ID': 1 });
+postCourseSchema.index({ Area: 1 });
+
 const PostCourse = models.course || model('course', postCourseSchema);
 
 export default PostCourse;

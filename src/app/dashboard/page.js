@@ -1,5 +1,5 @@
 import { CheckRole } from "@/function/server"
-import AdminPage from "@/app/(admin)/index";
+import Overview from '@/components/dashboard/overview'
 import { redirect } from 'next/navigation';
 
 export default async function Dashboard() {
@@ -18,5 +18,5 @@ export default async function Dashboard() {
     )
   }
 
-  return <AdminPage />
+  return <Overview />
 }

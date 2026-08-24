@@ -265,7 +265,7 @@ export default function CalendarPage() {
       const key = fmtDate(day)
       const dayLessons = (gridSource || []).filter(item => {
         const d = new Date(item.date)
-        return fmtDate(d) === key
+        return fmtDate(d) === key && !item.status
       })
       const isToday = sameDay(day, today)
       items.push({ day, lessons: dayLessons, isToday })

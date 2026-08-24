@@ -3,10 +3,14 @@ import NotificationRecipient from '@/models/notificationRecipient'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret, getCookieName } from '@/utils/env'
 
-const clients = new Map()
+const clients = new Map() // Map<userIdString, Set<controller>>
 
-function sendEvent(client, data) {
-  client.controller.enqueue(`data: ${JSON.stringify(data)}\n\n`)
+function sendEvent(controller, data) {
+  try {
+    controller.enqueue(`data: ${JSON.stringify(data)}\n\n`)
+  } catch (err) {
+    // Client disconnected
+  }
 }
 
 export async function GET(request) {
@@ -41,13 +45,41 @@ export async function GET(request) {
       return new Response('Unauthorized', { status: 401 })
     }
 
+    const userIdStr = userId.toString()
+
     const stream = new ReadableStream({
       start(controller) {
-        clients.set(userId.toString(), { controller, userId: userId.toString() })
-        sendEvent({ controller }, { type: 'connected', message: 'SSE connected' })
+        let userSet = clients.get(userIdStr)
+        if (!userSet) {
+          userSet = new Set()
+          clients.set(userIdStr, userSet)
+        }
+        userSet.add(controller)
+
+        sendEvent(controller, { type: 'connected', message: 'SSE connected' })
+
+        // Heartbeat keep-alive ping every 25s
+        const pingInterval = setInterval(() => {
+          try {
+            controller.enqueue(': ping\n\n')
+          } catch {
+            clearInterval(pingInterval)
+          }
+        }, 25000)
+
+        controller._pingInterval = pingInterval
       },
-      cancel() {
-        clients.delete(userId.toString())
+      cancel(controller) {
+        if (controller?._pingInterval) {
+          clearInterval(controller._pingInterval)
+        }
+        const userSet = clients.get(userIdStr)
+        if (userSet) {
+          userSet.delete(controller)
+          if (userSet.size === 0) {
+            clients.delete(userIdStr)
+          }
+        }
       }
     })
 
@@ -71,18 +103,22 @@ export async function broadcastNotification(notificationId, type = 'new_notifica
 
   for (const recipient of recipients) {
     const userId = recipient.user.toString()
-    const client = clients.get(userId)
-    if (client) {
+    const userSet = clients.get(userId)
+    if (userSet && userSet.size > 0) {
       const { default: Notification } = await import('@/models/notification')
       const notification = await Notification.findById(notificationId).lean()
-      sendEvent(client, { type, notification })
+      for (const controller of userSet) {
+        sendEvent(controller, { type, notification })
+      }
     }
   }
 }
 
 export async function broadcastUnreadUpdate(userId, data) {
-  const client = clients.get(userId.toString())
-  if (client) {
-    sendEvent(client, { type: 'count_update', ...data })
+  const userSet = clients.get(userId.toString())
+  if (userSet && userSet.size > 0) {
+    for (const controller of userSet) {
+      sendEvent(controller, { type: 'count_update', ...data })
+    }
   }
 }

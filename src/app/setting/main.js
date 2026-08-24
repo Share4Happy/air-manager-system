@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Noti from '@/components/(features)/(noti)/noti'
-import { defaultAvatarUrl } from '@/function'
 import QuizTab from './ui/quiz-tab'
+import MigrationTab from './ui/migration-tab'
 import { ROLES, RoleTabs } from '@/app/info/ui/shared'
 
 function ZaloTab({ zaloAccounts, users }) {
@@ -762,6 +762,7 @@ const TABS = [
   { key: 'sla', label: 'Cấu hình SLA' },
   { key: 'zalolite', label: 'ZaloLite' },
   { key: 'drive', label: 'Đồng bộ Drive' },
+  { key: 'migration', label: 'Di chuyển CSDL' },
 ]
 
 export default function SettingClient({ zaloAccounts, users }) {
@@ -785,6 +786,7 @@ export default function SettingClient({ zaloAccounts, users }) {
         {tab === 'sla' && <SlaTab />}
         {tab === 'zalolite' && <ZaloLiteTab />}
         {tab === 'drive' && <DriveVerifyTab />}
+        {tab === 'migration' && <MigrationTab />}
       </div>
     </div>
   )

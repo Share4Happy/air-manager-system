@@ -102,7 +102,7 @@ export async function GET(_req, { params }) {
                         )
                         ses.Image = folderId
                         reloadCourse(c._id)
-                        revalidateTag(`data_lesson${id}`)
+                        revalidateTag(`data_lesson${id}`, 'max')
                     }
                 } catch (err) {
                     console.error('[SESSION_GET] ensure lesson folder:', err)

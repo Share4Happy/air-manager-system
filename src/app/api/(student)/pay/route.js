@@ -112,10 +112,10 @@ export async function POST(request) {
             );
         }
 
-        revalidateTag(`student:${studentId}`);
-        revalidateTag('students');
-        revalidateTag(`course:${courseId}`);
-        revalidateTag('courses');
+        revalidateTag(`student:${studentId}`, 'max');
+        revalidateTag('students', 'max');
+        revalidateTag(`course:${courseId}`, 'max');
+        revalidateTag('courses', 'max');
         return NextResponse.json(
             { status: 2, mes: 'Tạo hóa đơn và cập nhật học sinh thành công.', data: [savedInvoice] },
             { status: 201 }

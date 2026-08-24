@@ -201,6 +201,18 @@ export async function POST(request) {
         if (upd.modifiedCount === 0) throw new Error('Không thể cập nhật dữ liệu checkin vào khóa học thử.');
         reloadCoursetry();
     }
+
+    // Dual-write to Session collection for LMS architecture
+    try {
+        const Session = (await import('@/models/session')).default;
+        await Session.updateOne(
+            { _id: sessionId },
+            { $set: { checkin: checkinData } }
+        );
+    } catch (e) {
+        console.error('[Checkin Photo] Session sync error:', e.message);
+    }
+
     revalidateTag(`data_lesson${sessionId}`, 'max');
 
     return NextResponse.json(

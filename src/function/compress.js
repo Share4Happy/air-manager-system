@@ -59,7 +59,7 @@ export async function compressVideoToHD(buffer, { mimeType = 'video/mp4', origin
     } finally {
         for (const p of [inputPath, outputPath]) {
             try {
-                if (fs.existsSync(p)) fs.unlinkSync(p);
+                fs.rmSync(p, { force: true });
             } catch { }
         }
     }

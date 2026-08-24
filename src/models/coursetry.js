@@ -63,6 +63,8 @@ TrialCourseSchema.virtual('allStudents').get(function () {
     return Array.from(set);
 });
 TrialCourseSchema.index({ 'sessions.day': 1, 'sessions.room': 1 });
+TrialCourseSchema.index({ 'sessions.teacher': 1 });
+TrialCourseSchema.index({ 'sessions.teachingAs': 1 });
 const TrialCourse =
     models.trialCourse || model('trialCourse', TrialCourseSchema);
 

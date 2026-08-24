@@ -113,6 +113,10 @@ const postSchema = new Schema({
   Note: { type: [LearnDetailSchema], default: [] }
 }, { versionKey: false })
 
+postSchema.index({ ID: 1 });
+postSchema.index({ Name: 1 });
+postSchema.index({ 'Course.course': 1 });
+
 const PostStudent = models.student || model('student', postSchema)
 
 export default PostStudent

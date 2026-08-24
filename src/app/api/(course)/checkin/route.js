@@ -96,6 +96,28 @@ export async function POST(req) {
           { $set: updateFields },
           { arrayFilters: [{ 'stu.ID': a.studentId }, { 'les.Lesson': sessionIdObj }] }
         )
+
+        // Dual-write to Attendance collection for LMS architecture
+        try {
+          const Attendance = (await import('@/models/attendance')).default;
+          await Attendance.updateOne(
+            { session: sessionIdObj, studentId: a.studentId },
+            {
+              $set: {
+                session: sessionIdObj,
+                course: course._id,
+                courseCode: course.ID,
+                studentId: a.studentId,
+                checkin: Number(a.checkin),
+                cmt: a.comment || [],
+                absenceReason: a.absenceReason || ''
+              }
+            },
+            { upsert: true }
+          );
+        } catch (e) {
+          console.error('[Checkin] Attendance sync error:', e.message);
+        }
       }
     } else {
       // Trường hợp 2: Khóa học thử
@@ -127,6 +149,28 @@ export async function POST(req) {
           },
           { arrayFilters: [{ 'ses._id': sessionIdObj }, { 'stu.studentId': student_id }] }
         )
+
+        // Dual-write to Attendance collection for LMS architecture
+        try {
+          const Attendance = (await import('@/models/attendance')).default;
+          await Attendance.updateOne(
+            { session: sessionIdObj, studentId: a.studentId },
+            {
+              $set: {
+                session: sessionIdObj,
+                course: trialCourse._id,
+                courseCode: trialCourse.name,
+                studentId: a.studentId,
+                checkin: (a.checkin != 2 && a.checkin != 0) ? 1 : 0,
+                cmt: a.comment || [],
+                absenceReason: ''
+              }
+            },
+            { upsert: true }
+          );
+        } catch (e) {
+          console.error('[Checkin Trial] Attendance sync error:', e.message);
+        }
       }
     }
     reloadCoursetry();
