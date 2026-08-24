@@ -45,6 +45,7 @@ export async function getMigrationStats() {
     const totalOldAttendances = oldOfficialAttendances + oldTrialAttendances;
 
     const isFullySynced = totalOldSessions > 0 && totalNewSessions === totalOldSessions && totalNewAttendances === totalOldAttendances;
+    const isCleanedLms = totalOldSessions === 0 && totalNewSessions > 0;
 
     return {
         coursesCount: courses.length,
@@ -62,7 +63,7 @@ export async function getMigrationStats() {
             sessionsCount: totalNewSessions,
             attendancesCount: totalNewAttendances
         },
-        status: isFullySynced ? 'SYNCED' : totalNewSessions > 0 ? 'PARTIAL' : 'NOT_MIGRATED'
+        status: isCleanedLms ? 'CLEANED_LMS' : isFullySynced ? 'SYNCED' : totalNewSessions > 0 ? 'PARTIAL' : 'NOT_MIGRATED'
     };
 }
 
@@ -235,8 +236,8 @@ export async function runLmsMigration({ dryRun = false } = {}) {
         }
     }));
 
-    totalSessionsGenerated = sessionOps.length;
-    totalAttendancesGenerated = attendanceOps.length;
+    const totalSessionsGenerated = sessionOps.length;
+    const totalAttendancesGenerated = attendanceOps.length;
 
     pushLog(`Tổng kết dữ liệu trích xuất: ${totalSessionsGenerated} buổi học (Sessions), ${totalAttendancesGenerated} bản ghi điểm danh (Attendances).`);
 
@@ -269,5 +270,59 @@ export async function runLmsMigration({ dryRun = false } = {}) {
         totalSessionsGenerated,
         totalAttendancesGenerated,
         logs
+    };
+}
+
+/**
+ * Dọn dẹp mảng nhúng Detail và Student.Learn trong Course và sessions trong TrialCourse.
+ */
+export async function cleanupLegacyEmbeddedData() {
+    await connectDB();
+    if (mongoose.connection.readyState !== 1) await mongoose.connection.asPromise();
+
+    const logs = [];
+    const pushLog = (msg) => {
+        const time = new Date().toLocaleTimeString('vi-VN');
+        logs.push(`[${time}] ${msg}`);
+    };
+
+    pushLog('Bắt đầu tiến trình dọn dẹp dữ liệu nhúng cũ trong CSDL...');
+
+    // 1. Kiểm tra đảm bảo Session và Attendance đã có dữ liệu
+    const [sessionsCount, attendancesCount] = await Promise.all([
+        Session.countDocuments(),
+        Attendance.countDocuments()
+    ]);
+
+    if (sessionsCount === 0 || attendancesCount === 0) {
+        throw new Error('Chưa thể xóa dữ liệu cũ vì collection Session hoặc Attendance chưa có dữ liệu đồng bộ!');
+    }
+
+    pushLog(`Xác thực an toàn: CSDL mới hiện có ${sessionsCount} buổi học và ${attendancesCount} lượt điểm danh.`);
+
+    // 2. Unset Detail và Student.Learn trên Course
+    pushLog("Đang dọn dẹp trường 'Detail' và 'Student.Learn' trong collection 'courses'...");
+    const courseRes = await Course.updateMany(
+        {},
+        { $unset: { Detail: 1, 'Student.$[].Learn': 1 } }
+    );
+    pushLog(`Đã dọn dẹp thành công ${courseRes.modifiedCount} khóa học chính quy.`);
+
+    // 3. Unset students trong sessions của TrialCourse
+    pushLog("Đang dọn dẹp mảng 'students' trong các buổi học thử 'coursetries'...");
+    const trialRes = await TrialCourse.updateMany(
+        {},
+        { $unset: { 'sessions.$[].students': 1 } }
+    );
+    pushLog(`Đã dọn dẹp thành công ${trialRes.modifiedCount} khóa học thử.`);
+
+    pushLog('Hoàn tất dọn dẹp CSDL! Hệ thống hiện đã chuyển hoàn toàn sang mô hình LMS tách rời.');
+
+    const stats = await getMigrationStats();
+
+    return {
+        success: true,
+        logs,
+        stats
     };
 }

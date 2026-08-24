@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import checkAuthToken from '@/utils/checktoken';
-import { getMigrationStats, runLmsMigration } from '@/lib/migration/lms-migration';
+import { getMigrationStats, runLmsMigration, cleanupLegacyEmbeddedData } from '@/lib/migration/lms-migration';
 
 export async function GET() {
     try {
@@ -25,8 +25,16 @@ export async function POST(req) {
         }
 
         const body = await req.json().catch(() => ({}));
-        const isDryRun = body.mode === 'dry-run';
 
+        if (body.mode === 'cleanup') {
+            const cleanupResult = await cleanupLegacyEmbeddedData();
+            return NextResponse.json({
+                success: true,
+                data: cleanupResult
+            });
+        }
+
+        const isDryRun = body.mode === 'dry-run';
         const result = await runLmsMigration({ dryRun: isDryRun });
         const updatedStats = await getMigrationStats();
 

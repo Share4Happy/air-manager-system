@@ -11,6 +11,7 @@
 - [x] **Giai đoạn 4:** Nâng cấp các API Route (Điểm danh, Check-in, Lịch học)
 - [x] **Giai đoạn 5:** Cập nhật Frontend UI & Tương thích ngược (Backward-compatible)
 - [x] **Giai đoạn 6:** Kiểm thử toàn diện (Build, Rollback test, UAT)
+- [x] **Giai đoạn 7:** Dọn dẹp mảng nhúng CSDL cũ (Cleanup Legacy Embedded Data) & Chuyển đổi thuần LMS
 
 ---
 
@@ -94,4 +95,14 @@
 - [x] **6.4.** Cập nhật tài liệu kỹ thuật [`docs/PLAN_LMS_MIGRATION_OPTION_2.md`](file:///home/asher/Documents/air-manager-system/docs/PLAN_LMS_MIGRATION_OPTION_2.md).
 
 ---
-*Tất cả các hạng mục của Phương án 2 đã được triển khai và sẵn sàng sử dụng trên cả môi trường Dev lẫn Production!*
+
+### 🔹 GIAI ĐOẠN 7: Dọn dẹp Mảng Nhúng CSDL Cũ & Chuyển Đổi Thuần LMS
+*Mục tiêu: Xóa mảng Detail và Student.Learn nhúng sâu trong bảng Course sau khi đã sao lưu và đồng bộ 100% sang Session & Attendance.*
+
+- [x] **7.1.** Bổ sung hàm `cleanupLegacyEmbeddedData()` trong [`src/lib/migration/lms-migration.js`](file:///home/asher/Documents/air-manager-system/src/lib/migration/lms-migration.js) (`$unset: { Detail: 1, 'Student.$[].Learn': 1 }`).
+- [x] **7.2.** Tích hợp `mode: 'cleanup'` vào API [`src/app/api/migration/lms/route.js`](file:///home/asher/Documents/air-manager-system/src/app/api/migration/lms/route.js).
+- [x] **7.3.** Bổ sung Danger Zone & Modal 2 bước (Yêu cầu nhập "XAC NHAN") trong giao diện Cài đặt [`src/app/setting/ui/migration-tab.js`](file:///home/asher/Documents/air-manager-system/src/app/setting/ui/migration-tab.js).
+- [x] **7.4.** Tái cấu trúc các API Điểm danh & Lịch học (`checkin`, `checkin-photo`, `calendar/[id]`) hoạt động độc lập và trực tiếp trên `Session` & `Attendance`.
+
+---
+*Tất cả các hạng mục của Phương án 2 và công cụ dọn dẹp CSDL đã được triển khai hoàn tất 100%!*

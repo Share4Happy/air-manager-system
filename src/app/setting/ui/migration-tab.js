@@ -8,6 +8,8 @@ export default function MigrationTab() {
     const [running, setRunning] = useState(false);
     const [logs, setLogs] = useState([]);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
+    const [cleanupText, setCleanupText] = useState('');
     const [noti, setNoti] = useState({ open: false, status: false, message: '' });
 
     const fetchStats = useCallback(async () => {
@@ -31,6 +33,10 @@ export default function MigrationTab() {
     const handleRunMigration = async (mode) => {
         setRunning(true);
         if (mode === 'execute') setShowConfirm(false);
+        if (mode === 'cleanup') {
+            setShowCleanupConfirm(false);
+            setCleanupText('');
+        }
         try {
             const res = await fetch('/api/migration/lms', {
                 method: 'POST',
@@ -43,14 +49,22 @@ export default function MigrationTab() {
                 if (json.data.stats) {
                     setStats(json.data.stats);
                 }
-                const isDry = json.data.dryRun;
-                setNoti({
-                    open: true,
-                    status: true,
-                    message: isDry
-                        ? `Kiểm tra thử (Dry-Run) hoàn tất! Dự kiến: ${json.data.totalSessionsGenerated} buổi học, ${json.data.totalAttendancesGenerated} lượt điểm danh.`
-                        : `Chuyển đổi CSDL thành công! Đã đồng bộ ${json.data.totalSessionsGenerated} buổi học và ${json.data.totalAttendancesGenerated} lượt điểm danh.`
-                });
+                if (mode === 'cleanup') {
+                    setNoti({
+                        open: true,
+                        status: true,
+                        message: 'Đã dọn dẹp dữ liệu nhúng cũ thành công! Hệ thống hiện đã chuyển sang mô hình LMS độc lập.'
+                    });
+                } else {
+                    const isDry = json.data.dryRun;
+                    setNoti({
+                        open: true,
+                        status: true,
+                        message: isDry
+                            ? `Kiểm tra thử (Dry-Run) hoàn tất! Dự kiến: ${json.data.totalSessionsGenerated} buổi học, ${json.data.totalAttendancesGenerated} lượt điểm danh.`
+                            : `Chuyển đổi CSDL thành công! Đã đồng bộ ${json.data.totalSessionsGenerated} buổi học và ${json.data.totalAttendancesGenerated} lượt điểm danh.`
+                    });
+                }
             } else {
                 setNoti({
                     open: true,
@@ -73,7 +87,8 @@ export default function MigrationTab() {
         );
     }
 
-    const isSynced = stats?.status === 'SYNCED';
+    const isCleaned = stats?.status === 'CLEANED_LMS';
+    const isSynced = stats?.status === 'SYNCED' || isCleaned;
 
     return (
         <div className="flex flex-col gap-6 max-w-5xl pb-10">
@@ -103,10 +118,12 @@ export default function MigrationTab() {
                     <p className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Buổi học (Sessions)</p>
                     <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-bold text-blue-600">{stats?.newSchema?.sessionsCount ?? 0}</span>
-                        <span className="text-xs text-gray-500">/ {stats?.oldSchema?.totalSessions ?? 0} buổi</span>
+                        <span className="text-xs text-gray-500">
+                            {isCleaned ? 'buổi trong LMS' : `/ ${stats?.oldSchema?.totalSessions ?? 0} buổi`}
+                        </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
-                        {stats?.newSchema?.sessionsCount === stats?.oldSchema?.totalSessions && stats?.oldSchema?.totalSessions > 0 ? '✓ Đã đồng bộ 100%' : 'Chưa đồng bộ đầy đủ'}
+                        {isCleaned ? '✓ Thuần CSDL mới (LMS)' : stats?.newSchema?.sessionsCount === stats?.oldSchema?.totalSessions && stats?.oldSchema?.totalSessions > 0 ? '✓ Đã đồng bộ 100%' : 'Chưa đồng bộ đầy đủ'}
                     </p>
                 </div>
 
@@ -114,17 +131,23 @@ export default function MigrationTab() {
                     <p className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Bản ghi điểm danh</p>
                     <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-2xl font-bold text-emerald-600">{stats?.newSchema?.attendancesCount ?? 0}</span>
-                        <span className="text-xs text-gray-500">/ {stats?.oldSchema?.totalAttendances ?? 0} lượt</span>
+                        <span className="text-xs text-gray-500">
+                            {isCleaned ? 'lượt trong LMS' : `/ ${stats?.oldSchema?.totalAttendances ?? 0} lượt`}
+                        </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
-                        {stats?.newSchema?.attendancesCount === stats?.oldSchema?.totalAttendances && stats?.oldSchema?.totalAttendances > 0 ? '✓ Đã đồng bộ 100%' : 'Chưa đồng bộ đầy đủ'}
+                        {isCleaned ? '✓ Thuần CSDL mới (LMS)' : stats?.newSchema?.attendancesCount === stats?.oldSchema?.totalAttendances && stats?.oldSchema?.totalAttendances > 0 ? '✓ Đã đồng bộ 100%' : 'Chưa đồng bộ đầy đủ'}
                     </p>
                 </div>
 
                 <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm flex flex-col justify-between">
                     <p className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Trạng thái CSDL</p>
                     <div className="mt-1">
-                        {isSynced ? (
+                        {isCleaned ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> ĐÃ DỌN DẸP (THUẦN LMS)
+                            </span>
+                        ) : isSynced ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span> ĐÃ ĐỒNG BỘ CHUẨN
                             </span>
@@ -146,7 +169,7 @@ export default function MigrationTab() {
 
             {/* Actions Bar */}
             <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl p-5 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-800 mb-3">Thao tác di chuyển dữ liệu (Migration Controls)</h4>
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">1. Thao tác di chuyển dữ liệu (Migration Controls)</h4>
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => handleRunMigration('dry-run')}
@@ -175,6 +198,29 @@ export default function MigrationTab() {
                 </p>
             </div>
 
+            {/* Danger Zone: Cleanup Legacy Embedded Fields */}
+            <div className="bg-red-50/60 border border-red-200 rounded-xl p-5 shadow-sm">
+                <h4 className="text-sm font-semibold text-red-800 flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    2. Dọn dẹp CSDL Cũ (Xóa mảng Detail & Student.Learn nhúng sâu)
+                </h4>
+                <p className="text-xs text-red-700 leading-relaxed mb-4">
+                    Sau khi bạn đã sao lưu (Backup) CSDL và xác nhận chuyển đổi thành công sang <strong>Session</strong> và <strong>Attendance</strong>, bạn có thể xóa sạch mảng nhúng <code>Detail</code> và <code>Student.Learn</code> trong bảng <code>Course</code> để giải phóng hoàn toàn dung lượng CSDL.
+                </p>
+                <button
+                    onClick={() => setShowCleanupConfirm(true)}
+                    disabled={running || isCleaned}
+                    className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-medium text-sm transition-all flex items-center gap-2 cursor-pointer border-none shadow-sm disabled:opacity-50"
+                >
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    {isCleaned ? '✓ Đã dọn dẹp dữ liệu cũ' : 'Xóa mảng dữ liệu nhúng cũ ($unset Detail & Learn)'}
+                </button>
+            </div>
+
             {/* Live Log Terminal Console */}
             {logs.length > 0 && (
                 <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 shadow-md">
@@ -192,7 +238,7 @@ export default function MigrationTab() {
                     </div>
                     <div className="max-h-60 overflow-y-auto font-mono text-xs text-gray-300 space-y-1">
                         {logs.map((log, idx) => (
-                            <div key={idx} className={log.includes('[DRY-RUN]') ? 'text-amber-400' : log.includes('Hoàn tất') ? 'text-emerald-400 font-bold' : ''}>
+                            <div key={idx} className={log.includes('[DRY-RUN]') ? 'text-amber-400' : log.includes('Hoàn tất') || log.includes('thành công') ? 'text-emerald-400 font-bold' : ''}>
                                 {log}
                             </div>
                         ))}
@@ -200,7 +246,7 @@ export default function MigrationTab() {
                 </div>
             )}
 
-            {/* Confirm Modal */}
+            {/* Confirm Modal for Migration */}
             {showConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
@@ -221,6 +267,50 @@ export default function MigrationTab() {
                                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium cursor-pointer border-none shadow-sm"
                             >
                                 Xác nhận chuyển đổi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Modal for Cleanup */}
+            {showCleanupConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150 border-2 border-red-500">
+                        <h3 className="text-lg font-bold text-red-700 mb-2 flex items-center gap-2">
+                            ⚠️ Cảnh báo: Xóa mảng nhúng CSDL cũ
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                            Thao tác này sẽ xóa vĩnh viễn trường <code>Detail</code> và <code>Student.Learn</code> trong bảng <code>Course</code> để tối ưu dung lượng và chuyển hệ thống sang chạy 100% trên bảng mới.
+                        </p>
+                        <p className="text-xs text-red-600 font-semibold mb-3">
+                            * Hãy chắc chắn bạn đã sao lưu (Backup) CSDL trước khi thực hiện!
+                        </p>
+                        <div className="mb-4">
+                            <label className="text-xs text-gray-600 block mb-1">
+                                Nhập <strong>XAC NHAN</strong> vào ô bên dưới để mở khóa nút xóa:
+                            </label>
+                            <input
+                                type="text"
+                                value={cleanupText}
+                                onChange={(e) => setCleanupText(e.target.value)}
+                                placeholder="XAC NHAN"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-red-500"
+                            />
+                        </div>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => { setShowCleanupConfirm(false); setCleanupText(''); }}
+                                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium cursor-pointer border-none"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                onClick={() => handleRunMigration('cleanup')}
+                                disabled={cleanupText.trim().toUpperCase() !== 'XAC NHAN'}
+                                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium cursor-pointer border-none shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Xác nhận xóa vĩnh viễn
                             </button>
                         </div>
                     </div>

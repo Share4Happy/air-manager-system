@@ -423,16 +423,16 @@ const Main = ({ initialTeachers }) => {
           </button>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-2 bg-white rounded-md border border-[var(--border-color)]">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="flex-wrap w-full sm:w-auto">
-          <input type="text" placeholder="Tìm kiếm theo tên, email hoặc SĐT..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full sm:w-[360px]" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-2 bg-white rounded-md border border-[var(--border-color)]">
+        <div className="flex flex-wrap items-center gap-2 w-full">
+          <input type="text" placeholder="Tìm kiếm theo tên, email hoặc SĐT..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-[200px]" />
           <div>
             <Menu isOpen={isRoleMenuOpen} onOpenChange={setIsRoleMenuOpen} menuItems={roleMenuItems} menuPosition="bottom" customButton={roleMenuButton} />
           </div>
           <div>
             <Menu isOpen={isStatusMenuOpen} onOpenChange={setIsStatusMenuOpen} menuItems={statusMenuItems} menuPosition="bottom" customButton={statusMenuButton} />
           </div>
-          <div className="px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100" style={{ padding: 10.5 }} onClick={() => setIsAddUserPopupOpen(true)}>
+          <div className="px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 shrink-0" style={{ padding: 10.5 }} onClick={() => setIsAddUserPopupOpen(true)}>
             <Svg_Add w="var(--font-size-xs)" h="var(--font-size-xs)" c="var(--text-primary)" />
             <h5>Thêm người dùng</h5>
           </div>
@@ -440,41 +440,41 @@ const Main = ({ initialTeachers }) => {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', paddingTop: 16 }}>
         {filteredUsers.length > 0 ? (
-          <div className="overflow-x-auto">
-              <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+          <div className="overflow-x-auto w-full border border-gray-200 rounded-lg shadow-sm bg-white">
+              <table className="w-full min-w-[1050px] border-collapse bg-white text-left">
                 <thead>
-                  <tr className="bg-gray-50 text-left">
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">STT</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Tên</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b hidden sm:table-cell">Email</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b hidden md:table-cell">SĐT</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Vai trò</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b hidden lg:table-cell">Ngày tạo</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Trạng thái</th>
-                    <th className="px-2 sm:px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Thao tác</th>
+                  <tr className="bg-gray-50 text-left border-b border-gray-200">
+                    <th className="px-3 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-14 text-center">STT</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[180px]">Tên</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[220px]">Email</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[140px]">SĐT</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[180px]">Vai trò</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[140px]">Ngày tạo</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap min-w-[130px]">Trạng thái</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-20 text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((user, idx) => (
-                      <tr key={user._id} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
-                        <td className="px-2 sm:px-4 py-3 text-sm text-gray-500">{idx + 1}</td>
-                        <td className="px-2 sm:px-4 py-3 text-sm font-medium text-gray-800">{user.name}</td>
-                        <td className="px-2 sm:px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{user.email}</td>
-                        <td className="px-2 sm:px-4 py-3 text-sm text-gray-600 hidden md:table-cell">{user.phone}</td>
-                        <td className="px-2 sm:px-4 py-3">
+                      <tr key={user._id} className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-none">
+                        <td className="px-3 py-3 text-sm text-gray-500 whitespace-nowrap text-center">{idx + 1}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-800 whitespace-nowrap">{user.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{user.email || '–––'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{user.phone || '–––'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex flex-wrap gap-1">
                             {user.role?.map(r => (
                               <span key={r} className={`px-2 py-0.5 text-[10px] font-semibold rounded ${ROLE_COLORS[r] || 'bg-gray-100 text-gray-700'}`}>{r}</span>
                             ))}
                           </div>
                         </td>
-                        <td className="px-2 sm:px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{formatDate(getCreatedDate(user))}</td>
-                        <td className="px-2 sm:px-4 py-3">
+                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(getCreatedDate(user))}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 text-[11px] font-semibold rounded ${user.status !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                             {user.status !== false ? 'Hoạt động' : 'Đã vô hiệu'}
                           </span>
                         </td>
-                        <td className="px-2 sm:px-4 py-3 text-center relative">
+                        <td className="px-4 py-3 text-center relative whitespace-nowrap">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

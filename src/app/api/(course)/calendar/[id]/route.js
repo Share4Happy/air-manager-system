@@ -68,6 +68,83 @@ export async function GET(_req, { params }) {
 
     try {
         await connect()
+
+        // 1. Kiểm tra từ Collection Session (LMS Chuẩn mới)
+        const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
+
+        const sessionDoc = await Session.findById(id).lean();
+        if (sessionDoc) {
+            const courseDoc = sessionDoc.course ? await Course.findById(sessionDoc.course, 'ID Version Area').lean() : null;
+            const [topic, teachers, attDocs, room] = await Promise.all([
+                topicById(sessionDoc.topic),
+                User.find({ _id: { $in: [sessionDoc.teacher, sessionDoc.teachingAs].filter(Boolean) } })
+                    .select('name')
+                    .lean(),
+                Attendance.find({ session: id }).lean(),
+                roomName(sessionDoc.room)
+            ]);
+
+            const studentIds = attDocs.map(a => a.studentId);
+            const studs = await Student.find({
+                $or: [
+                    { ID: { $in: studentIds } },
+                    { _id: { $in: studentIds.filter(isId) } }
+                ]
+            }).select('ID Name Avt').lean();
+
+            const uMap = new Map(teachers.map(u => [u._id.toString(), u]));
+            const sMap = new Map([
+                ...studs.map(s => [s.ID, s]),
+                ...studs.map(s => [s._id.toString(), s])
+            ]);
+
+            const students = attDocs.map(att => {
+                const info = sMap.get(att.studentId) || {};
+                return {
+                    _id: info._id ?? null,
+                    ID: info.ID ?? att.studentId ?? '–––',
+                    Name: info.Name ?? 'Không tên',
+                    Avt: info.Avt ?? null,
+                    attendance: {
+                        Checkin: att.checkin ?? 0,
+                        Cmt: att.cmt ?? [],
+                        CmtFn: att.cmtFn ?? '',
+                        Note: att.note ?? '',
+                        Lesson: id,
+                        Image: att.images ?? []
+                    }
+                };
+            });
+
+            return NextResponse.json({
+                success: true,
+                data: {
+                    course: {
+                        _id: courseDoc?._id || sessionDoc.course,
+                        ID: courseDoc?.ID || sessionDoc.courseCode,
+                        Version: courseDoc?.Version || 1,
+                        type: sessionDoc.type || 'official'
+                    },
+                    session: {
+                        _id: sessionDoc._id,
+                        buoi: sessionDoc.buoi,
+                        Topic: topic,
+                        Day: sessionDoc.day,
+                        Room: room,
+                        Time: sessionDoc.time,
+                        Teacher: uMap.get(String(sessionDoc.teacher)) || null,
+                        TeachingAs: uMap.get(String(sessionDoc.teachingAs)) || null,
+                        Image: sessionDoc.image,
+                        DetailImage: sessionDoc.detailImage,
+                        Checkin: sessionDoc.checkin || null
+                    },
+                    students
+                }
+            });
+        }
+
+        // 2. Fallback sang CSDL nhúng cũ nếu chưa chuyển đổi
         const c = await Course.findOne(
             { 'Detail._id': id },
             { ID: 1, Version: 1, Area: 1, Student: 1, Detail: 1 }

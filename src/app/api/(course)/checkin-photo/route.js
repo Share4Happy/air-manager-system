@@ -186,23 +186,8 @@ export async function POST(request) {
     if (!fileId) throw new Error('Không lấy được ID file sau khi tải lên.');
 
     const checkinData = { id: fileId, folderId: checkinFolderId, time: now, status };
-    if (ctx.kind === 'official') {
-        const upd = await PostCourse.updateOne(
-            { _id: ctx.courseId, 'Detail._id': sessionId },
-            { $set: { 'Detail.$.Checkin': checkinData } }
-        );
-        if (upd.modifiedCount === 0) throw new Error('Không thể cập nhật dữ liệu checkin vào khóa học.');
-        reloadCourse(ctx.courseId);
-    } else {
-        const upd = await TrialCourse.updateOne(
-            { _id: ctx.trialId, 'sessions._id': sessionId },
-            { $set: { 'sessions.$.checkin': checkinData } }
-        );
-        if (upd.modifiedCount === 0) throw new Error('Không thể cập nhật dữ liệu checkin vào khóa học thử.');
-        reloadCoursetry();
-    }
-
-    // Dual-write to Session collection for LMS architecture
+    
+    // Always update Session collection directly (LMS architecture)
     try {
         const Session = (await import('@/models/session')).default;
         await Session.updateOne(
@@ -211,6 +196,20 @@ export async function POST(request) {
         );
     } catch (e) {
         console.error('[Checkin Photo] Session sync error:', e.message);
+    }
+
+    if (ctx.kind === 'official') {
+        await PostCourse.updateOne(
+            { _id: ctx.courseId, 'Detail._id': sessionId },
+            { $set: { 'Detail.$.Checkin': checkinData } }
+        ).catch(() => {});
+        reloadCourse(ctx.courseId);
+    } else {
+        await TrialCourse.updateOne(
+            { _id: ctx.trialId, 'sessions._id': sessionId },
+            { $set: { 'sessions.$.checkin': checkinData } }
+        ).catch(() => {});
+        reloadCoursetry();
     }
 
     revalidateTag(`data_lesson${sessionId}`, 'max');
