@@ -14,7 +14,7 @@ import mongoose from 'mongoose'
 async function requireAdminSale() {
     const auth = await checkAuthToken()
     if (!auth || !auth.id) return { ok: false, message: 'Bạn cần đăng nhập.' }
-    if (!auth.role?.includes('Admin') && !auth.role?.includes('Sale')) {
+    if (!auth.role?.includes('Admin') && !auth.role?.includes('Sale') && !auth.role?.includes('Academic')) {
         return { ok: false, message: 'Bạn không có quyền thực hiện chức năng này.' }
     }
     return { ok: true, auth }

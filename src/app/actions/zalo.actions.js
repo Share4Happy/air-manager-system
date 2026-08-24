@@ -11,7 +11,7 @@ import { fetchBot } from '@/function/zalolite';
 export async function addZaloAccountAction(previousState, formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
 
@@ -49,7 +49,7 @@ export async function selectZaloAccountAction(previousState, formData) {
         if (!user || !user.id) {
             return { status: false, message: 'Xác thực không thành công.' };
         }
-        if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
             return { status: false, message: 'Bạn không có quyền thực hiện chức năng này.' };
         }
 

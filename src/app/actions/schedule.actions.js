@@ -12,13 +12,13 @@ import { unstable_cache as nextCache } from 'next/cache';
 export async function getRunningSchedulesAction() {
     try {
         const user = await checkAuthToken();
-        if (!user?.id || (!user.role.includes('Admin') && !user.role.includes('Sale'))) {
+        if (!user?.id || (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic'))) {
             throw new Error("Không có quyền xem thông tin này.");
         }
         const getSchedules = nextCache(async (currentUser) => {
             await connectToDatabase();
             const filter = {};
-            if (currentUser.role.includes('Sale') && !currentUser.role.includes('Admin')) {
+            if (currentUser.role.includes('Sale') && !currentUser.role.includes('Admin') && !currentUser.role.includes('Academic')) {
                 const permittedAccountIds = (await ZaloAccount.find({ roles: currentUser.id }).select('_id').lean()).map(acc => acc._id);
                 if (permittedAccountIds.length === 0) return [];
                 filter.zaloAccount = { $in: permittedAccountIds };
@@ -116,7 +116,7 @@ export async function createScheduleAction(prevState, formData) {
     try {
         const user = await checkAuthToken();
         if (!user || !user.id) throw new Error("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
-        if (!user.role?.includes('Admin') && !user.role?.includes('Sale')) throw new Error("Bạn không có quyền thực hiện chức năng này.");
+        if (!user.role?.includes('Admin') && !user.role?.includes('Sale') && !user.role?.includes('Academic')) throw new Error("Bạn không có quyền thực hiện chức năng này.");
 
         await connectToDatabase();
 
@@ -133,16 +133,13 @@ export async function createScheduleAction(prevState, formData) {
         const account = await ZaloAccount.findById(zaloAccountId);
         if (!account) throw new Error("Không tìm thấy tài khoản Zalo.");
 
-        // --- THÊM MỚI: LỌC KHÁCH HÀNG KHÔNG HỢP LỆ ---
         let validTasks = tasksToSchedule;
         let removedCount = 0;
 
-        // Chỉ lọc nếu hành động không phải là 'findUid'
         if (actionType !== 'findUid') {
             const originalCount = validTasks.length;
             const needsPhone = ['sendMessage', 'addFriend'].includes(actionType);
             validTasks = validTasks.filter(task => {
-                // iTrail Gateway tự resolve phone → UID, chỉ cần có số điện thoại
                 if (needsPhone) return !!task.phone;
                 return task.uid && Array.isArray(task.uid) && task.uid.some(
                     u => u.zalo?.toString() === zaloAccountId.toString() && u.uid
@@ -154,7 +151,6 @@ export async function createScheduleAction(prevState, formData) {
                 return { success: true, message: `Tất cả ${originalCount} người đã bị loại bỏ do ${needsPhone ? 'thiếu số điện thoại' : 'không có UID hợp lệ'} cho tài khoản Zalo này.` };
             }
         }
-        // Từ đây, tất cả logic sẽ sử dụng `validTasks` thay vì `tasksToSchedule`
 
         let finalActionsPerHour = Math.min(Number(actionsPerHour) || 30, 30);
 
@@ -185,7 +181,7 @@ export async function createScheduleAction(prevState, formData) {
 
                 let message = `Đã có lịch tìm UID đang chạy. Đã thêm ${uniqueTasksToSchedule.length} người mới vào cuối lịch trình.`;
                 if (duplicateCount > 0) message += ` Đã bỏ qua ${duplicateCount} người do bị trùng.`;
-                if (removedCount > 0) message += ` Đã loại bỏ ${removedCount} người do thiếu UID.`; // Thông báo thêm
+                if (removedCount > 0) message += ` Đã loại bỏ ${removedCount} người do thiếu UID.`;
                 return { success: true, message: message };
             }
         }
@@ -200,11 +196,10 @@ export async function createScheduleAction(prevState, formData) {
             tasks: scheduledTasks,
             config: {
                 actionsPerHour: finalActionsPerHour,
-                // --- SỬA LỖI: Cho phép `addFriend` cũng lưu `messageTemplate` ---
                 messageTemplate: ['sendMessage', 'addFriend'].includes(actionType) ? messageTemplate : null
             },
             statistics: {
-                total: validTasks.length, // Dùng số lượng task hợp lệ
+                total: validTasks.length,
                 completed: 0,
                 failed: 0
             },
@@ -235,7 +230,7 @@ export async function cancelScheduleAction(prevState, formData) {
     try {
         const user = await checkAuthToken();
         if (!user || !user.id) throw new Error("Phiên đăng nhập không hợp lệ.");
-        if (!user.role?.includes('Admin') && !user.role?.includes('Sale')) throw new Error("Bạn không có quyền thực hiện chức năng này.");
+        if (!user.role?.includes('Admin') && !user.role?.includes('Sale') && !user.role?.includes('Academic')) throw new Error("Bạn không có quyền thực hiện chức năng này.");
         await connectToDatabase();
         const jobId = formData.get('jobId');
         if (!jobId) throw new Error("Thiếu ID của lịch trình.");

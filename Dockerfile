@@ -1,7 +1,5 @@
-# Base image
 FROM node:22-alpine AS base
 
-# Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -14,27 +12,20 @@ RUN \
   else echo "Lockfile not found." && exit 1; \
   fi
 
-
-# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 
-# COPY .env.production.sample .env.production
 RUN npm run build
 
-# Production image, copy all the files and run next
 FROM base AS runner
 RUN apk add --no-cache ffmpeg
 WORKDIR /app
 ENV NODE_OPTIONS=--openssl-legacy-provider
 ENV NODE_ENV=production
 ENV FFMPEG_PATH=ffmpeg
-# Các biến cấu hình (MONGODB_URI, JWT_SECRET, token, URL, GOOGLE_*, DRIVE_*, ...)
-# được truyền lúc chạy qua file env (docker-compose: env_file .env.production)
-# xem .env.production.sample để biết đủ danh sách biến.
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -50,8 +41,6 @@ USER nextjs
 
 EXPOSE 4000
 
-# Đặt HOSTNAME và PORT
-# ENV HOSTNAME="0.0.0.0"
 ENV PORT=4000
 ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]

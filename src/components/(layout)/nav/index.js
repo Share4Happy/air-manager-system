@@ -34,84 +34,151 @@ const academicChildren = [
   { href: '/academic/course-manager', content: 'Quản lý khóa học' },
   { href: '/academic/debt', content: 'Quản lý học phí' },
   { href: '/academic/makeup', content: 'Quản lý học bù' },
-]
+];
 
 const initialNavItems = [
-  { href: '/dashboard', icon: <Svg_Chart h={22} w={22} c={'var(--text-secondary)'} />, content: 'Thống kê' },
-  { href: '/calendar', icon: <Svg_Canlendar w={22} h={22} c={'var(--text-secondary)'} />, content: 'Lịch dạy' },
-  { href: '/course', icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />, content: 'Khóa học' },
   {
-    href: '/tools', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-67.7-67.7L19.9 396.1z" />
-      </svg>
-    </div>, content: 'Công cụ'
-  },
-  { href: '/student/list', icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />, content: 'Học sinh' },
-  { href: '/e-portfolio', icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />, content: 'Eportfolio' },
-  {
-    href: '/academic', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3zM504 312l0-64.9c0-7.9 6.4-17.1 17.1-17.1c4.7 0 9.2 1.8 12.5 5.1l49 49c6.9 6.9 6.9 18.2 0 25.2l-12.5 12.5c-6.9 6.9-18.2 6.9-25.2 0L504 312zm-79.4 71.7L384 424l0 19.5c0 4.7 3.8 8.5 8.5 8.5l19.5 0 40.3-40.3c3.1-3.1 3.1-8.2 0-11.3l-11.3-11.3c-3.1-3.1-8.2-3.1-11.3 0z" />
-      </svg>
-    </div>, content: 'Học vụ', children: academicChildren
+    href: '/dashboard',
+    icon: <Svg_Chart h={22} w={22} c={'var(--text-secondary)'} />,
+    content: 'Thống kê',
+    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
   },
   {
-    href: '/client', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512l388.6 0c10 0 18.8-4.9 24.2-12.5l-99.2-99.2c-14.9-14.9-23.3-35.1-23.3-56.1l0-33c-15.9-4.7-32.8-7.2-50.3-7.2l-91.4 0zM384 224c-17.7 0-32 14.3-32 32l0 82.7c0 17 6.7 33.3 18.7 45.3L478.1 491.3c18.7 18.7 49.1 18.7 67.9 0l73.4-73.4c18.7-18.7 18.7-49.1 0-67.9L512 242.7c-12-12-28.3-18.7-45.3-18.7L384 224zm24 80a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z" />
-      </svg>
-    </div>, content: 'Chăm sóc'
+    href: '/calendar',
+    icon: <Svg_Canlendar w={22} h={22} c={'var(--text-secondary)'} />,
+    content: 'Lịch dạy',
+    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
   },
   {
-    href: '/teacher', icon: <div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
-        <path d="M160 64c0-35.3 28.7-64 64-64L576 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64l-239.2 0c-11.8-25.5-29.9-47.5-52.4-64l99.6 0 0-32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 32 64 0 0-288L224 64l0 49.1C205.2 102.2 183.3 96 160 96l0-32zm0 64a96 96 0 1 1 0 192 96 96 0 1 1 0-192zM133.3 352l53.3 0C260.3 352 320 411.7 320 485.3c0 14.7-11.9 26.7-26.7 26.7L26.7 512C11.9 512 0 500.1 0 485.3C0 411.7 59.7 352 133.3 352z" />
-      </svg>
-    </div>, content: 'Người dùng'
+    href: '/course',
+    icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />,
+    content: 'Khóa học',
+    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
+  },
+  {
+    href: '/academic',
+    icon: (
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
+          <path d="M96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3zM504 312l0-64.9c0-7.9 6.4-17.1 17.1-17.1c4.7 0 9.2 1.8 12.5 5.1l49 49c6.9 6.9 6.9 18.2 0 25.2l-12.5 12.5c-6.9 6.9-18.2 6.9-25.2 0L504 312zm-79.4 71.7L384 424l0 19.5c0 4.7 3.8 8.5 8.5 8.5l19.5 0 40.3-40.3c3.1-3.1 3.1-8.2 0-11.3l-11.3-11.3c-3.1-3.1-8.2-3.1-11.3 0z" />
+        </svg>
+      </div>
+    ),
+    content: 'Học vụ',
+    children: academicChildren,
+    roles: ['Admin', 'Academic']
+  },
+  {
+    href: '/student/list',
+    icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />,
+    content: 'Học sinh',
+    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
+  },
+  {
+    href: '/e-portfolio',
+    icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />,
+    content: 'Eportfolio',
+    roles: ['Admin', 'Academic', 'Teacher']
+  },
+  {
+    href: '/tools',
+    icon: (
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}>
+          <path d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-67.7-67.7L19.9 396.1z" />
+        </svg>
+      </div>
+    ),
+    content: 'Công cụ',
+    roles: ['Admin', 'Academic', 'Teacher']
+  },
+  {
+    href: '/client',
+    icon: (
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
+          <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512l388.6 0c10 0 18.8-4.9 24.2-12.5l-99.2-99.2c-14.9-14.9-23.3-35.1-23.3-56.1l0-33c-15.9-4.7-32.8-7.2-50.3-7.2l-91.4 0zM384 224c-17.7 0-32 14.3-32 32l0 82.7c0 17 6.7 33.3 18.7 45.3L478.1 491.3c18.7 18.7 49.1 18.7 67.9 0l73.4-73.4c18.7-18.7 18.7-49.1 0-67.9L512 242.7c-12-12-28.3-18.7-45.3-18.7L384 224zm24 80a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z" />
+        </svg>
+      </div>
+    ),
+    content: 'Chăm sóc',
+    roles: ['Admin', 'Sale', 'Academic']
+  },
+  {
+    href: '/teacher',
+    icon: (
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" height={22} width={22} fill={'var(--text-secondary)'}>
+          <path d="M160 64c0-35.3 28.7-64 64-64L576 0c35.3 0 64 28.7 64 64l0 288c0 35.3-28.7 64-64 64l-239.2 0c-11.8-25.5-29.9-47.5-52.4-64l99.6 0 0-32c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 32 64 0 0-288L224 64l0 49.1C205.2 102.2 183.3 96 160 96l0-32zm0 64a96 96 0 1 1 0 192 96 96 0 1 1 0-192zM133.3 352l53.3 0C260.3 352 320 411.7 320 485.3c0 14.7-11.9 26.7-26.7 26.7L26.7 512C11.9 512 0 500.1 0 485.3C0 411.7 59.7 352 133.3 352z" />
+        </svg>
+      </div>
+    ),
+    content: 'Người dùng',
+    roles: ['Admin']
   },
 ];
 
-export default function Nav() {
+export default function Nav({ data }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [orderedItems, setOrderedItems] = useState(initialNavItems);
   const navContainerRef = useRef(null);
   const [hasBackup, setHasBackup] = useState(false);
   const [backupUser, setBackupUser] = useState({});
 
   useEffect(() => {
-    setHasBackup(!!localStorage.getItem('backupToken'))
+    setHasBackup(!!localStorage.getItem('backupToken'));
     try {
-      const u = JSON.parse(localStorage.getItem('backupUser') || '{}')
-      setBackupUser(u)
+      const u = JSON.parse(localStorage.getItem('backupUser') || '{}');
+      setBackupUser(u);
     } catch {}
-  }, [])
+  }, []);
+
+  const currentRoles = useMemo(() => {
+    if (hasBackup && backupUser?.role) {
+      return Array.isArray(backupUser.role) ? backupUser.role : [backupUser.role];
+    }
+    if (data?.role) {
+      return Array.isArray(data.role) ? data.role : [data.role];
+    }
+    return ['Admin'];
+  }, [data, hasBackup, backupUser]);
+
+  const orderedItems = useMemo(() => {
+    const isAdmin = currentRoles.some(r => /^admin$/i.test(r));
+    if (isAdmin) return initialNavItems;
+
+    return initialNavItems.filter(item => {
+      if (!item.roles) return true;
+      return item.roles.some(reqRole =>
+        currentRoles.some(r => r.toLowerCase() === reqRole.toLowerCase())
+      );
+    });
+  }, [currentRoles]);
 
   const handleSwitchBack = async () => {
-    const token = localStorage.getItem('backupToken')
-    if (!token) return
+    const token = localStorage.getItem('backupToken');
+    if (!token) return;
     try {
       const res = await fetch('/api/switch-back', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ backupToken: token }),
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (res.ok) {
-        localStorage.removeItem('backupToken')
-        localStorage.removeItem('backupUser')
-        window.location.reload()
+        localStorage.removeItem('backupToken');
+        localStorage.removeItem('backupUser');
+        window.location.reload();
       } else {
-        localStorage.removeItem('backupToken')
-        localStorage.removeItem('backupUser')
-        setHasBackup(false)
+        localStorage.removeItem('backupToken');
+        localStorage.removeItem('backupUser');
+        setHasBackup(false);
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
-  }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -129,29 +196,6 @@ export default function Nav() {
       return next;
     });
   };
-
-  useEffect(() => {
-    const savedOrder = localStorage.getItem('navItemOrder');
-    if (savedOrder) {
-      try {
-        const orderedHrefs = JSON.parse(savedOrder);
-        const newOrderedItems = orderedHrefs
-          .map(href => initialNavItems.find(item => item.href === href))
-          .filter(Boolean);
-        initialNavItems.forEach(item => {
-          if (!newOrderedItems.find(i => i.href === item.href)) {
-            newOrderedItems.push(item);
-          }
-        });
-        setOrderedItems(newOrderedItems);
-      } catch (e) {
-        console.error("Failed to parse nav item order from localStorage", e);
-        setOrderedItems(initialNavItems);
-      }
-    } else {
-      setOrderedItems(initialNavItems);
-    }
-  }, []);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedParents, setExpandedParents] = useState({ '/academic': true });

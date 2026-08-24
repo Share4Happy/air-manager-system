@@ -158,11 +158,11 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
             const buoi = index + 1;
             const sessionIdStr = String(session._id);
 
-            const matchedStudents = students
-                .filter(st => st.Learn?.some(lr => String(lr.Lesson) === sessionIdStr))
+            const matchedStudents = (students || [])
+                .filter(st => (st.Learn || []).some(lr => String(lr.Lesson) === sessionIdStr))
                 .map(st => ({
                     ...st,
-                    Learn: st.Learn.filter(lr => String(lr.Lesson) === sessionIdStr)
+                    Learn: (st.Learn || []).filter(lr => String(lr.Lesson) === sessionIdStr)
                 }));
 
             const roomInfo = session.Room ? roomMap.get(String(session.Room)) : null;

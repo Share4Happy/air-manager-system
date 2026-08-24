@@ -293,8 +293,8 @@ export default function Overview() {
 
                 {!hasLoadedOnce.current && loading ? (
                     <div className="flex flex-wrap justify-center gap-3">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                 <KPISkeleton />
                             </div>
                         ))}
@@ -304,19 +304,19 @@ export default function Overview() {
                     ) : (
                         <>
                             <div className="flex flex-wrap justify-center gap-3">
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Tổng học sinh" value={formatNumber(summary?.totalStudents)} 
                                         icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
                                 </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Tuổi trung bình" value={formatAge(summary?.avgAge)}
                                         icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
                                 </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                {/* <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
                                     <StatCard label="Học phí đã nhận" value={formatCurrencyVN(summary?.totalTuition)}
                                         icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
-                                </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                </div> */}
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Số lớp học" value={formatNumber(summary?.totalClasses)}
                                         icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
                                 </div>
@@ -329,25 +329,25 @@ export default function Overview() {
                             </div>
 
                             <div className="flex flex-wrap justify-center gap-3">
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Học sinh" value={formatNumber(summary?.filteredStudents)}
                                         icon={<Svg_Student w={20} h={20} c={'currentColor'} />} />
                                 </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Tuổi trung bình" value={formatAge(summary?.filteredAvgAge)}
                                         icon={<Svg_User w={20} h={20} c={'currentColor'} />} />
                                 </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                {/* <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
                                     <StatCard label="Học phí" value={formatCurrencyVN(summary?.filteredTuition)}
                                         icon={<Svg_Tuition w={20} h={20} c={'currentColor'} />} />
-                                </div>
-                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.75rem)]">
+                                </div> */}
+                                <div className="w-[calc(50%-0.375rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
                                     <StatCard label="Số lớp" value={formatNumber(summary?.filteredClasses)}
                                         icon={<Svg_Graduation w={20} h={20} c={'currentColor'} />} />
                                 </div>
                             </div>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+                        <div className="grid grid-cols-1 gap-4 mt-6">
                             <ChartCard title="Sĩ số học sinh theo lớp">
                                 {data?.studentsByClass?.length ? (
                                     <div className="h-72">
@@ -358,7 +358,7 @@ export default function Overview() {
                                     </div>
                                 ) : <EmptyState />}
                             </ChartCard>
-                            <ChartCard title="Thống kê học phí theo tháng">
+                            {/* <ChartCard title="Thống kê học phí theo tháng">
                                 {data?.monthlyTuition?.length ? (
                                     <div className="h-72">
                                         <Bar data={{
@@ -367,7 +367,7 @@ export default function Overview() {
                                         }} options={chartOpts(true)} />
                                     </div>
                                 ) : <EmptyState />}
-                            </ChartCard>
+                            </ChartCard> */}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">

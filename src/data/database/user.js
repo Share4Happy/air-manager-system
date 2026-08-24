@@ -44,8 +44,24 @@ async function dataUserreport() {
         await connectDB();
         const now = new Date();
         const courses = await getCourseAll();
+        const Attendance = (await import('@/models/attendance')).default;
+        
+        let allAttendances = [];
+        try {
+            allAttendances = await Attendance.find({}).lean();
+        } catch (e) {
+            // Fallback if collection query fails
+        }
+        const attendanceBySession = new Map();
+        allAttendances.forEach(att => {
+            const sessId = att.session?.toString();
+            if (!sessId) return;
+            if (!attendanceBySession.has(sessId)) attendanceBySession.set(sessId, []);
+            attendanceBySession.get(sessId).push(att);
+        });
+
         const teacherData = {};
-        for (const course of courses) {
+        for (const course of (courses || [])) {
             if (!course.Detail?.length) continue;
             const roomMap = new Map(course.Area?.rooms?.map(r => [r._id.toString(), r.name]) || []);
             for (const lesson of course.Detail) {
@@ -57,18 +73,36 @@ async function dataUserreport() {
                 }
                 const lessonDate = new Date(lesson.Day);
                 if (lessonDate > now) {
-                    teacherData[teacherId].allLessons.push({ lessonId, courseId: course.ID, course_id: course._id.toString(), day: lesson.Day, room: roomMap.get(lesson.Room?.toString()) || null, status: 'chưa diễn ra', isViolation: false, errors: { attendance: false, comment: false, image: false } });
+                    teacherData[teacherId].allLessons.push({
+                        lessonId,
+                        courseId: course.ID,
+                        course_id: course._id.toString(),
+                        day: lesson.Day,
+                        room: roomMap.get(lesson.Room?.toString()) || null,
+                        status: 'chưa diễn ra',
+                        isViolation: false,
+                        errors: { attendance: false, comment: false, image: false }
+                    });
                     continue;
                 }
                 const hasImageViolation = !lesson.DetailImage?.length;
                 let hasAttendanceViolation = false;
                 let hasCommentViolation = false;
-                if (course.Student?.length) {
+
+                const sessionAtts = attendanceBySession.get(lessonId);
+                if (sessionAtts && sessionAtts.length > 0) {
+                    for (const att of sessionAtts) {
+                        if (att.checkin === 0) hasAttendanceViolation = true;
+                        if (att.checkin === 1 && (!att.cmt || !att.cmt.length)) hasCommentViolation = true;
+                        if (hasAttendanceViolation && hasCommentViolation) break;
+                    }
+                } else if (course.Student?.length) {
                     for (const student of course.Student) {
-                        const learnRecord = student.Learn.find(lr => lr.Lesson?.toString() === lessonId);
+                        const learnList = Array.isArray(student.Learn) ? student.Learn : [];
+                        const learnRecord = learnList.find(lr => lr.Lesson?.toString() === lessonId);
                         if (learnRecord) {
                             if (learnRecord.Checkin === 0) hasAttendanceViolation = true;
-                            if (learnRecord.Checkin === 1 && !learnRecord.Cmt?.length) hasCommentViolation = true;
+                            if (learnRecord.Checkin === 1 && (!learnRecord.Cmt || !learnRecord.Cmt.length)) hasCommentViolation = true;
                         } else {
                             hasAttendanceViolation = true;
                         }
@@ -78,9 +112,19 @@ async function dataUserreport() {
                     hasAttendanceViolation = true;
                     hasCommentViolation = true;
                 }
+
                 const isViolation = hasAttendanceViolation || hasCommentViolation || hasImageViolation;
                 if (isViolation) teacherData[teacherId].totalViolations++;
-                teacherData[teacherId].allLessons.push({ lessonId, courseId: course.ID, course_id: course._id.toString(), day: lesson.Day, room: roomMap.get(lesson.Room?.toString()) || null, status: 'đã diễn ra', isViolation, errors: { attendance: hasAttendanceViolation, comment: hasCommentViolation, image: hasImageViolation } });
+                teacherData[teacherId].allLessons.push({
+                    lessonId,
+                    courseId: course.ID,
+                    course_id: course._id.toString(),
+                    day: lesson.Day,
+                    room: roomMap.get(lesson.Room?.toString()) || null,
+                    status: 'đã diễn ra',
+                    isViolation,
+                    errors: { attendance: hasAttendanceViolation, comment: hasCommentViolation, image: hasImageViolation }
+                });
             }
         }
         const result = Object.values(teacherData);

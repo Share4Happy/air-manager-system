@@ -7,14 +7,14 @@ import Form from "@/models/formclient";
 import Customer from "@/models/customer";
 import checkAuthToken from "@/utils/checktoken";
 
-//--- CÁC ACTION CRUD FORM (GIỮ NGUYÊN CẤU TRÚC CŨ) ---//
+//--- CÁC ACTION CRUD FORM ---//
 
 export async function createAreaAction(_previousState, formData) {
     await dbConnect();
     const name = formData.get('name');
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     const formInputValues = formData.getAll('formInput');
@@ -52,7 +52,7 @@ export async function updateAreaAction(_previousState, formData) {
     const formInput = formInputValues.map(Number);
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     if (!id || !name) {
@@ -99,11 +99,11 @@ export async function deleteAreaAction(_previousState, formData) {
     const id = formData.get('id');
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     try {
-        await dbConnect();
+        await connectDB();
         const areaToDelete = await Form.findById(id);
         if (!areaToDelete) { return { status: false, message: 'Không tìm thấy khu vực để xóa.' }; }
         await Form.findByIdAndDelete(id);
@@ -133,7 +133,7 @@ async function getSheets() {
 export async function syncCustomersFromSheetAction(_previousState, _formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
 

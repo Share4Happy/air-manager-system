@@ -10,8 +10,8 @@ export function formatDate(date) {
 export function countStudentsWithLesson(lessonId, data) {
     let count = 0;
 
-    for (const student of data) {
-        const hasLesson = student.Learn.some(entry => entry.Lesson === lessonId);
+    for (const student of (data || [])) {
+        const hasLesson = (student.Learn || []).some(entry => String(entry.Lesson) === String(lessonId));
         if (hasLesson) {
             count++;
         }

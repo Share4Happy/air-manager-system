@@ -33,8 +33,8 @@ export default function Timeline({ data = [], props, selectedLessonId }) {
             <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
                 {data.Detail?.map((e, i) => {
                     let datalesson = e
-                    datalesson.Student = data.Student.flatMap((s) => {
-                        let g = s.Learn.filter(t => t.Lesson == e._id)
+                    datalesson.Student = (data.Student || []).flatMap((s) => {
+                        let g = (s.Learn || []).filter(t => String(t.Lesson) == String(e._id))
                         return g
                     })
                     return (

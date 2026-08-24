@@ -21,7 +21,7 @@ import {
 async function requireAuth() {
     const user = await checkAuthToken();
     if (!user || !user.id) return { ok: false, message: 'Bạn cần đăng nhập để thực hiện hành động này.' };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { ok: false, message: 'Bạn không có quyền thực hiện chức năng này.' };
     }
     return { ok: true, user };

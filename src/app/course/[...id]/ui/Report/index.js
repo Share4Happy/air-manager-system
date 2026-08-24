@@ -27,7 +27,7 @@ const useCourseAnalytics = (course) => {
         const studentLearnMap = new Map(
             course.Student.map(student => [
                 student.ID,
-                new Map(student.Learn.map(learnItem => [learnItem.Lesson, learnItem.Checkin]))
+                new Map((student.Learn || []).map(learnItem => [learnItem.Lesson, learnItem.Checkin]))
             ])
         );
 

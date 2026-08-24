@@ -219,7 +219,7 @@ export async function updateCustomerInfo(previousState, formData) {
 export async function addCareNoteAction(previousState, formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     const customerId = formData.get('customerId');
@@ -241,7 +241,7 @@ export async function addCareNoteAction(previousState, formData) {
 export async function updateCustomerStatusAction(previousState, formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     const customerId = formData.get('customerId');
@@ -274,7 +274,7 @@ export async function updateCustomerStatusAction(previousState, formData) {
 export async function convertToStudentAction(previousState, formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     const customerId = formData.get('customerId');
@@ -284,7 +284,7 @@ export async function convertToStudentAction(previousState, formData) {
     try {
         await connectDB();
         const user = await checkAuthToken();
-        if (!user || (!user.role.includes('Admin') && !user.role.includes('Sale'))) {
+        if (!user || (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic'))) {
             return { success: false, error: 'Bạn không có quyền thực hiện chức năng này.' };
         }
         const customer = await Customer.findById(customerId).lean();
@@ -316,7 +316,7 @@ export async function convertToStudentAction(previousState, formData) {
 export async function assignRoleToCustomersAction(prevState, formData) {
     const user = await checkAuthToken();
     if (!user || !user.id) return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
-    if (!user.role.includes('Admin') && !user.role.includes('Sale')) {
+    if (!user.role.includes('Admin') && !user.role.includes('Sale') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này', status: false };
     }
     const customersJSON = formData.get('selectedCustomersJSON');

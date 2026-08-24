@@ -187,8 +187,8 @@ export async function GET(_req, { params }) {
             }
 
             const students = buildStudents(
-                c.Student.flatMap(s => {
-                    const attendance = s.Learn.find(lr => lr.Lesson.toString() === id);
+                (c.Student || []).flatMap(s => {
+                    const attendance = (s.Learn || []).find(lr => lr.Lesson?.toString() === id);
                     return attendance ? [{ ...s, attendance }] : [];
                 }),
                 sMap,

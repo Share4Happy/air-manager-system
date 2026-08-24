@@ -476,57 +476,87 @@ const Main = ({ initialTeachers }) => {
                         </td>
                         <td className="px-4 py-3 text-center relative whitespace-nowrap">
                         <button
+                          type="button"
                           onClick={(e) => {
-                            e.stopPropagation()
+                            e.stopPropagation();
                             if (openMenuId === user._id) {
-                              setOpenMenuId(null)
+                              setOpenMenuId(null);
                             } else {
-                              const rect = e.currentTarget.getBoundingClientRect()
-                              const menuH = 132
-                              const spaceBelow = window.innerHeight - rect.bottom
-                              setMenuPos({
-                                top: spaceBelow >= menuH ? rect.bottom + 4 : rect.top - menuH,
-                                left: rect.left + rect.width / 2
-                              })
-                              setOpenMenuId(user._id)
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const menuWidth = 205;
+                              const menuH = 175;
+                              const spaceBelow = window.innerHeight - rect.bottom;
+                              const top = spaceBelow >= menuH ? rect.bottom + 4 : Math.max(8, rect.top - menuH);
+                              const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
+                              setMenuPos({ top, left });
+                              setOpenMenuId(user._id);
                             }
                           }}
-                          className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:bg-gray-100 rounded transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                          title="Thao tác"
                         >
-                          ⋮
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.75" />
+                            <circle cx="12" cy="12" r="1.75" />
+                            <circle cx="12" cy="19" r="1.75" />
+                          </svg>
                         </button>
                         {openMenuId === user._id && (
                           <>
-                            <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                            <div className="fixed z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]"
+                            <div className="fixed inset-0 z-[999]" onClick={() => setOpenMenuId(null)} />
+                            <div
+                              className="fixed z-[1000] bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 w-[205px] text-left"
                               style={{
                                 top: menuPos.top,
-                                left: Math.max(4, Math.min(menuPos.left - 70, window.innerWidth - 144)),
-                              }}>
+                                left: menuPos.left,
+                              }}
+                            >
                               <button
+                                type="button"
                                 onClick={() => { setOpenMenuId(null); handleOpenEditPopup(user); }}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="w-full text-left px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors cursor-pointer group"
                               >
-                                Thông tin tài khoản
+                                <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                </svg>
+                                <span>Thông tin tài khoản</span>
                               </button>
                               <button
+                                type="button"
                                 onClick={() => { setOpenMenuId(null); setConfirmUser(user); }}
                                 disabled={toggling}
-                                className={`w-full text-left px-3 py-2 text-sm transition-colors ${user.status !== false ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'} ${toggling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full text-left px-3.5 py-2 text-sm flex items-center gap-2.5 transition-colors cursor-pointer ${user.status !== false ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-600 hover:bg-emerald-50'} ${toggling ? 'opacity-50 cursor-not-allowed' : ''}`}
                               >
-                                {user.status !== false ? 'Vô hiệu tài khoản' : 'Kích hoạt tài khoản'}
+                                {user.status !== false ? (
+                                  <svg className="w-4 h-4 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 12.75v6.75a2.25 2.25 0 002.25 2.25z" />
+                                  </svg>
+                                )}
+                                <span>{user.status !== false ? 'Vô hiệu tài khoản' : 'Kích hoạt tài khoản'}</span>
                               </button>
                               <button
-                                 onClick={() => { setOpenMenuId(null); handleSwitchRole(user._id, user.name, user.status); }}
-                                className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                                type="button"
+                                onClick={() => { setOpenMenuId(null); handleSwitchRole(user._id, user.name, user.status); }}
+                                className="w-full text-left px-3.5 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2.5 transition-colors cursor-pointer group"
                               >
-                                Chuyển đổi role
+                                <svg className="w-4 h-4 text-blue-500 group-hover:text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                                </svg>
+                                <span>Chuyển đổi role</span>
                               </button>
                               <button
+                                type="button"
                                 onClick={() => { setOpenMenuId(null); setResetLoginUser(user); }}
-                                className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors"
+                                className="w-full text-left px-3.5 py-2 text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2.5 transition-colors cursor-pointer group"
                               >
-                                Reset thời gian khóa
+                                <svg className="w-4 h-4 text-amber-500 group-hover:text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                <span>Reset thời gian khóa</span>
                               </button>
                             </div>
                           </>
