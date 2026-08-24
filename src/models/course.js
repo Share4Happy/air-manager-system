@@ -1,4 +1,4 @@
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const DetailSchema = new Schema({
     Topic: { type: Schema.Types.ObjectId, required: true },
@@ -95,6 +95,6 @@ postCourseSchema.index({ 'Detail.TeachingAs': 1 });
 postCourseSchema.index({ 'Student.ID': 1 });
 postCourseSchema.index({ Area: 1 });
 
-const PostCourse = models.course || model('course', postCourseSchema);
+const PostCourse = mongoose.models.course || mongoose.model('course', postCourseSchema);
 
 export default PostCourse;

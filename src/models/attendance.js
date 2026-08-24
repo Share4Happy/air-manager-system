@@ -1,4 +1,4 @@
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const AttendanceImageSchema = new Schema({
     id: { type: String, required: true },
@@ -32,6 +32,6 @@ AttendanceSchema.index({ courseCode: 1 });
 AttendanceSchema.index({ course: 1 });
 AttendanceSchema.index({ makeupStatus: 1 });
 
-const Attendance = models.attendance || model('attendance', AttendanceSchema);
+const Attendance = mongoose.models.attendance || mongoose.model('attendance', AttendanceSchema);
 
 export default Attendance;

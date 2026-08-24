@@ -1,4 +1,4 @@
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const DetailImageSchema = new Schema({
     id: { type: String, required: true },
@@ -39,10 +39,11 @@ const SessionSchema = new Schema({
 SessionSchema.index({ day: 1, room: 1 });
 SessionSchema.index({ teacher: 1 });
 SessionSchema.index({ teachingAs: 1 });
-SessionSchema.index({ courseCode: 1, buoi: 1 }, { unique: true });
+SessionSchema.index({ course: 1, buoi: 1 });
+SessionSchema.index({ courseCode: 1, buoi: 1 });
 SessionSchema.index({ course: 1 });
 SessionSchema.index({ day: 1 });
 
-const Session = models.session || model('session', SessionSchema);
+const Session = mongoose.models.session || mongoose.model('session', SessionSchema);
 
 export default Session;

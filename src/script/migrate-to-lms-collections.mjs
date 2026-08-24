@@ -19,75 +19,69 @@ async function main() {
     await mongoose.connect(MONGO_URI);
     console.log(`[LMS Migration] Connected. Mode: ${isDryRun ? 'DRY-RUN (Chạy thử - Không ghi DB)' : 'EXECUTE (Chạy thật)'}`);
 
+    try {
+        await Session.collection.dropIndex('courseCode_1_buoi_1');
+    } catch {
+        // Index does not exist
+    }
+
     const courses = await Course.find({}).lean();
     const trialCourses = await TrialCourse.find({}).lean();
 
     console.log(`[LMS Migration] Found ${courses.length} official courses and ${trialCourses.length} trial courses.`);
 
-    const sessionOps = [];
-    const attendanceOps = [];
+    const sessionMap = new Map();
+    const attendanceMap = new Map();
 
     for (const course of courses) {
         const details = course.Detail || [];
         const students = course.Student || [];
 
         details.forEach((d, idx) => {
-            const sessionId = d._id;
+            const sessionId = d._id || new mongoose.Types.ObjectId();
             const buoi = idx + 1;
 
-            sessionOps.push({
-                updateOne: {
-                    filter: { _id: sessionId },
-                    update: {
-                        $set: {
-                            _id: sessionId,
-                            course: course._id,
-                            courseCode: course.ID,
-                            courseName: course.Name,
-                            courseType: course.Type || 'AI Robotic',
-                            buoi,
-                            day: d.Day || new Date(),
-                            time: d.Time || '',
-                            room: d.Room || null,
-                            teacher: d.Teacher || null,
-                            teachingAs: d.TeachingAs || null,
-                            topic: d.Topic || null,
-                            book: course.Book || null,
-                            image: d.Image || null,
-                            detailImage: d.DetailImage || [],
-                            checkin: d.Checkin || null,
-                            note: d.Note || '',
-                            type: d.Type || 'Chính khóa',
-                            status: true
-                        }
-                    },
-                    upsert: true
-                }
+            sessionMap.set(String(sessionId), {
+                _id: sessionId,
+                course: course._id,
+                courseCode: course.ID || 'CHUA_CO_MA',
+                courseName: course.Name || '',
+                courseType: course.Type || 'AI Robotic',
+                buoi,
+                day: d.Day || new Date(),
+                time: d.Time || '',
+                room: d.Room || null,
+                teacher: d.Teacher || null,
+                teachingAs: d.TeachingAs || null,
+                topic: d.Topic || null,
+                book: course.Book || null,
+                image: d.Image || null,
+                detailImage: d.DetailImage || [],
+                checkin: d.Checkin || null,
+                note: d.Note || '',
+                type: d.Type || 'Chính khóa',
+                status: true
             });
 
             students.forEach(st => {
-                const learnRecord = (st.Learn || []).find(lr => String(lr.Lesson) === String(sessionId));
+                const studentId = st.ID || String(st._id);
+                if (!studentId) return;
+
+                const learnRecord = (st.Learn || []).find(lr => String(lr.Lesson) === String(sessionId) || (d._id && String(lr.Lesson) === String(d._id)));
                 if (learnRecord) {
-                    attendanceOps.push({
-                        updateOne: {
-                            filter: { session: sessionId, studentId: st.ID },
-                            update: {
-                                $set: {
-                                    session: sessionId,
-                                    course: course._id,
-                                    courseCode: course.ID,
-                                    studentId: st.ID,
-                                    checkin: typeof learnRecord.Checkin === 'number' ? learnRecord.Checkin : 0,
-                                    cmt: learnRecord.Cmt || [],
-                                    cmtFn: learnRecord.CmtFn || '',
-                                    note: learnRecord.Note || '',
-                                    images: learnRecord.Image || [],
-                                    absenceReason: learnRecord.absenceReason || '',
-                                    makeupStatus: learnRecord.makeupStatus || 'NOT_REQUIRED'
-                                }
-                            },
-                            upsert: true
-                        }
+                    const attKey = `${String(sessionId)}__${String(studentId)}`;
+                    attendanceMap.set(attKey, {
+                        session: sessionId,
+                        course: course._id,
+                        courseCode: course.ID || 'CHUA_CO_MA',
+                        studentId: studentId,
+                        checkin: typeof learnRecord.Checkin === 'number' ? learnRecord.Checkin : 0,
+                        cmt: learnRecord.Cmt || [],
+                        cmtFn: learnRecord.CmtFn || '',
+                        note: learnRecord.Note || '',
+                        images: learnRecord.Image || [],
+                        absenceReason: learnRecord.absenceReason || '',
+                        makeupStatus: learnRecord.makeupStatus || 'NOT_REQUIRED'
                     });
                 }
             });
@@ -97,64 +91,68 @@ async function main() {
     for (const trial of trialCourses) {
         const sessions = trial.sessions || [];
         sessions.forEach((s, idx) => {
-            const sessionId = s._id;
+            const sessionId = s._id || new mongoose.Types.ObjectId();
             const buoi = idx + 1;
 
-            sessionOps.push({
-                updateOne: {
-                    filter: { _id: sessionId },
-                    update: {
-                        $set: {
-                            _id: sessionId,
-                            course: trial._id,
-                            courseCode: trial.name,
-                            courseName: trial.name,
-                            courseType: 'trial',
-                            buoi,
-                            day: s.day || new Date(),
-                            time: s.time || '',
-                            room: s.room || null,
-                            teacher: s.teacher || null,
-                            teachingAs: s.teachingAs || null,
-                            topic: s.topicId || null,
-                            book: s.book || null,
-                            image: s.folderId || null,
-                            detailImage: s.images ? [s.images] : [],
-                            checkin: s.checkin || null,
-                            note: s.note || '',
-                            type: 'trial',
-                            status: s.status !== false
-                        }
-                    },
-                    upsert: true
-                }
+            sessionMap.set(String(sessionId), {
+                _id: sessionId,
+                course: trial._id,
+                courseCode: trial.name || 'HocThu',
+                courseName: trial.name || 'Khóa học thử',
+                courseType: 'trial',
+                buoi,
+                day: s.day || new Date(),
+                time: s.time || '',
+                room: s.room || null,
+                teacher: s.teacher || null,
+                teachingAs: s.teachingAs || null,
+                topic: s.topicId || null,
+                book: s.book || null,
+                image: s.folderId || null,
+                detailImage: s.images ? [s.images] : [],
+                checkin: s.checkin || null,
+                note: s.note || '',
+                type: 'trial',
+                status: s.status !== false
             });
 
             (s.students || []).forEach(st => {
-                attendanceOps.push({
-                    updateOne: {
-                        filter: { session: sessionId, studentId: st.studentId },
-                        update: {
-                            $set: {
-                                session: sessionId,
-                                course: trial._id,
-                                courseCode: trial.name,
-                                studentId: st.studentId,
-                                checkin: st.checkin ? 1 : 0,
-                                cmt: st.cmt || [],
-                                cmtFn: '',
-                                note: st.note || '',
-                                images: st.images || [],
-                                absenceReason: '',
-                                makeupStatus: 'NOT_REQUIRED'
-                            }
-                        },
-                        upsert: true
-                    }
+                const studentId = String(st.studentId || st._id || st.ID);
+                if (!studentId) return;
+
+                const attKey = `${String(sessionId)}__${String(studentId)}`;
+                attendanceMap.set(attKey, {
+                    session: sessionId,
+                    course: trial._id,
+                    courseCode: trial.name || 'HocThu',
+                    studentId: studentId,
+                    checkin: st.checkin ? 1 : 0,
+                    cmt: st.cmt || [],
+                    cmtFn: '',
+                    note: st.note || '',
+                    images: st.images || [],
+                    absenceReason: '',
+                    makeupStatus: 'NOT_REQUIRED'
                 });
             });
         });
     }
+
+    const sessionOps = Array.from(sessionMap.values()).map(doc => ({
+        updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: doc },
+            upsert: true
+        }
+    }));
+
+    const attendanceOps = Array.from(attendanceMap.values()).map(doc => ({
+        updateOne: {
+            filter: { session: doc.session, studentId: doc.studentId },
+            update: { $set: doc },
+            upsert: true
+        }
+    }));
 
     console.log(`[LMS Migration] Total Sessions: ${sessionOps.length}`);
     console.log(`[LMS Migration] Total Attendances: ${attendanceOps.length}`);

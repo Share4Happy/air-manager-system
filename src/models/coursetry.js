@@ -1,4 +1,4 @@
-import { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const ImageSchema = new Schema(
     {
@@ -66,6 +66,6 @@ TrialCourseSchema.index({ 'sessions.day': 1, 'sessions.room': 1 });
 TrialCourseSchema.index({ 'sessions.teacher': 1 });
 TrialCourseSchema.index({ 'sessions.teachingAs': 1 });
 const TrialCourse =
-    models.trialCourse || model('trialCourse', TrialCourseSchema);
+    mongoose.models.trialCourse || mongoose.model('trialCourse', TrialCourseSchema);
 
 export default TrialCourse;

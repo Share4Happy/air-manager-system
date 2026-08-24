@@ -88,11 +88,15 @@ export async function runLmsMigration({ dryRun = false } = {}) {
 
     pushLog(`Tìm thấy ${courses.length} lớp học chính quy và ${trialCourses.length} lớp học thử.`);
 
-    let sessionOps = [];
-    let attendanceOps = [];
+    // Drop stale unique index if existed from older schema
+    try {
+        await Session.collection.dropIndex('courseCode_1_buoi_1');
+    } catch {
+        // Index does not exist or already dropped
+    }
 
-    let totalSessionsGenerated = 0;
-    let totalAttendancesGenerated = 0;
+    const sessionMap = new Map(); // Map<sessionIdStr, doc>
+    const attendanceMap = new Map(); // Map<session_student_key, doc>
 
     // 1. Xử lý các khóa học chính quy
     for (const course of courses) {
@@ -102,14 +106,14 @@ export async function runLmsMigration({ dryRun = false } = {}) {
         pushLog(`Đang xử lý lớp ${course.ID} (${course.Name || 'Không tên'}) - ${details.length} buổi học, ${students.length} học sinh...`);
 
         details.forEach((d, idx) => {
-            const sessionId = d._id;
+            const sessionId = d._id || new mongoose.Types.ObjectId();
             const buoi = idx + 1;
 
             const sessionDoc = {
                 _id: sessionId,
                 course: course._id,
-                courseCode: course.ID,
-                courseName: course.Name,
+                courseCode: course.ID || 'CHUA_CO_MA',
+                courseName: course.Name || '',
                 courseType: course.Type || 'AI Robotic',
                 buoi,
                 day: d.Day || new Date(),
@@ -127,24 +131,20 @@ export async function runLmsMigration({ dryRun = false } = {}) {
                 status: true
             };
 
-            sessionOps.push({
-                updateOne: {
-                    filter: { _id: sessionId },
-                    update: { $set: sessionDoc },
-                    upsert: true
-                }
-            });
-            totalSessionsGenerated++;
+            sessionMap.set(String(sessionId), sessionDoc);
 
             // Trích xuất điểm danh từng học sinh cho buổi học này
             students.forEach(st => {
-                const learnRecord = (st.Learn || []).find(lr => String(lr.Lesson) === String(sessionId));
+                const studentId = st.ID || String(st._id);
+                if (!studentId) return;
+
+                const learnRecord = (st.Learn || []).find(lr => String(lr.Lesson) === String(sessionId) || (d._id && String(lr.Lesson) === String(d._id)));
                 if (learnRecord) {
-                    const studentId = st.ID;
+                    const attKey = `${String(sessionId)}__${String(studentId)}`;
                     const attDoc = {
                         session: sessionId,
                         course: course._id,
-                        courseCode: course.ID,
+                        courseCode: course.ID || 'CHUA_CO_MA',
                         studentId: studentId,
                         checkin: typeof learnRecord.Checkin === 'number' ? learnRecord.Checkin : 0,
                         cmt: learnRecord.Cmt || [],
@@ -155,14 +155,7 @@ export async function runLmsMigration({ dryRun = false } = {}) {
                         makeupStatus: learnRecord.makeupStatus || 'NOT_REQUIRED'
                     };
 
-                    attendanceOps.push({
-                        updateOne: {
-                            filter: { session: sessionId, studentId: studentId },
-                            update: { $set: attDoc },
-                            upsert: true
-                        }
-                    });
-                    totalAttendancesGenerated++;
+                    attendanceMap.set(attKey, attDoc);
                 }
             });
         });
@@ -174,14 +167,14 @@ export async function runLmsMigration({ dryRun = false } = {}) {
         pushLog(`Đang xử lý lớp học thử ${trial.name} - ${sessions.length} buổi...`);
 
         sessions.forEach((s, idx) => {
-            const sessionId = s._id;
+            const sessionId = s._id || new mongoose.Types.ObjectId();
             const buoi = idx + 1;
 
             const sessionDoc = {
                 _id: sessionId,
                 course: trial._id,
-                courseCode: trial.name,
-                courseName: trial.name,
+                courseCode: trial.name || 'HocThu',
+                courseName: trial.name || 'Khóa học thử',
                 courseType: 'trial',
                 buoi,
                 day: s.day || new Date(),
@@ -199,22 +192,19 @@ export async function runLmsMigration({ dryRun = false } = {}) {
                 status: s.status !== false
             };
 
-            sessionOps.push({
-                updateOne: {
-                    filter: { _id: sessionId },
-                    update: { $set: sessionDoc },
-                    upsert: true
-                }
-            });
-            totalSessionsGenerated++;
+            sessionMap.set(String(sessionId), sessionDoc);
 
             // Trích xuất điểm danh học sinh học thử
             (s.students || []).forEach(st => {
+                const studentId = String(st.studentId || st._id || st.ID);
+                if (!studentId) return;
+
+                const attKey = `${String(sessionId)}__${String(studentId)}`;
                 const attDoc = {
                     session: sessionId,
                     course: trial._id,
-                    courseCode: trial.name,
-                    studentId: st.studentId,
+                    courseCode: trial.name || 'HocThu',
+                    studentId: studentId,
                     checkin: st.checkin ? 1 : 0,
                     cmt: st.cmt || [],
                     cmtFn: '',
@@ -224,17 +214,29 @@ export async function runLmsMigration({ dryRun = false } = {}) {
                     makeupStatus: 'NOT_REQUIRED'
                 };
 
-                attendanceOps.push({
-                    updateOne: {
-                        filter: { session: sessionId, studentId: st.studentId },
-                        update: { $set: attDoc },
-                        upsert: true
-                    }
-                });
-                totalAttendancesGenerated++;
+                attendanceMap.set(attKey, attDoc);
             });
         });
     }
+
+    const sessionOps = Array.from(sessionMap.values()).map(doc => ({
+        updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: doc },
+            upsert: true
+        }
+    }));
+
+    const attendanceOps = Array.from(attendanceMap.values()).map(doc => ({
+        updateOne: {
+            filter: { session: doc.session, studentId: doc.studentId },
+            update: { $set: doc },
+            upsert: true
+        }
+    }));
+
+    totalSessionsGenerated = sessionOps.length;
+    totalAttendancesGenerated = attendanceOps.length;
 
     pushLog(`Tổng kết dữ liệu trích xuất: ${totalSessionsGenerated} buổi học (Sessions), ${totalAttendancesGenerated} bản ghi điểm danh (Attendances).`);
 
