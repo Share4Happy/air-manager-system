@@ -7,7 +7,7 @@ import { Svg_Pen } from '@/components/(icon)/svg';
 import { driveThumbnailUrl, drivePreviewUrl } from '@/function';
 import { uploadDirectToDrive } from './upload';
 
-export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess }) {
+export default function Lightbox({ mediaItem, media, folderId, onClose, onUpdateSuccess, onReplaceSuccess }) {
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState({
         open: false,
@@ -16,13 +16,16 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
     });
     const fileInputRef = useRef(null);
 
-    if (!mediaItem) return null;
+    const activeItem = mediaItem || media;
+    const handleSuccess = onUpdateSuccess || onReplaceSuccess;
+
+    if (!activeItem) return null;
 
     let fileUrl = '';
-    if (mediaItem.type === 'image') {
-        fileUrl = driveThumbnailUrl(mediaItem.id, 1200);
-    } else if (mediaItem.type === 'video') {
-        fileUrl = drivePreviewUrl(mediaItem.id);
+    if (activeItem.type === 'image') {
+        fileUrl = driveThumbnailUrl(activeItem.id, 1200);
+    } else if (activeItem.type === 'video') {
+        fileUrl = drivePreviewUrl(activeItem.id);
     }
 
     const handleFileChange = async (event) => {
@@ -33,7 +36,7 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
 
         if (!file) return;
 
-        if (mediaItem.type === 'image' && !file.type.startsWith('image/')) {
+        if (activeItem.type === 'image' && !file.type.startsWith('image/')) {
             setNotification({
                 open: true,
                 status: false,
@@ -41,7 +44,7 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
             });
             return;
         }
-        if (mediaItem.type === 'video' && !file.type.startsWith('video/')) {
+        if (activeItem.type === 'video' && !file.type.startsWith('video/')) {
             setNotification({
                 open: true,
                 status: false,
@@ -53,10 +56,10 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
         setIsLoading(true);
 
         try {
-            const fileType = mediaItem.type;
+            const fileType = activeItem.type;
             const res = await uploadDirectToDrive(file, folderId, {
                 fileType,
-                oldImageId: mediaItem.id,
+                oldImageId: activeItem.id,
                 timeoutMs: fileType === 'video' ? 600000 : 120000
             });
 
@@ -64,8 +67,8 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
                 throw new Error(res.result.mes || 'Có lỗi xảy ra khi cập nhật.');
             }
 
-            if (onUpdateSuccess) {
-                await onUpdateSuccess();
+            if (handleSuccess) {
+                await handleSuccess();
             }
 
             onClose();
@@ -86,7 +89,7 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
         setIsLoading(true);
 
         try {
-            const response = await fetch(`/api/updateimage?id=${mediaItem.id}`, {
+            const response = await fetch(`/api/updateimage?id=${activeItem.id}`, {
                 method: 'DELETE',
             });
 
@@ -95,8 +98,8 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
                 throw new Error(result.mes || 'Xóa file thất bại.');
             }
 
-            if (onUpdateSuccess) {
-                await onUpdateSuccess();
+            if (handleSuccess) {
+                await handleSuccess();
             }
             onClose();
 
@@ -158,7 +161,7 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
                         type="file"
                         ref={fileInputRef}
                         onChange={handleFileChange}
-                        accept={mediaItem.type === 'image' ? 'image/*' : 'video/*'}
+                        accept={activeItem.type === 'image' ? 'image/*' : 'video/*'}
                         style={{ display: 'none' }}
                     />
                     <button className="absolute top-0 -right-[15px] w-[30px] h-[30px] bg-white text-[#333] border-none rounded font-light text-xl leading-[30px] text-center cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.3)] transition-transform duration-200 hover:-translate-y-0.5" onClick={onClose}>×</button>
@@ -170,8 +173,17 @@ export default function Lightbox({ mediaItem, folderId, onClose, onUpdateSuccess
                             <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z" />
                         </svg>
                     </button>
-                    {mediaItem.type === 'image' ? (
-                        <img src={fileUrl} alt="Ảnh phóng to" />
+                    {activeItem.type === 'image' ? (
+                        <img
+                            src={fileUrl}
+                            alt="Ảnh phóng to"
+                            onError={(e) => {
+                                if (!e.currentTarget.dataset.retried) {
+                                    e.currentTarget.dataset.retried = '1';
+                                    e.currentTarget.src = `https://lh3.googleusercontent.com/d/${activeItem.id}`;
+                                }
+                            }}
+                        />
                     ) : (
                         <iframe
                             src={fileUrl}

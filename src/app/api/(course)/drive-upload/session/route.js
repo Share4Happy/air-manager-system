@@ -21,11 +21,11 @@ async function getAccessToken() {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { folderId, fileName, mimeType, fileSize, oldImageId } = body;
+        const { folderId, fileName, mimeType, fileSize, oldImageId, sessionId } = body;
 
         let targetFolderId = folderId;
 
-        // Nếu thiếu folderId nhưng có oldImageId (trường hợp thay thế file cũ), tìm folderId từ DB
+        // 1. Nếu thiếu folderId nhưng có oldImageId (trường hợp thay thế file cũ), tìm folderId từ DB
         if (!targetFolderId && oldImageId) {
             try {
                 await connectDB();
@@ -51,9 +51,60 @@ export async function POST(request) {
             }
         }
 
+        // 2. Nếu thiếu folderId nhưng có sessionId, tìm folderId từ Session / Course
+        if (!targetFolderId && sessionId) {
+            try {
+                await connectDB();
+                const Session = (await import('@/models/session')).default;
+                const ses = await Session.findById(sessionId).lean();
+                if (ses?.image) {
+                    targetFolderId = ses.image;
+                } else {
+                    const course = await PostCourse.findOne({ 'Detail._id': sessionId }).lean();
+                    const detail = course?.Detail?.find(d => String(d._id) === String(sessionId));
+                    if (detail?.Image) {
+                        targetFolderId = detail.Image;
+                    }
+                }
+
+                // Nếu vẫn chưa có folderId, tự động tạo trên Google Drive
+                if (!targetFolderId) {
+                    const code = ses?.courseCode || 'GENERAL';
+                    const day = ses?.day || new Date();
+                    const { getDriveClient, createDriveFolder, lessonFolderName } = await import('@/function/drive/folder');
+                    const drive = getDriveClient();
+                    const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
+                    if (PARENT_FOLDER_ID) {
+                        let classFolderId = null;
+                        const list = await drive.files.list({
+                            q: `name='${code}' and '${PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                            fields: 'files(id)',
+                            supportsAllDrives: true,
+                            includeItemsFromAllDrives: true,
+                        });
+                        if (list.data.files?.length) {
+                            classFolderId = list.data.files[0].id;
+                        } else {
+                            classFolderId = await createDriveFolder(drive, code, PARENT_FOLDER_ID);
+                        }
+                        if (classFolderId) {
+                            const folderName = lessonFolderName(code, day);
+                            targetFolderId = await createDriveFolder(drive, folderName, classFolderId);
+                            if (targetFolderId) {
+                                await Session.updateOne({ _id: sessionId }, { $set: { image: targetFolderId } });
+                                await PostCourse.updateOne({ 'Detail._id': sessionId }, { $set: { 'Detail.$.Image': targetFolderId } });
+                            }
+                        }
+                    }
+                }
+            } catch (findErr) {
+                console.warn('[drive-upload/session] Lỗi khi tra cứu/tạo folderId từ sessionId:', findErr.message);
+            }
+        }
+
         if (!targetFolderId || !fileName) {
             return NextResponse.json(
-                { status: 1, mes: 'Thiếu tham số bắt buộc (folderId, fileName).' },
+                { status: 1, mes: 'Thiếu tham số bắt buộc (folderId hoặc sessionId, fileName).' },
                 { status: 400 }
             );
         }

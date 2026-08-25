@@ -110,7 +110,7 @@ export async function GET(req) {
       return aStart < bEnd && bStart < aEnd
     }
 
-    const conflicting = [...officialConflicts, ...trialConflicts].filter(item => {
+    const conflicting = allConflicts.filter(item => {
       const itemStart = timeToMins(item.timeStart)
       const itemEnd = timeToMins(item.timeEnd)
       return overlaps(reqStart, reqEnd, itemStart, itemEnd)

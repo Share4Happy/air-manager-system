@@ -31,7 +31,8 @@ export default function StudentImageSelectionManager({ studentInfo, courseInfo, 
 
     useEffect(() => {
         const existingIds = new Set(allCourseImages.map(img => img.id));
-        const studentIds = new Set(studentInfo.Image.map(img => img.id) || []);
+        const rawStudentImgs = studentInfo?.Image || studentInfo?.attendance?.Image || [];
+        const studentIds = new Set(Array.isArray(rawStudentImgs) ? rawStudentImgs.map(img => img.id) : []);
         const validIds = new Set([...studentIds].filter(id => existingIds.has(id)));
         setOriginalImageIds(validIds);
         setSelectedImageIds(validIds);

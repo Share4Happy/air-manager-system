@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Re_lesson } from '@/data/course';
 import Noti from '@/components/(features)/(noti)/noti';
 import UploadManager from './upload-manager';
@@ -25,19 +25,45 @@ export default function ImageUploader({ session, onUploadSuccess }) {
 
     const uploaderRef = useRef();
     const uploadUrlsRef = useRef([]);
+    const pendingThumbsRef = useRef({});
+
+    useEffect(() => {
+        if (session?.DetailImage && Array.isArray(session.DetailImage)) {
+            const pending = pendingThumbsRef.current;
+            setMediaItems(session.DetailImage.map(item =>
+                pending[item.id] ? { ...item, _preview: pending[item.id] } : item
+            ));
+        }
+    }, [session?.DetailImage]);
+
+    const handleThumbReady = (fileId) => {
+        const blob = pendingThumbsRef.current[fileId];
+        if (blob) {
+            URL.revokeObjectURL(blob);
+            delete pendingThumbsRef.current[fileId];
+        }
+    };
 
     const handleUploadFinish = async () => {
-        await Re_lesson(session._id);
+        if (session?._id) await Re_lesson(session._id);
         try {
-            const res = await fetch(`/api/calendar/${session._id}?_=${Date.now()}`);
+            const res = await fetch(`/api/calendar/${session?._id}?_=${Date.now()}`);
             const json = await res.json();
-            if (json.success) {
-                setMediaItems(json.data.session?.DetailImage || []);
-            } else {
-                setMediaItems(session?.DetailImage || []);
+            if (json.success && json.data?.session?.DetailImage) {
+                const pending = pendingThumbsRef.current;
+                const merged = json.data.session.DetailImage.map(item =>
+                    pending[item.id] ? { ...item, _preview: pending[item.id] } : item
+                );
+                setMediaItems(merged);
+                for (const [fid, blob] of Object.entries(pending)) {
+                    if (!merged.some(item => item.id === fid)) {
+                        URL.revokeObjectURL(blob);
+                        delete pendingThumbsRef.current[fid];
+                    }
+                }
             }
         } catch {
-            setMediaItems(session?.DetailImage || []);
+            // Keep existing mediaItems
         }
     };
 
@@ -52,8 +78,9 @@ export default function ImageUploader({ session, onUploadSuccess }) {
         for (const job of jobs) {
             try {
                 const timeoutMs = job.type === 'video' ? 600000 : 120000;
-                const { result } = await uploadDirectToDrive(job.file, session.Image, {
+                const { result } = await uploadDirectToDrive(job.file, session?.Image, {
                     fileType: job.type,
+                    sessionId: session?._id,
                     onProgress: (percent) => updateQueueItem(job.key, { percent }),
                     timeoutMs
                 });
@@ -63,7 +90,14 @@ export default function ImageUploader({ session, onUploadSuccess }) {
                 const uploaded = result.data?.[0];
                 if (!uploaded?.id) throw new Error("API không trả về ID của file.");
 
-                updateQueueItem(job.key, { status: 'success', driveId: uploaded.id, percent: 100 });
+                pendingThumbsRef.current[uploaded.id] = job.previewUrl;
+
+                // CẬP NHẬT HIỂN THỊ LIỀN VÀO MEDIA ITEMS (TỨC THÌ)
+                setUploadQueue(prev => prev.filter(item => item.key !== job.key));
+                setMediaItems(prev => {
+                    if (prev.some(item => item.id === uploaded.id)) return prev;
+                    return [{ ...uploaded, _preview: job.previewUrl }, ...prev];
+                });
             } catch (err) {
                 console.error(`Lỗi tải lên file ${job.file.name}:`, err);
                 failedCount++;
@@ -75,10 +109,13 @@ export default function ImageUploader({ session, onUploadSuccess }) {
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         await handleUploadFinish();
-        uploadUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+        const pendingUrls = new Set(Object.values(pendingThumbsRef.current));
+        uploadUrlsRef.current.forEach(url => {
+            if (!pendingUrls.has(url)) URL.revokeObjectURL(url);
+        });
         uploadUrlsRef.current = [];
         setUploadQueue([]);
         setIsUploading(false);
@@ -201,6 +238,7 @@ export default function ImageUploader({ session, onUploadSuccess }) {
                                     session={session}
                                     mediaItems={mediaItems}
                                     uploadingItems={uploadQueue}
+                                    onDriveReady={handleThumbReady}
                                     onAdd={() => setUploaderOpen(true)}
                                     onMediaClick={selectMode ? undefined : setLightboxMedia}
                                     selectMode={selectMode}

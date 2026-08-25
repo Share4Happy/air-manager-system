@@ -1,13 +1,56 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { driveThumbnailUrl, driveFolderUrl } from '@/function';
+
+function MediaThumb({ item, onDriveReady }) {
+    const [showPreview, setShowPreview] = useState(!!item._preview);
+    const [driveReady, setDriveReady] = useState(false);
+    const imgRef = useRef(null);
+
+    useEffect(() => {
+        const img = imgRef.current;
+        if (img?.complete && img.naturalWidth > 0 && !driveReady) {
+            setDriveReady(true);
+            setShowPreview(false);
+            onDriveReady?.(item.id);
+        }
+    }, []);
+
+    const handleLoad = () => {
+        if (driveReady) return;
+        setDriveReady(true);
+        setShowPreview(false);
+        onDriveReady?.(item.id);
+    };
+
+    return (
+        <>
+            {showPreview && item._preview && (
+                item.type === 'video' ? (
+                    <video src={item._preview} muted playsInline className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                    <img src={item._preview} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                )
+            )}
+            <img
+                ref={imgRef}
+                src={driveThumbnailUrl(item.id, 400)}
+                alt="File từ Google Drive"
+                loading="lazy"
+                onLoad={handleLoad}
+                className="absolute inset-0 w-full h-full object-cover"
+            />
+        </>
+    );
+}
 
 export default function MediaGallery({
     session,
     mediaItems = [],
     uploadingItems = [],
+    onDriveReady,
     onAdd,
     onMediaClick,
     selectMode,
@@ -130,7 +173,7 @@ export default function MediaGallery({
                                 onClick={() => selectMode ? onToggleSelect(item.id) : onMediaClick(item)}
                                 className={`relative w-full aspect-square rounded-lg overflow-hidden bg-[#e2e8f0] transition-transform duration-200 ease-in-out border-none p-0 cursor-pointer group ${selectedIds.has(item.id) ? 'ring-2 ring-red-500' : ''}`}
                             >
-                                <img src={getDriveImageUrl(item.id)} alt={`File từ Google Drive`} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                                <MediaThumb item={item} onDriveReady={onDriveReady} />
                                 {selectMode && (
                                     <div className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedIds.has(item.id) ? 'bg-red-500 border-red-500' : 'bg-white/80 border-gray-400'}`}>
                                         {selectedIds.has(item.id) && <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}

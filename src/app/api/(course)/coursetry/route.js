@@ -55,9 +55,11 @@ export async function GET() {
 
         const roomIds = new Set()
         const stuIds = new Set()
-        course.sessions.forEach(s => {
+        ;(course.sessions || []).forEach(s => {
             if (s.room) roomIds.add(String(s.room))
-            s.students.forEach(st => stuIds.add(st.studentId))
+            ;(s.students || []).forEach(st => {
+                if (st?.studentId) stuIds.add(st.studentId)
+            })
         })
 
         const roomMap = new Map()
@@ -82,7 +84,7 @@ export async function GET() {
         course.sessions = course.sessions.map(s => {
             const roomObj = roomMap.get(String(s.room)) || null
             const topic = s.book?.Topics?.find(t => String(t._id) === String(s.topicId)) || null
-            const students = s.students.map(st => {
+            const students = (s.students || []).map(st => {
                 const info = stuMap.get(String(st.studentId)) || {}
                 uniqStu.add(String(st.studentId))
                 return { ...st, ...info }

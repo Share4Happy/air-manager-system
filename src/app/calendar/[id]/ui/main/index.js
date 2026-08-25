@@ -81,42 +81,74 @@ export default function Main({ data }) {
     const vk = roll.filter(s => cur(s) === '2').length;
     const vc = isTrialCourse ? 0 : roll.filter(s => cur(s) === '3').length;
 
-    const changeAtt = (id, v) => setAtt(prev => ({ ...prev, [id]: v }));
+    const changeAtt = (id, v) => {
+        const stu = roll.find(s => s.ID === id);
+        if (stu && String(stu.Checkin) === String(v)) {
+            setAtt(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+        } else {
+            setAtt(prev => ({ ...prev, [id]: v }));
+        }
+    };
 
     const saveComment = async (arr) => {
         if (!selStu) return;
-        setCmts(p => ({ ...p, [selStu.ID]: arr }));
-        setShowComment(false);
+        const curCmt = selStu.originalComment || [];
+        const isCmtChanged = JSON.stringify(arr) !== JSON.stringify(curCmt);
         const checkinVal = cur(selStu);
+        const isCheckinChanged = att[selStu.ID] !== undefined && String(att[selStu.ID]) !== String(selStu.Checkin);
+
+        setShowComment(false);
+
+        if (!isCmtChanged && !isCheckinChanged) {
+            setSelStu(null);
+            return;
+        }
+
+        setCmts(p => ({ ...p, [selStu.ID]: arr }));
         setSaving(true);
         try {
             const res = await updateAttendance(course._id, session._id, [{ studentId: selStu.ID, checkin: checkinVal, comment: arr }]);
             if (res.status === 2) {
-                setNotiOK(true); setNotiMsg('Lưu nhận xét thành công!');
+                setNotiOK(true);
+                setNotiMsg('Lưu nhận xét thành công!');
+                setNotiOpen(true);
+                setAtt(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
+                setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
                 await Re_lesson(session._id);
                 router.refresh();
             } else {
                 setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
-                setNotiOK(false); setNotiMsg(res.mes || 'Lưu nhận xét thất bại!');
+                setNotiOK(false);
+                setNotiMsg(res.mes || 'Lưu nhận xét thất bại!');
+                setNotiOpen(true);
             }
         } catch {
             setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
-            setNotiOK(false); setNotiMsg('Có lỗi xảy ra khi lưu nhận xét!');
+            setNotiOK(false);
+            setNotiMsg('Có lỗi xảy ra khi lưu nhận xét!');
+            setNotiOpen(true);
         } finally {
-            setSaving(false); setNotiOpen(true);
+            setSaving(false);
             setSelStu(null);
         }
     };
 
     const buildPayload = () => {
         const arr = [];
-        Object.keys(att).forEach(id =>
-            arr.push({ studentId: id, checkin: att[id], comment: cmts[id] })
-        );
-        Object.keys(cmts).forEach(id => {
-            if (!arr.find(i => i.studentId === id)) {
-                const stu = roll.find(s => s.ID === id);
-                if (stu) arr.push({ studentId: id, checkin: stu.Checkin, comment: cmts[id] });
+        roll.forEach(stu => {
+            const hasAttChange = att[stu.ID] !== undefined && String(att[stu.ID]) !== String(stu.Checkin);
+            const hasCmtChange = cmts[stu.ID] !== undefined && JSON.stringify(cmts[stu.ID]) !== JSON.stringify(stu.originalComment || []);
+
+            if (hasAttChange || hasCmtChange) {
+                arr.push({
+                    studentId: stu.ID,
+                    checkin: att[stu.ID] !== undefined ? att[stu.ID] : stu.Checkin,
+                    comment: cmts[stu.ID] !== undefined ? cmts[stu.ID] : (stu.originalComment || [])
+                });
             }
         });
         return arr;
@@ -141,6 +173,11 @@ export default function Main({ data }) {
     }
 
     const saveNote = async () => {
+        const originalNote = session?.Note || session?.note || '';
+        if (note.trim() === originalNote.trim()) {
+            setShowNote(false);
+            return;
+        }
         setSavingNote(true);
         try {
             if (isTrialCourse) {
@@ -181,7 +218,7 @@ export default function Main({ data }) {
     const saveAll = async () => {
         const payload = buildPayload();
         if (!payload.length) {
-            setNotiOK(false); setNotiMsg('Không có gì thay đổi'); setNotiOpen(true);
+            setNotiOK(false); setNotiMsg('Không có thay đổi nào để lưu!'); setNotiOpen(true);
             setSaving(false);
             return;
         }
@@ -190,6 +227,8 @@ export default function Main({ data }) {
         try {
             const res = await updateAttendance(course._id, session._id, payload);
             if (res.status === 2) {
+                setAtt({});
+                setCmts({});
                 setNotiOK(true); setNotiMsg('Lưu thành công!'); setNotiOpen(true);
                 await Re_lesson(session._id);
                 router.refresh();

@@ -3,6 +3,8 @@ import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 import { getDriveClient } from '@/function/drive/index';
+import mongoose from 'mongoose';
+import { revalidateTag } from 'next/cache';
 
 export async function POST(request) {
     try {
@@ -13,7 +15,7 @@ export async function POST(request) {
 
     try {
         const body = await request.json();
-        const { folderId, fileId, fileType, size, name, oldImageId } = body;
+        const { folderId, fileId, fileType, size, name, oldImageId, sessionId } = body;
 
         if (!fileId) {
             return NextResponse.json(
@@ -37,13 +39,13 @@ export async function POST(request) {
                 { 'Detail.DetailImage.id': oldImageId },
                 { $set: { 'Detail.$.DetailImage.$[elem].id': fileId, 'Detail.$.DetailImage.$[elem].size': Number(size) || 0 } },
                 { arrayFilters: [{ 'elem.id': oldImageId }] }
-            );
+            ).catch(() => ({ modifiedCount: 0 }));
 
             if (sessionUpdate?.modifiedCount === 0 && updateResult.modifiedCount === 0) {
                 updateResult = await TrialCourse.updateOne(
                     { 'sessions.images.id': oldImageId },
                     { $set: { 'sessions.$.images.id': fileId, 'sessions.$.images.size': Number(size) || 0 } }
-                );
+                ).catch(() => ({ modifiedCount: 0 }));
 
                 if (updateResult.modifiedCount === 0) {
                     await drive.files.delete({ fileId, supportsAllDrives: true });
@@ -61,6 +63,9 @@ export async function POST(request) {
                 console.warn(`Không thể xóa file cũ ${oldImageId} khỏi Drive:`, deleteError.message);
             }
 
+            if (sessionId) revalidateTag(`data_lesson${sessionId}`, 'max');
+            revalidateTag('courses', 'max');
+
             return NextResponse.json(
                 { status: 2, mes: 'Thay thế file thành công.', data: fileId },
                 { status: 200 }
@@ -68,9 +73,9 @@ export async function POST(request) {
         }
 
         // 2. Trường hợp TẢI LÊN MỚI (New file)
-        if (!folderId) {
+        if (!folderId && !sessionId) {
             return NextResponse.json(
-                { status: 1, mes: 'Thiếu folderId cho file tải lên mới.' },
+                { status: 1, mes: 'Thiếu folderId hoặc sessionId cho file tải lên mới.' },
                 { status: 400 }
             );
         }
@@ -83,31 +88,47 @@ export async function POST(request) {
         };
 
         const Session = (await import('@/models/session')).default;
+        const sessionQuery = (sessionId && mongoose.Types.ObjectId.isValid(sessionId))
+            ? (folderId ? { $or: [{ _id: new mongoose.Types.ObjectId(sessionId) }, { image: folderId }] } : { _id: new mongoose.Types.ObjectId(sessionId) })
+            : { image: folderId };
+
         const sessionUpdate = await Session.updateOne(
-            { image: folderId },
-            { $push: { detailImage: newMediaObject } }
+            sessionQuery,
+            {
+                $push: { detailImage: newMediaObject },
+                ...(folderId ? { $set: { image: folderId } } : {})
+            }
         ).catch(() => ({ matchedCount: 0 }));
 
+        const courseQuery = (sessionId && mongoose.Types.ObjectId.isValid(sessionId))
+            ? (folderId ? { $or: [{ 'Detail._id': new mongoose.Types.ObjectId(sessionId) }, { 'Detail.Image': folderId }] } : { 'Detail._id': new mongoose.Types.ObjectId(sessionId) })
+            : { 'Detail.Image': folderId };
+
         let updateResult = await PostCourse.updateOne(
-            { 'Detail.Image': folderId },
+            courseQuery,
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        );
+        ).catch(() => ({ matchedCount: 0 }));
 
-        if (sessionUpdate?.matchedCount === 0 && updateResult.matchedCount === 0) {
-            updateResult = await TrialCourse.updateOne(
-                { 'sessions.folderId': folderId },
-                { $set: { 'sessions.$.images': newMediaObject } }
-            );
+        if (sessionUpdate?.matchedCount === 0 && updateResult?.matchedCount === 0) {
+            if (folderId) {
+                updateResult = await TrialCourse.updateOne(
+                    { 'sessions.folderId': folderId },
+                    { $set: { 'sessions.$.images': newMediaObject } }
+                ).catch(() => ({ matchedCount: 0 }));
+            }
 
-            if (updateResult.matchedCount === 0) {
+            if (updateResult?.matchedCount === 0 && sessionUpdate?.matchedCount === 0) {
                 // Rollback xóa file vừa tạo trên Drive
                 await drive.files.delete({ fileId, supportsAllDrives: true });
                 return NextResponse.json(
-                    { status: 1, mes: `Không tìm thấy buổi học nào có folderId là '${folderId}'.` },
+                    { status: 1, mes: `Không tìm thấy buổi học nào tương ứng.` },
                     { status: 404 }
                 );
             }
         }
+
+        if (sessionId) revalidateTag(`data_lesson${sessionId}`, 'max');
+        revalidateTag('courses', 'max');
 
         return NextResponse.json(
             {

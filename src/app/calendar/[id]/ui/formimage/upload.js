@@ -5,7 +5,7 @@
  * - Vượt qua 100% giới hạn 100MB của Cloudflare.
  * - Không gây quá tải RAM hay Timeout cho server.
  */
-export async function uploadDirectToDrive(file, folderId, { fileType, oldImageId, onProgress } = {}) {
+export async function uploadDirectToDrive(file, folderId, { fileType, oldImageId, onProgress, sessionId } = {}) {
     try {
         // 1. Tạo Resumable Session URL từ Server
         const sessionRes = await fetch('/api/drive-upload/session', {
@@ -13,6 +13,7 @@ export async function uploadDirectToDrive(file, folderId, { fileType, oldImageId
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 folderId,
+                sessionId,
                 fileName: file.name,
                 mimeType: file.type || (fileType === 'video' ? 'video/mp4' : 'image/jpeg'),
                 fileSize: file.size,
@@ -94,6 +95,7 @@ export async function uploadDirectToDrive(file, folderId, { fileType, oldImageId
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 folderId: targetFolderId,
+                sessionId,
                 fileId: uploadedFileId,
                 fileType: fileType || (file.type.startsWith('video') ? 'video' : 'image'),
                 size: file.size,

@@ -10,7 +10,7 @@ export async function PATCH(req, { params }) {
         const auth = await authenticate(req)
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { id } = params
+        const { id } = await params
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json({ error: 'ID không hợp lệ' }, { status: 400 })
         }
@@ -62,7 +62,7 @@ export async function DELETE(req, { params }) {
         const auth = await authenticate(req)
         if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { id } = params
+        const { id } = await params
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json({ error: 'ID không hợp lệ' }, { status: 400 })
         }

@@ -67,7 +67,7 @@ export async function POST(request) {
         });
 
         const uploadedId = response.data.id;
-        
+
         if (!uploadedId) {
             throw new Error("Không thể lấy ID file từ Google Drive sau khi tải lên.");
         }
@@ -82,7 +82,7 @@ export async function POST(request) {
                 { image: folderId },
                 { $push: { detailImage: newMediaObject } }
             );
-        } catch (e) {}
+        } catch (e) { }
 
         let updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
@@ -93,7 +93,7 @@ export async function POST(request) {
             await TrialCourse.updateOne(
                 { 'sessions.folderId': folderId },
                 { $push: { 'sessions.$.images': newMediaObject } }
-            ).catch(() => {});
+            ).catch(() => { });
         }
 
         // --- 4. Trả về thành công ---
@@ -215,19 +215,19 @@ export async function PUT(request) {
             { 'detailImage.id': oldImageId },
             { $set: { 'detailImage.$[elem].id': newImageId, 'detailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
-        ).catch(() => {});
+        ).catch(() => { });
 
         await PostCourse.updateOne(
             { 'Detail.DetailImage.id': oldImageId },
             { $set: { 'Detail.$.DetailImage.$[elem].id': newImageId, 'Detail.$.DetailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
-        ).catch(() => {});
+        ).catch(() => { });
 
         await TrialCourse.updateOne(
             { 'sessions.images.id': oldImageId },
             { $set: { 'sessions.$[ses].images.$[img].id': newImageId, 'sessions.$[ses].images.$[img].size': fileBuffer.length } },
             { arrayFilters: [{ 'ses.images.id': oldImageId }, { 'img.id': oldImageId }] }
-        ).catch(() => {});
+        ).catch(() => { });
 
         // --- 4. Xóa file cũ khỏi Google Drive ---
         try {
@@ -268,8 +268,8 @@ export async function DELETE(request) {
         await Promise.all([
             Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
             Attendance.updateMany({}, { $pull: { images: { id: id } } }),
-            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => {}),
-            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(() => {})
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => { }),
+            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(() => { })
         ]);
 
         try {

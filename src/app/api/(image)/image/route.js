@@ -78,7 +78,7 @@ export async function POST(request) {
                 { image: folderId },
                 { $push: { detailImage: newMediaObject } }
             );
-        } catch (e) {}
+        } catch (e) { }
 
         const updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
@@ -242,7 +242,7 @@ export async function PUT(request) {
                     { arrayFilters: [{ 'elem.id': oldImageId }] }
                 )
             ]);
-        } catch (e) {}
+        } catch (e) { }
 
         const updateOperations = [];
 
@@ -259,7 +259,7 @@ export async function PUT(request) {
                         }
                     },
                     { arrayFilters: [{ 'detailElem._id': affectedDetailObjectId }, { 'elem.id': oldImageId }] }
-                ).catch(() => {})
+                ).catch(() => { })
             );
         } else if (affectedCourseId) {
             updateOperations.push(
@@ -279,7 +279,7 @@ export async function PUT(request) {
                             { 'imageElem.id': oldImageId }
                         ]
                     }
-                ).catch(() => {})
+                ).catch(() => { })
             );
         }
 
@@ -328,7 +328,7 @@ export async function DELETE(request) {
         await Promise.all([
             Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
             Attendance.updateMany({}, { $pull: { images: { id: id } } }),
-            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => {})
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => { })
         ]);
 
         try {
