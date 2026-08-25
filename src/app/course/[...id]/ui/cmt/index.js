@@ -8,6 +8,7 @@ import Title from '@/components/(features)/(popup)/title';
 import Noti from '@/components/(features)/(noti)/noti';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
 import { useRouter } from 'next/navigation';
+import { reloadCourse } from '@/data/actions/reload';
 
 export default function CommentPopup({ data, course, lesson }) {
     const router = useRouter();
@@ -56,7 +57,7 @@ export default function CommentPopup({ data, course, lesson }) {
         setIsConverting(true);
         const combined = rawComments.join('. ');
         setCmt([2, { text: combined }]);
-        await Re_course_one(data.course);
+        if (course || data?.course) await reloadCourse(course || data.course);
         router.refresh();
         setIsConverting(false);
     };
@@ -92,7 +93,7 @@ export default function CommentPopup({ data, course, lesson }) {
             }
 
             setNoti({ open: true, mes: 'Cập nhật nhận xét thành công!', status: true });
-            await Re_course_one(data.course);
+            if (course || data?.course) await reloadCourse(course || data.course);
             router.refresh();
         } catch (error) {
             setNoti({ open: true, mes: error.message, status: false });

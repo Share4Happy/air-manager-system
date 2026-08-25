@@ -5,9 +5,7 @@ import TrialCourse from '@/models/coursetry'
 import PostStudent from '@/models/student'
 import mongoose from 'mongoose'
 import { revalidateTag } from 'next/cache'
-import { Re_coursetry } from '@/data/course'
 import { reloadCourse, reloadCoursetry } from '@/data/actions/reload'
-
 import { getMonthlyCalendar } from '@/data/database/calendar'
 
 export async function GET(req) {
@@ -30,113 +28,129 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const { courseId, sessionId, attendanceData } = await req.json()
-    if (!courseId || !sessionId || !Array.isArray(attendanceData))
-      return NextResponse.json({ status: 1, mes: 'Thiếu tham số' }, { status: 400 })
+    if (!sessionId || !Array.isArray(attendanceData))
+      return NextResponse.json({ status: 1, mes: 'Thiếu tham số bắt buộc (sessionId, attendanceData)' }, { status: 400 })
+
+    if (!mongoose.Types.ObjectId.isValid(sessionId))
+      return NextResponse.json({ status: 1, mes: 'sessionId không hợp lệ' }, { status: 400 })
 
     await connectDB()
-    let sessionDate;
-    const sessionIdObj = new mongoose.Types.ObjectId(sessionId);
+    const sessionIdObj = new mongoose.Types.ObjectId(sessionId)
+    const Session = (await import('@/models/session')).default
+    const Attendance = (await import('@/models/attendance')).default
 
-    // Trường hợp 1: Khóa học chính thức
-    const course = await PostCourse.findOne({ _id: courseId, 'Detail._id': sessionIdObj }).lean()
-    if (course) {
-      const lesson = course.Detail.find(d => d._id.equals(sessionIdObj));
-      if (lesson) sessionDate = lesson.Day;
+    // Tìm thông tin buổi học trong Session collection (LMS chuẩn)
+    const sessionDoc = await Session.findById(sessionIdObj).lean()
 
-      for (const a of attendanceData) {
-        const updateFields = {
-          'Student.$[stu].Learn.$[les].Checkin': Number(a.checkin),
-          'Student.$[stu].Learn.$[les].Cmt': a.comment || [],
-        };
-        if (a.absenceReason !== undefined) {
-          updateFields['Student.$[stu].Learn.$[les].absenceReason'] = a.absenceReason;
+    // Tìm khóa học chính thức (PostCourse)
+    let course = null
+    if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
+      course = await PostCourse.findById(courseId).lean()
+    }
+    if (!course && courseId && typeof courseId === 'string') {
+      course = await PostCourse.findOne({ ID: courseId.trim() }).lean()
+    }
+    if (!course && sessionDoc?.course) {
+      course = await PostCourse.findById(sessionDoc.course).lean()
+    }
+    if (!course && sessionDoc?.courseCode) {
+      course = await PostCourse.findOne({ ID: sessionDoc.courseCode }).lean()
+    }
+    if (!course) {
+      course = await PostCourse.findOne({ 'Detail._id': sessionIdObj }).lean()
+    }
+
+    // Tìm khóa học thử (TrialCourse) nếu không phải khóa chính thức
+    let trialCourse = null
+    if (!course) {
+      if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
+        trialCourse = await TrialCourse.findById(courseId).lean()
+      }
+      if (!trialCourse) {
+        trialCourse = await TrialCourse.findOne({ 'sessions._id': sessionIdObj }).lean()
+      }
+    }
+
+    // Cập nhật điểm danh và nhận xét
+    for (const a of attendanceData) {
+      if (!a || !a.studentId) continue
+
+      const checkinNum = (a.checkin !== undefined && a.checkin !== null && a.checkin !== '') ? Number(a.checkin) : undefined
+      const updateAtt = {
+        session: sessionIdObj,
+        course: course?._id || trialCourse?._id || sessionDoc?.course || (courseId && mongoose.Types.ObjectId.isValid(courseId) ? new mongoose.Types.ObjectId(courseId) : null),
+        courseCode: course?.ID || trialCourse?.name || sessionDoc?.courseCode || (typeof courseId === 'string' ? courseId : ''),
+        studentId: a.studentId
+      }
+
+      if (checkinNum !== undefined && !isNaN(checkinNum)) updateAtt.checkin = checkinNum
+      if (a.comment !== undefined) updateAtt.cmt = a.comment || []
+      if (a.cmtFn !== undefined) updateAtt.cmtFn = a.cmtFn || ''
+      if (a.absenceReason !== undefined) updateAtt.absenceReason = a.absenceReason || ''
+      if (a.note !== undefined) updateAtt.note = a.note || ''
+
+      // 1. Cập nhật vào Attendance collection (nguồn chuẩn)
+      await Attendance.updateOne(
+        { session: sessionIdObj, studentId: a.studentId },
+        { $set: updateAtt },
+        { upsert: true }
+      )
+
+      // 2. Đồng bộ vào PostCourse.Student nếu có
+      if (course) {
+        const updateCourseFields = {}
+        if (checkinNum !== undefined && !isNaN(checkinNum)) {
+          updateCourseFields['Student.$[stu].Learn.$[les].Checkin'] = checkinNum
         }
-        await PostCourse.updateOne(
-          { _id: course._id },
-          { $set: updateFields },
-          { arrayFilters: [{ 'stu.ID': a.studentId }, { 'les.Lesson': sessionIdObj }] }
-        )
+        if (a.comment !== undefined) {
+          updateCourseFields['Student.$[stu].Learn.$[les].Cmt'] = a.comment || []
+        }
+        if (a.absenceReason !== undefined) {
+          updateCourseFields['Student.$[stu].Learn.$[les].absenceReason'] = a.absenceReason
+        }
+        if (a.cmtFn !== undefined) {
+          updateCourseFields['Student.$[stu].Learn.$[les].CmtFn'] = a.cmtFn
+        }
 
-        // Dual-write to Attendance collection for LMS architecture
-        try {
-          const Attendance = (await import('@/models/attendance')).default;
-          await Attendance.updateOne(
-            { session: sessionIdObj, studentId: a.studentId },
-            {
-              $set: {
-                session: sessionIdObj,
-                course: course._id,
-                courseCode: course.ID,
-                studentId: a.studentId,
-                checkin: Number(a.checkin),
-                cmt: a.comment || [],
-                absenceReason: a.absenceReason || ''
-              }
-            },
-            { upsert: true }
-          );
-        } catch (e) {
-          console.error('[Checkin] Attendance sync error:', e.message);
+        if (Object.keys(updateCourseFields).length > 0) {
+          await PostCourse.updateOne(
+            { _id: course._id },
+            { $set: updateCourseFields },
+            { arrayFilters: [{ 'stu.ID': a.studentId }, { 'les.Lesson': sessionIdObj }] }
+          ).catch(() => {})
         }
       }
-    } else {
-      // Trường hợp 2: Khóa học thử
-      const trialCourse = await TrialCourse.findOne({ 'sessions._id': sessionIdObj }).lean()
-      if (!trialCourse) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học.' }, { status: 404 })
 
-      const lesson = trialCourse.sessions.find(s => s._id.equals(sessionIdObj));
-      if (lesson) sessionDate = lesson.day;
-
-      const studentHumanIds = attendanceData.map(a => a.studentId);
-      const studentsFound = await PostStudent.find({ ID: { $in: studentHumanIds } }, { _id: 1, ID: 1 }).lean();
-      const studentIdMap = new Map(studentsFound.map(s => [s.ID, s._id]));
-
-      for (const a of attendanceData) {
-        const student_id = studentIdMap.get(a.studentId);
-        if (!student_id) {
-          console.warn(`Không tìm thấy học sinh với ID: ${a.studentId}.`);
-          continue;
-        }
-
-        await TrialCourse.updateOne(
-          { _id: trialCourse._id },
-          {
-            $set: {
-              // Giữ nguyên logic mới: lưu checkin dưới dạng Boolean
-              'sessions.$[ses].students.$[stu].checkin': (a.checkin != 2 && a.checkin != 0),
-              'sessions.$[ses].students.$[stu].cmt': a.comment || []
-            }
-          },
-          { arrayFilters: [{ 'ses._id': sessionIdObj }, { 'stu.studentId': student_id }] }
-        )
-
-        // Dual-write to Attendance collection for LMS architecture
-        try {
-          const Attendance = (await import('@/models/attendance')).default;
-          await Attendance.updateOne(
-            { session: sessionIdObj, studentId: a.studentId },
-            {
-              $set: {
-                session: sessionIdObj,
-                course: trialCourse._id,
-                courseCode: trialCourse.name,
-                studentId: a.studentId,
-                checkin: (a.checkin != 2 && a.checkin != 0) ? 1 : 0,
-                cmt: a.comment || [],
-                absenceReason: ''
-              }
-            },
-            { upsert: true }
-          );
-        } catch (e) {
-          console.error('[Checkin Trial] Attendance sync error:', e.message);
+      // 3. Đồng bộ vào TrialCourse nếu là khóa học thử
+      if (trialCourse) {
+        const stuDoc = await PostStudent.findOne({ ID: a.studentId }, { _id: 1 }).lean()
+        if (stuDoc?._id) {
+          const updateTrial = {}
+          if (checkinNum !== undefined && !isNaN(checkinNum)) {
+            updateTrial['sessions.$[ses].students.$[stu].checkin'] = (checkinNum !== 2 && checkinNum !== 0)
+          }
+          if (a.comment !== undefined) {
+            updateTrial['sessions.$[ses].students.$[stu].cmt'] = a.comment || []
+          }
+          if (Object.keys(updateTrial).length > 0) {
+            await TrialCourse.updateOne(
+              { _id: trialCourse._id },
+              { $set: updateTrial },
+              { arrayFilters: [{ 'ses._id': sessionIdObj }, { 'stu.studentId': stuDoc._id }] }
+            ).catch(() => {})
+          }
         }
       }
     }
-    reloadCoursetry();
-    revalidateTag(`data_lesson${sessionId}`, 'max');
-    reloadCourse(courseId);
-    return NextResponse.json({ status: 2, mes: 'Cập nhật điểm danh thành công!' })
+
+    // Revalidate cache
+    revalidateTag(`data_lesson${sessionId}`, 'max')
+    revalidateTag('running-schedules', 'max')
+    if (course?._id) reloadCourse(course._id)
+    if (courseId && (!course || String(course._id) !== String(courseId))) reloadCourse(courseId)
+    reloadCoursetry()
+
+    return NextResponse.json({ status: 2, mes: 'Cập nhật điểm danh và nhận xét thành công!' })
   } catch (err) {
     console.error('Checkin update error:', err)
     return NextResponse.json({ status: 1, mes: err.message || 'internal error' }, { status: 500 })

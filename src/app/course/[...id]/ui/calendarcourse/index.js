@@ -15,22 +15,53 @@ import { course_data, user_data } from '@/data/actions/get';
 
 const toArr = v => Array.isArray(v) ? v : v == null ? [] : typeof v === 'object' ? Object.values(v) : [v];
 const Cell = React.memo(({ flex, align, header, children }) => (<div style={{ flex, justifyContent: align, fontWeight: header ? 600 : 400 }} className={`${'flex p-[8px_8px]'} text-sm font-normal text-[var(--text-primary)]`}>{children}</div>));
-const MoreIcons = React.memo(({ onEdit, onDelete, onMakeup }) => (
-    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
-        <WrapIcon icon={<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>} content="Sửa lịch học" placement="bottom" style={{ background: 'var(--yellow)' }} click={onEdit} />
-        <button
-            onClick={onDelete}
-            className="px-2.5 py-1.5 flex items-center gap-1.5 rounded text-white text-xs font-medium cursor-pointer border-none hover:opacity-90 transition-all"
-            style={{ background: '#dc2626' }}
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={12} height={12} fill="white">
-                <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
-            </svg>
-            <span>Báo nghỉ</span>
-        </button>
-        <WrapIcon icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={13} height={13} fill="#fff"><path d="M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 48L0 160l0-48C0 85.5 21.5 64 48 64l48 0 0-32c0-17.7 14.3-32 32-32zM0 192l448 0 0 272c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 192zm232 96c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 48-48 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l48 0 0 48c0 13.3 10.7 24 24 24s24-10.7 24-24l0-48 48 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-48 0 0-48z"/></svg>} content="Tạo buổi bù" placement="bottom" style={{ background: 'var(--green)' }} click={onMakeup} />
-    </div>
-));
+const MoreIcons = React.memo(({ lesson, onEdit, onDelete, onMakeup }) => {
+    const isCancelled = lesson?.Type === 'Báo nghỉ';
+    const isPast = useMemo(() => {
+        if (!lesson?.Day) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lDate = new Date(lesson.Day);
+        lDate.setHours(0, 0, 0, 0);
+        return lDate < today;
+    }, [lesson?.Day]);
+
+    return (
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+            <WrapIcon icon={<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>} content="Sửa lịch học" placement="bottom" style={{ background: 'var(--yellow)' }} click={onEdit} />
+            {isCancelled ? (
+                <span className="px-2 py-1 rounded text-red-700 bg-red-100 text-xs font-semibold select-none">
+                    Đã báo nghỉ
+                </span>
+            ) : isPast ? (
+                <WrapIcon
+                    icon={
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={12} height={12} fill="#94a3b8">
+                            <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+                        </svg>
+                    }
+                    content="Buổi học đã diễn ra (Không thể báo nghỉ)"
+                    placement="bottom"
+                    style={{ background: '#e2e8f0', cursor: 'not-allowed' }}
+                    click={onDelete}
+                />
+            ) : (
+                <button
+                    onClick={onDelete}
+                    className="px-2.5 py-1.5 flex items-center gap-1.5 rounded text-white text-xs font-medium cursor-pointer border-none hover:opacity-90 transition-all"
+                    style={{ background: '#dc2626' }}
+                    title="Báo nghỉ buổi học"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={12} height={12} fill="white">
+                        <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+                    </svg>
+                    <span>Báo nghỉ</span>
+                </button>
+            )}
+            <WrapIcon icon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={13} height={13} fill="#fff"><path d="M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 48L0 160l0-48C0 85.5 21.5 64 48 64l48 0 0-32c0-17.7 14.3-32 32-32zM0 192l448 0 0 272c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 192zm232 96c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 48-48 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l48 0 0 48c0 13.3 10.7 24 24 24s24-10.7 24-24l0-48 48 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-48 0 0-48z"/></svg>} content="Tạo buổi bù" placement="bottom" style={{ background: 'var(--green)' }} click={onMakeup} />
+        </div>
+    );
+});
 const ListMenu = React.memo(({ arr, loading, empty, onPick }) => {
     const body = useMemo(() => {
         if (loading) return <Loading content="đang tải..." />;
@@ -54,7 +85,7 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onMakeup }) => {
                             case 'Topic': return <Cell key={col.key} flex={col.flex} align={col.align}>{row.LessonDetails?.Name || 'N/A'}</Cell>;
                             case 'Teacher': return <Cell key={col.key} flex={col.flex} align={col.align}>{row.Teacher?.name || 'N/A'}</Cell>;
                             case 'Day': return <Cell key={col.key} flex={col.flex} align={col.align}>{formatDate(new Date(row.Day))}</Cell>;
-                            case 'more': return <Cell key={col.key} flex={col.flex} align={col.align}><MoreIcons onEdit={() => onEdit(row)} onDelete={() => onDelete(row)} onMakeup={() => onMakeup(row)} /></Cell>;
+                            case 'more': return <Cell key={col.key} flex={col.flex} align={col.align}><MoreIcons lesson={row} onEdit={() => onEdit(row)} onDelete={() => onDelete(row)} onMakeup={() => onMakeup(row)} /></Cell>;
                             case 'Type': {
                                 let statusText = 'Chưa diễn ra';
                                 let statusBg = '#64748b';
@@ -96,29 +127,147 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onMakeup }) => {
 });
 const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCancel, initialStudents = [], allTeachers, allRooms, topicMap }) => {
     const isEditMode = mode === 'edit';
-    const initialFormState = useMemo(() => ({
-        Day: isEditMode ? lesson.Day.split('T')[0] : '',
-        Start: isEditMode ? lesson.Time.split('-')[0] : '',
-        Topic: isEditMode ? lesson.LessonDetails?.Name : '',
-        Teacher: isEditMode ? lesson.Teacher?.name : '',
-        TeachingAs: isEditMode ? lesson.TeachingAs?.name : '',
-        Room: isEditMode ? lesson.Room : '',
-        Students: isEditMode ? toArr(course.Student).filter(s => s.Learn?.some(l => l.Lesson === lesson._id)).map(s => s.ID) : initialStudents,
-    }), [mode, lesson, course.Student, initialStudents]);
+
+    const lastLesson = useMemo(() => {
+        const list = toArr(course.Detail).filter(d => d.Type !== 'Báo nghỉ');
+        return list[list.length - 1] || toArr(course.Detail)[0] || null;
+    }, [course.Detail]);
+
+    // Danh sách GV và Trợ giảng của chính lớp học này
+    const courseTeachers = useMemo(() => {
+        const set = new Set();
+        if (course.TeacherHR?.name) set.add(course.TeacherHR.name);
+        toArr(course.Detail).forEach(d => {
+            if (d.Teacher?.name) set.add(d.Teacher.name);
+            else if (typeof d.Teacher === 'string' && d.Teacher) set.add(d.Teacher);
+        });
+        const list = Array.from(set);
+        return list.length > 0 ? list : allTeachers.map(t => t.name);
+    }, [course.TeacherHR, course.Detail, allTeachers]);
+
+    const courseAssistants = useMemo(() => {
+        const set = new Set();
+        toArr(course.Detail).forEach(d => {
+            if (d.TeachingAs?.name) set.add(d.TeachingAs.name);
+            else if (typeof d.TeachingAs === 'string' && d.TeachingAs) set.add(d.TeachingAs);
+        });
+        const list = Array.from(set);
+        return ['— Không chọn —', ...(list.length > 0 ? list : allTeachers.map(t => t.name))];
+    }, [course.Detail, allTeachers]);
+
+    // Ngày kết thúc (buổi cuối cùng) của khóa học
+    const maxCourseDate = useMemo(() => {
+        const dates = toArr(course.Detail).map(d => new Date(d.Day).getTime()).filter(t => !isNaN(t));
+        return dates.length > 0 ? Math.max(...dates) : null;
+    }, [course.Detail]);
+
+    // Tính ngày mặc định cho buổi học bù: Sau khi khóa học đã kết thúc (+ 7 ngày sau buổi cuối)
+    const defaultMakeupDate = useMemo(() => {
+        if (!maxCourseDate) return new Date().toISOString().split('T')[0];
+        const lastDate = new Date(maxCourseDate);
+        const nextDate = new Date(lastDate);
+        nextDate.setDate(nextDate.getDate() + 7);
+        return nextDate.toISOString().split('T')[0];
+    }, [maxCourseDate]);
+
+    // Thống kê số buổi vắng của từng học sinh trong khóa
+    const studentAbsenceMap = useMemo(() => {
+        const map = new Map();
+        toArr(course.Student).forEach(st => {
+            const absentCount = (st.Learn || []).filter(l => l.Checkin === 2 || l.Checkin === 3).length;
+            map.set(st.ID, absentCount);
+        });
+        return map;
+    }, [course.Student]);
+
+    const absentStudentIds = useMemo(() => {
+        return toArr(course.Student).filter(s => (studentAbsenceMap.get(s.ID) || 0) > 0).map(s => s.ID);
+    }, [course.Student, studentAbsenceMap]);
+
+    // Điền sẵn thông tin thông minh
+    const initialFormState = useMemo(() => {
+        const defaultDay = isEditMode
+            ? (lesson.Day ? lesson.Day.split('T')[0] : '')
+            : defaultMakeupDate;
+
+        const defaultStart = isEditMode
+            ? (lesson.Time ? lesson.Time.split('-')[0] : '')
+            : (lastLesson?.Time ? lastLesson.Time.split('-')[0] : '18:00');
+
+        const defaultTopic = isEditMode
+            ? (lesson.LessonDetails?.Name || '')
+            : (lesson?.LessonDetails?.Name || '');
+
+        const defaultTeacher = isEditMode
+            ? (lesson.Teacher?.name || '')
+            : (course.TeacherHR?.name || lastLesson?.Teacher?.name || courseTeachers[0] || '');
+
+        const defaultTeachingAs = isEditMode
+            ? (lesson.TeachingAs?.name || '')
+            : (lastLesson?.TeachingAs?.name || '');
+
+        const defaultRoom = isEditMode
+            ? (lesson.Room || '')
+            : (lastLesson?.Room || (allRooms[0] || ''));
+
+        let defaultStudents = [];
+        if (isEditMode) {
+            defaultStudents = toArr(course.Student).filter(s => s.Learn?.some(l => l.Lesson === lesson._id)).map(s => s.ID);
+        } else if (initialStudents.length > 0) {
+            defaultStudents = initialStudents;
+        } else if (absentStudentIds.length > 0) {
+            defaultStudents = absentStudentIds;
+        } else {
+            defaultStudents = toArr(course.Student).map(s => s.ID);
+        }
+
+        return {
+            Day: defaultDay,
+            Start: defaultStart,
+            Topic: defaultTopic,
+            Teacher: defaultTeacher,
+            TeachingAs: defaultTeachingAs,
+            Room: defaultRoom,
+            Students: defaultStudents,
+        };
+    }, [isEditMode, lesson, lastLesson, course.TeacherHR, course.Student, courseTeachers, allRooms, initialStudents, absentStudentIds, defaultMakeupDate]);
 
     const [form, setForm] = useState(initialFormState);
     const [open, setOpen] = useState({ topic: false, teacher: false, assist: false, room: false });
     const [saving, setSaving] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
     const isStudentListLocked = useMemo(() => mode === 'makeup' && initialStudents.length > 0, [mode, initialStudents]);
 
     const handleFormChange = useCallback((field, value) => setForm(f => ({ ...f, [field]: value })), []);
-    const toggleStu = useCallback(id => { setForm(f => ({ ...f, Students: f.Students.includes(id) ? f.Students.filter(x => x !== id) : [...f.Students, id] })); }, []);
+    const toggleStu = useCallback(id => {
+        setForm(f => ({
+            ...f,
+            Students: f.Students.includes(id) ? f.Students.filter(x => x !== id) : [...f.Students, id]
+        }));
+    }, []);
+
+    const handleSelectAllStudents = useCallback(() => {
+        setForm(f => ({ ...f, Students: toArr(course.Student).map(s => s.ID) }));
+    }, [course.Student]);
+
+    const handleDeselectAllStudents = useCallback(() => {
+        setForm(f => ({ ...f, Students: [] }));
+    }, []);
+
+    const handleSelectAbsentOnly = useCallback(() => {
+        setForm(f => ({ ...f, Students: absentStudentIds }));
+    }, [absentStudentIds]);
+
     const handleOpen = useCallback((menu, value) => setOpen(o => ({ ...o, [menu]: value })), []);
     const handlePick = useCallback((field, menuName, value) => { handleFormChange(field, value); handleOpen(menuName, false); }, [handleFormChange, handleOpen]);
 
     const save = useCallback(async () => {
         if (!isEditMode && (!form.Topic || !form.Day || !form.Start)) {
-            onDone(null, false, 'Vui lòng nhập đủ thông tin bắt buộc.');
+            onDone(null, false, 'Vui lòng nhập đủ thông tin bắt buộc (Chủ đề, Ngày, Giờ).');
+            return;
+        }
+        if (form.Students.length === 0) {
+            onDone(null, false, 'Vui lòng chọn ít nhất 1 học sinh tham gia buổi học bù.');
             return;
         }
         const teacherEntry = allTeachers.find(t => t.name === form.Teacher);
@@ -126,12 +275,13 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
         const topicEntry = topicMap.get(form.Topic);
 
         const [h, m] = form.Start.split(':').map(Number);
-        const totalMin = h * 60 + m + (topicEntry?.Period || lesson?.LessonDetails?.Period || 0) * 45;
+        const totalMin = (h || 0) * 60 + (m || 0) + (topicEntry?.Period || lesson?.LessonDetails?.Period || 0) * 45;
         const endH = String(Math.floor(totalMin / 60)).padStart(2, '0');
         const endM = String(totalMin % 60).padStart(2, '0');
 
         let payload = {
             courseId: course._id,
+            student: form.Students || [],
             data: { ...form, Teacher: teacherEntry?._id, TeachingAs: teachingAsEntry?._id, Time: `${form.Start}-${endH}:${endM}` }
         };
         if (isEditMode) {
@@ -153,38 +303,269 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
         }
     }, [form, allTeachers, topicMap, course._id, lesson, isEditMode, onDone]);
 
-    const availableTeachers = useMemo(() => allTeachers.filter(t => t.name !== form.TeachingAs).map(t => t.name), [allTeachers, form.TeachingAs]);
-    const availableAssistants = useMemo(() => ['— Không chọn —', ...allTeachers.filter(t => t.name !== form.Teacher).map(t => t.name)], [allTeachers, form.Teacher]);
+    const availableTeachers = useMemo(() => courseTeachers.filter(t => t !== form.TeachingAs), [courseTeachers, form.TeachingAs]);
+    const availableAssistants = useMemo(() => courseAssistants.filter(t => t !== form.Teacher), [courseAssistants, form.Teacher]);
     const allTopics = useMemo(() => Array.from(topicMap.keys()), [topicMap]);
     const studentIdToNameMap = useMemo(() => new Map(toArr(course.Student).map(s => [s.ID, s.Name])), [course.Student]);
+
+    // Lọc danh sách học sinh theo ô tìm kiếm
+    const filteredStudentList = useMemo(() => {
+        const list = toArr(course.Student);
+        if (!studentSearch) return list;
+        const q = studentSearch.toLowerCase();
+        return list.filter(s =>
+            (s.Name && s.Name.toLowerCase().includes(q)) ||
+            (s.ID && s.ID.toLowerCase().includes(q))
+        );
+    }, [course.Student, studentSearch]);
 
     return (
         <>
             {saving && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 2500 }}><Loading content={isEditMode ? "Đang cập nhật..." : "Đang lưu..."} /></div>}
-            <div className={'flex flex-col gap-3 p-4'}>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">Chủ đề buổi học</p>
-                {isEditMode ? <p className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: '10px 12px', background: 'var(--bg_color)', borderRadius: 4 }}>{form.Topic}</p> : <Menu menuItems={<ListMenu arr={allTopics} empty="Chưa có chủ đề" onPick={v => handlePick('Topic', 'topic', v)} />} menuPosition="bottom" isOpen={open.topic} onOpenChange={v => handleOpen('topic', v)} customButton={<button className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ textAlign: 'left' }}><p className="text-sm font-normal text-[var(--text-primary)]">{form.Topic || 'Chọn chủ đề'}</p></button>} />}
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <DateInput className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ flex: 1 }} value={form.Day} onChange={v => handleFormChange('Day', v)} />
-                    <input type="time" className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ flex: 1 }} value={form.Start} onChange={e => handleFormChange('Start', e.target.value)} />
+            <div className="flex flex-col gap-4 p-4 max-h-[80vh] overflow-y-auto">
+                {/* Chủ đề bài học */}
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-[var(--text-primary)]">
+                        Chủ đề bài học <span className="text-rose-500">*</span>
+                    </label>
+                    {isEditMode ? (
+                        <p className="text-xs md:text-sm font-medium text-[var(--text-primary)] p-2.5 bg-[var(--bg-secondary)] rounded border border-[var(--border-color)]">
+                            {form.Topic || 'Chưa chọn chủ đề'}
+                        </p>
+                    ) : (
+                        <Menu
+                            menuItems={<ListMenu arr={allTopics} empty="Chưa có chủ đề" onPick={v => handlePick('Topic', 'topic', v)} />}
+                            menuPosition="bottom"
+                            isOpen={open.topic}
+                            onOpenChange={v => handleOpen('topic', v)}
+                            customButton={
+                                <button type="button" className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded transition-all text-left flex items-center justify-between hover:border-gray-400">
+                                    <span className={form.Topic ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}>
+                                        {form.Topic || '-- Chọn chủ đề bài học --'}
+                                    </span>
+                                    <span className="text-xs text-[var(--text-secondary)]">▼</span>
+                                </button>
+                            }
+                        />
+                    )}
                 </div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]" style={{ marginTop: 8 }}>Giáo viên</p>
-                <Menu menuItems={<ListMenu arr={availableTeachers} empty="Chưa có GV" onPick={v => handlePick('Teacher', 'teacher', v)} />} menuPosition="bottom" isOpen={open.teacher} onOpenChange={v => handleOpen('teacher', v)} customButton={<button className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ textAlign: 'left' }}><p className="text-sm font-normal text-[var(--text-primary)]">{form.Teacher || 'Chọn GV'}</p></button>} />
-                <p className="text-sm font-semibold text-[var(--text-primary)]" style={{ marginTop: 8 }}>Trợ giảng</p>
-                <Menu menuItems={<ListMenu arr={availableAssistants} empty="" onPick={v => handlePick('TeachingAs', 'assist', v === '— Không chọn —' ? '' : v)} />} menuPosition="bottom" isOpen={open.assist} onOpenChange={v => handleOpen('assist', v)} customButton={<button className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ textAlign: 'left' }}><p className="text-sm font-normal text-[var(--text-primary)]">{form.TeachingAs || 'Không có'}</p></button>} />
-                <p className="text-sm font-semibold text-[var(--text-primary)]" style={{ marginTop: 8 }}>Phòng học</p>
-                <Menu menuItems={<ListMenu arr={allRooms} empty="Chưa có phòng" onPick={v => handlePick('Room', 'room', v)} />} menuPosition="bottom" isOpen={open.room} onOpenChange={v => handleOpen('room', v)} customButton={<button className={'flex-1 w-full p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer text-left'} style={{ textAlign: 'left' }}><p className="text-sm font-normal text-[var(--text-primary)]">{form.Room || 'Chọn phòng'}</p></button>} />
-                <p className="text-sm font-semibold text-[var(--text-primary)]" style={{ marginTop: 8 }}>{isStudentListLocked ? 'Học sinh tham gia (cố định)' : 'Chọn học sinh tham gia'}</p>
-                <div className={''}>
-                    {isStudentListLocked ? toArr(form.Students).map(id => (<div key={id} className="text-sm font-normal text-[var(--text-primary)]" style={{ padding: '10px 16px', borderRadius: 4, background: 'var(--green)', color: '#fff', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}><p style={{ fontSize: 14 }}>{id} – {studentIdToNameMap.get(id)}</p></div>)) : toArr(course.Student).map(s => {
-                        const selected = form.Students.includes(s.ID);
-                        return (<div key={s.ID} className="text-sm font-normal text-[var(--text-primary)]" onClick={() => toggleStu(s.ID)} style={{ padding: '10px 16px', borderRadius: 4, cursor: 'pointer', background: selected ? 'var(--green)' : 'var(--border-color)', color: selected ? '#fff' : 'var(--text-primary)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}><p style={{ fontSize: 14 }}>{s.ID} – {s.Name}</p><p style={{ fontSize: 14 }}>{selected ? 'Chọn' : 'Không chọn'}</p></div>);
-                    })}
+
+                {/* Ngày và Giờ học */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-[var(--text-primary)]">
+                            Ngày học bù <span className="text-rose-500">*</span>
+                        </label>
+                        <DateInput
+                            className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-left"
+                            placeholder="Chọn ngày học"
+                            value={form.Day}
+                            onChange={v => handleFormChange('Day', v)}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-[var(--text-primary)]">
+                            Giờ bắt đầu <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="time"
+                            className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-[var(--text-primary)] outline-none focus:border-gray-400"
+                            value={form.Start}
+                            onChange={e => handleFormChange('Start', e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Giáo viên & Trợ giảng (Lấy từ chính lớp học) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-[var(--text-primary)]">Giáo viên phụ trách</label>
+                        <Menu
+                            menuItems={<ListMenu arr={availableTeachers} empty="Chưa có GV" onPick={v => handlePick('Teacher', 'teacher', v)} />}
+                            menuPosition="bottom"
+                            isOpen={open.teacher}
+                            onOpenChange={v => handleOpen('teacher', v)}
+                            customButton={
+                                <button type="button" className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded transition-all text-left flex items-center justify-between hover:border-gray-400">
+                                    <span className={form.Teacher ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}>
+                                        {form.Teacher || '-- Chọn giáo viên lớp --'}
+                                    </span>
+                                    <span className="text-xs text-[var(--text-secondary)]">▼</span>
+                                </button>
+                            }
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-[var(--text-primary)]">Trợ giảng</label>
+                        <Menu
+                            menuItems={<ListMenu arr={availableAssistants} empty="" onPick={v => handlePick('TeachingAs', 'assist', v === '— Không chọn —' ? '' : v)} />}
+                            menuPosition="bottom"
+                            isOpen={open.assist}
+                            onOpenChange={v => handleOpen('assist', v)}
+                            customButton={
+                                <button type="button" className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded transition-all text-left flex items-center justify-between hover:border-gray-400">
+                                    <span className={form.TeachingAs ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}>
+                                        {form.TeachingAs || 'Không có trợ giảng'}
+                                    </span>
+                                    <span className="text-xs text-[var(--text-secondary)]">▼</span>
+                                </button>
+                            }
+                        />
+                    </div>
+                </div>
+
+                {/* Phòng học */}
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-[var(--text-primary)]">Phòng học</label>
+                    <Menu
+                        menuItems={<ListMenu arr={allRooms} empty="Chưa có phòng" onPick={v => handlePick('Room', 'room', v)} />}
+                        menuPosition="bottom"
+                        isOpen={open.room}
+                        onOpenChange={v => handleOpen('room', v)}
+                        customButton={
+                            <button type="button" className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded transition-all text-left flex items-center justify-between hover:border-gray-400">
+                                <span className={form.Room ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}>
+                                    {form.Room || '-- Chọn phòng học --'}
+                                </span>
+                                <span className="text-xs text-[var(--text-secondary)]">▼</span>
+                            </button>
+                        }
+                    />
+                </div>
+
+                {/* Học sinh tham gia */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-[var(--border-color)]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[var(--text-primary)]">
+                                {isStudentListLocked ? 'Học sinh tham gia (cố định)' : 'Chọn học sinh tham gia buổi bù'}
+                            </span>
+                            <span className="text-[11px] px-2 py-0.5 rounded bg-[var(--bg-secondary)] text-[var(--text-primary)] font-medium border border-[var(--border-color)]">
+                                Đã chọn {form.Students.length}/{toArr(course.Student).length}
+                            </span>
+                        </div>
+
+                        {/* Nút thao tác nhanh */}
+                        {!isStudentListLocked && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={handleSelectAllStudents}
+                                    className="text-[11px] px-2 py-0.5 rounded bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-color)] font-medium transition-colors"
+                                >
+                                    Chọn tất cả
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDeselectAllStudents}
+                                    className="text-[11px] px-2 py-0.5 rounded bg-[var(--bg-secondary)] hover:bg-rose-50 hover:text-rose-600 text-[var(--text-secondary)] border border-[var(--border-color)] font-medium transition-colors"
+                                >
+                                    Bỏ chọn
+                                </button>
+                                {absentStudentIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAbsentOnly}
+                                        className="text-[11px] px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium transition-colors"
+                                    >
+                                        Chỉ HS vắng ({absentStudentIds.length})
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Ô tìm kiếm học sinh */}
+                    {!isStudentListLocked && toArr(course.Student).length > 4 && (
+                        <div className="relative">
+                            <input
+                                className="w-full pl-3 pr-3 py-1.5 text-xs rounded border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-gray-400"
+                                placeholder="Tìm theo tên hoặc mã học sinh..."
+                                value={studentSearch}
+                                onChange={e => setStudentSearch(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Danh sách học sinh */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-56 overflow-y-auto p-0.5">
+                        {isStudentListLocked ? (
+                            toArr(form.Students).map(id => (
+                                <div
+                                    key={id}
+                                    className="p-2 rounded border border-[var(--border-color)] bg-[#e3f2fd] flex items-center justify-between"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-[#1565c0]">✓</span>
+                                        <div>
+                                            <p className="text-xs font-medium text-[var(--text-primary)]">{studentIdToNameMap.get(id)}</p>
+                                            <p className="text-[10px] text-[var(--text-secondary)] font-mono">{id}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : filteredStudentList.length === 0 ? (
+                            <p className="text-xs text-[var(--text-secondary)] py-4 text-center col-span-2">Không tìm thấy học sinh phù hợp</p>
+                        ) : (
+                            filteredStudentList.map(s => {
+                                const isSelected = form.Students.includes(s.ID);
+                                const absentCount = studentAbsenceMap.get(s.ID) || 0;
+
+                                return (
+                                    <div
+                                        key={s.ID}
+                                        onClick={() => toggleStu(s.ID)}
+                                        className={`p-2 rounded border border-[var(--border-color)] cursor-pointer transition-colors flex items-center justify-between select-none ${
+                                            isSelected
+                                                ? 'bg-[#e3f2fd]'
+                                                : 'bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)]'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center border text-[9px] ${
+                                                isSelected ? 'bg-[#1565c0] text-white border-[#1565c0]' : 'border-gray-300 bg-white'
+                                            }`}>
+                                                {isSelected ? '✓' : ''}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-medium text-[var(--text-primary)]">
+                                                    {s.Name}
+                                                </p>
+                                                <p className="text-[10px] text-[var(--text-secondary)] font-mono">
+                                                    {s.ID}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {absentCount > 0 && (
+                                            <span className="text-[10px] font-medium px-1.5 py-0.2 rounded border bg-rose-50 text-rose-700 border-rose-200">
+                                                Vắng {absentCount}b
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             </div>
-            <div className={'p-2 border-t border-[var(--border-color)] flex gap-2 justify-end'}>
-                <button className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ borderRadius: 5, background: 'var(--border-color)' }} onClick={onCancel}>Huỷ bỏ</button>
-                <button className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5" style={{ borderRadius: 5, background: 'var(--green)' }} onClick={save}>Lưu thông tin</button>
+
+            {/* Footer Buttons */}
+            <div className="p-3 border-t border-[var(--border-color)] flex gap-2 justify-end bg-[var(--bg-secondary)]/30">
+                <button
+                    type="button"
+                    className="px-4 py-2 text-xs md:text-sm font-medium rounded border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+                    onClick={onCancel}
+                >
+                    Hủy bỏ
+                </button>
+                <button
+                    type="button"
+                    className="px-5 py-2 text-xs md:text-sm font-medium rounded bg-[#1565c0] hover:bg-[#0d47a1] text-white shadow-xs transition-all flex items-center gap-1.5"
+                    onClick={save}
+                >
+                    <span>Lưu buổi học bù</span>
+                </button>
             </div>
         </>
     );
@@ -215,11 +596,11 @@ export default function Calendar({ course }) {
     const handleUpdateCourse = useCallback(async () => {
         setIsProcessing(true);
         await reloadCourse(course._id);
+        if (course.ID) await reloadCourse(course.ID);
         const freshData = await course_data(course._id);
         if (freshData) setCurCourse(freshData);
-        router.refresh();
-        setIsProcessing(false);
-    }, [course._id, router]);
+        window.location.reload();
+    }, [course._id, course.ID]);
     const handleApiResponse = useCallback(async (isSuccess, message) => {
         setToast({ open: true, status: isSuccess, mes: message });
         if (isSuccess) {
@@ -232,6 +613,26 @@ export default function Calendar({ course }) {
         if (type === 'edit' && data?.Type === 'Báo nghỉ') {
             setToast({ open: true, status: false, mes: 'Không thể chỉnh sửa buổi học đã báo nghỉ.' });
             return;
+        }
+        if (type === 'cancel' && data) {
+            if (data.Type === 'Báo nghỉ') {
+                setToast({ open: true, status: false, mes: 'Buổi học này đã được báo nghỉ trước đó.' });
+                return;
+            }
+            if (data.Day) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const lDate = new Date(data.Day);
+                lDate.setHours(0, 0, 0, 0);
+                if (lDate < today) {
+                    setToast({
+                        open: true,
+                        status: false,
+                        mes: `Không thể báo nghỉ: Buổi học này đã diễn ra vào ngày ${formatDate(new Date(data.Day))}.`
+                    });
+                    return;
+                }
+            }
         }
         setPopupState({ type, data });
     }, []);

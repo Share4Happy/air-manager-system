@@ -18,8 +18,12 @@ export async function reloadArea(_id) {
 }
 
 export async function reloadCourse(_id) {
-    if (_id) { revalidateTag(`course:${_id}`, 'max'); clearCacheByTag(`course:${_id}`) }
-    revalidateTag('courses', 'max'); clearCacheByTag('courses')
+    if (_id) {
+        revalidateTag(`course:${_id}`, 'max');
+        clearCacheByTag(`course:${_id}`);
+    }
+    revalidateTag('courses', 'max');
+    clearCacheByTag('courses');
 }
 
 export async function reloadBook(_id) {

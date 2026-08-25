@@ -101,6 +101,7 @@ export async function POST(request) {
                 _id: newLessonObjectId,
                 course: courseId,
                 courseCode: updatedCourse.ID,
+                courseName: updatedCourse.ID,
                 buoi: (updatedCourse.Detail || []).length || 1,
                 day: lessonDay,
                 time: data.Time,
@@ -111,18 +112,22 @@ export async function POST(request) {
                 image: imageURL,
                 detailImage: [],
                 type: type || 'Học bù',
-                status: 'ACTIVE',
+                status: true,
                 note: data.Note || ''
-            }).catch(() => {});
+            }).catch(err => console.error('[udetail] Session.create error:', err));
 
-            if (student.length > 0) {
+            const studentList = (student && Array.isArray(student) && student.length > 0)
+                ? student
+                : (data?.Students && Array.isArray(data.Students) ? data.Students : (data?.student && Array.isArray(data.student) ? data.student : []));
+
+            if (studentList.length > 0) {
                 await PostCourse.updateOne(
                     { _id: courseId },
-                    { $push: { "Student.$[studentElem].Learn": { Lesson: newLessonObjectId } } },
-                    { arrayFilters: [{ "studentElem.ID": { $in: student } }] }
-                ).catch(() => {});
+                    { $push: { "Student.$[studentElem].Learn": { Lesson: newLessonObjectId, Checkin: 0, makeupStatus: 'MAKEUP_SCHEDULED' } } },
+                    { arrayFilters: [{ "studentElem.ID": { $in: studentList } }] }
+                ).catch(err => console.error('[udetail] PostCourse Learn error:', err));
 
-                const attDocs = student.map(stId => ({
+                const attDocs = studentList.map(stId => ({
                     session: newLessonObjectId,
                     course: courseId,
                     courseCode: updatedCourse.ID,
@@ -133,12 +138,15 @@ export async function POST(request) {
                     note: '',
                     images: [],
                     absenceReason: '',
-                    makeupStatus: 'COMPLETED'
+                    makeupStatus: 'MAKEUP_SCHEDULED'
                 }));
-                await Attendance.insertMany(attDocs).catch(() => {});
+                await Attendance.insertMany(attDocs).catch(err => console.error('[udetail] Attendance.insertMany error:', err));
             }
 
-            reloadCourse(courseId);
+            await reloadCourse(courseId);
+            if (updatedCourse?.ID) {
+                await reloadCourse(updatedCourse.ID);
+            }
             return NextResponse.json({ status: 2, mes: 'Tạo buổi học bù thành công', data: updatedCourse }, { status: 201 });
         }
 
@@ -146,6 +154,20 @@ export async function POST(request) {
         if (type === 'Báo nghỉ') {
             if (!detailId || !isValidObjectId(detailId)) return NextResponse.json({ status: 1, mes: 'Thiếu hoặc sai định dạng detailId để báo nghỉ' }, { status: 400 });
             
+            // Kiểm tra nếu buổi học đã diễn ra trong quá khứ
+            const courseDoc = await PostCourse.findById(courseId).select('Detail ID');
+            if (!courseDoc) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học' }, { status: 404 });
+            const targetLesson = courseDoc.Detail?.id ? courseDoc.Detail.id(detailId) : courseDoc.Detail?.find(d => d._id?.toString() === detailId.toString());
+            if (targetLesson && targetLesson.Day) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const lessonDay = new Date(targetLesson.Day);
+                lessonDay.setHours(0, 0, 0, 0);
+                if (lessonDay < today) {
+                    return NextResponse.json({ status: 1, mes: 'Không thể báo nghỉ: Buổi học này đã diễn ra trong quá khứ.' }, { status: 400 });
+                }
+            }
+
             const Session = (await import('@/models/session')).default;
             await Session.findByIdAndUpdate(detailId, {
                 $set: { type: type, note: data.Note || '' }

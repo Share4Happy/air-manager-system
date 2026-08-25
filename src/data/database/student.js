@@ -29,10 +29,14 @@ async function dataStudent(_id) {
         await connectDB()
         if (_id && !mongoose.Types.ObjectId.isValid(_id)) return null
         const query = _id ? { _id } : {}
-        let studentQuery = Student.find(query).populate({ path: 'Area' })
-        if (_id) {
-            studentQuery.populate({ path: 'Course.course', model: 'course', populate: { path: 'Book', model: 'book', select: 'ID Name Price Topics Image' } })
-        }
+        let studentQuery = Student.find(query)
+            .populate({ path: 'Area' })
+            .populate({
+                path: 'Course.course',
+                model: 'course',
+                select: 'ID Name Status Book TeacherHR',
+                populate: { path: 'Book', model: 'book', select: 'ID Name Price Topics Image' }
+            })
         const students = await studentQuery.lean()
         if (_id && students.length === 0) return null
         const Session = (await import('@/models/session')).default;

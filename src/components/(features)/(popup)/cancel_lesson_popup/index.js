@@ -31,7 +31,24 @@ export default function CancelLessonPopup({
     const teacherName = lessonData?.Teacher?.name || courseData?.TeacherHR?.name || 'Chưa phân công';
     const isAlreadyCancelled = lessonData?.Type === 'Báo nghỉ';
 
+    const isPastLesson = React.useMemo(() => {
+        if (!lessonData?.Day) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lDate = new Date(lessonData.Day);
+        lDate.setHours(0, 0, 0, 0);
+        return lDate < today;
+    }, [lessonData?.Day]);
+
     const handleConfirm = async () => {
+        if (isPastLesson) {
+            if (showNoti) showNoti(false, 'Không thể báo nghỉ vì buổi học này đã diễn ra trong quá khứ.');
+            return;
+        }
+        if (isAlreadyCancelled) {
+            if (showNoti) showNoti(false, 'Buổi học này đã được báo nghỉ trước đó.');
+            return;
+        }
         if (!reason.trim()) {
             if (showNoti) showNoti(false, 'Vui lòng nhập hoặc chọn lý do báo nghỉ.');
             return;
@@ -78,6 +95,21 @@ export default function CancelLessonPopup({
             size="md"
         >
             <div className="p-5 flex flex-col gap-4">
+                {/* Cảnh báo nếu buổi học đã diễn ra */}
+                {isPastLesson && (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2.5 text-amber-800 text-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="currentColor" className="shrink-0 mt-0.5 text-amber-600">
+                            <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.4-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+                        </svg>
+                        <div>
+                            <p className="font-bold text-amber-900 text-xs">Không thể báo nghỉ buổi học đã diễn ra!</p>
+                            <p className="mt-0.5 text-amber-700 leading-relaxed text-[11px]">
+                                Buổi học này đã diễn ra vào ngày <strong>{lessonDate}</strong>. Hệ thống chỉ cho phép báo nghỉ đối với các buổi học chưa diễn ra hoặc diễn ra hôm nay.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Thông tin buổi học */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm flex flex-col gap-1.5">
                     <div className="flex justify-between items-center">
@@ -104,9 +136,11 @@ export default function CancelLessonPopup({
                     <label className="text-sm font-semibold text-gray-700">Loại báo nghỉ:</label>
                     <div className="grid grid-cols-2 gap-3">
                         <label
-                            onClick={() => setCancelType('class')}
-                            className={`flex flex-col p-3 rounded-lg border cursor-pointer transition-all ${
-                                cancelType === 'class'
+                            onClick={() => !isPastLesson && setCancelType('class')}
+                            className={`flex flex-col p-3 rounded-lg border transition-all ${
+                                isPastLesson ? 'opacity-60 cursor-not-allowed border-gray-200 bg-gray-50' : 'cursor-pointer'
+                            } ${
+                                cancelType === 'class' && !isPastLesson
                                     ? 'border-red-500 bg-red-50/60 shadow-sm'
                                     : 'border-gray-200 bg-white hover:bg-gray-50'
                             }`}
@@ -115,6 +149,7 @@ export default function CancelLessonPopup({
                                 <input
                                     type="radio"
                                     name="cancelType"
+                                    disabled={isPastLesson}
                                     checked={cancelType === 'class'}
                                     onChange={() => setCancelType('class')}
                                     className="accent-red-600"
@@ -127,9 +162,11 @@ export default function CancelLessonPopup({
                         </label>
 
                         <label
-                            onClick={() => setCancelType('teacher')}
-                            className={`flex flex-col p-3 rounded-lg border cursor-pointer transition-all ${
-                                cancelType === 'teacher'
+                            onClick={() => !isPastLesson && setCancelType('teacher')}
+                            className={`flex flex-col p-3 rounded-lg border transition-all ${
+                                isPastLesson ? 'opacity-60 cursor-not-allowed border-gray-200 bg-gray-50' : 'cursor-pointer'
+                            } ${
+                                cancelType === 'teacher' && !isPastLesson
                                     ? 'border-amber-500 bg-amber-50/60 shadow-sm'
                                     : 'border-gray-200 bg-white hover:bg-gray-50'
                             }`}
@@ -138,6 +175,7 @@ export default function CancelLessonPopup({
                                 <input
                                     type="radio"
                                     name="cancelType"
+                                    disabled={isPastLesson}
                                     checked={cancelType === 'teacher'}
                                     onChange={() => setCancelType('teacher')}
                                     className="accent-amber-600"
@@ -159,9 +197,14 @@ export default function CancelLessonPopup({
                             <button
                                 key={i}
                                 type="button"
+                                disabled={isPastLesson}
                                 onClick={() => setReason(r)}
-                                className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
-                                    reason === r
+                                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                                    isPastLesson
+                                        ? 'opacity-60 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500'
+                                        : 'cursor-pointer'
+                                } ${
+                                    reason === r && !isPastLesson
                                         ? 'bg-red-600 text-white border-red-600'
                                         : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -179,7 +222,10 @@ export default function CancelLessonPopup({
                     </label>
                     <textarea
                         rows="3"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-gray-700 transition-colors focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none"
+                        disabled={isPastLesson}
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-gray-700 transition-colors focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none ${
+                            isPastLesson ? 'bg-gray-100 opacity-60 cursor-not-allowed' : ''
+                        }`}
                         placeholder="Nhập chi tiết lý do báo nghỉ..."
                         value={reason}
                         onChange={e => setReason(e.target.value)}
@@ -194,16 +240,18 @@ export default function CancelLessonPopup({
                         disabled={submitting}
                         className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium border-none cursor-pointer transition-colors"
                     >
-                        Hủy
+                        {isPastLesson ? 'Đóng' : 'Hủy'}
                     </button>
                     <button
                         type="button"
                         onClick={handleConfirm}
-                        disabled={submitting || !reason.trim()}
-                        className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium border-none cursor-pointer transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        disabled={isPastLesson || isAlreadyCancelled || submitting || !reason.trim()}
+                        className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium border-none cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                     >
                         {submitting ? (
                             <span>Đang xử lý...</span>
+                        ) : isPastLesson ? (
+                            <span>Không thể báo nghỉ (Đã diễn ra)</span>
                         ) : (
                             <>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="14" height="14" fill="white">

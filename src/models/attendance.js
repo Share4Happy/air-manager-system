@@ -12,7 +12,7 @@ const AttendanceSchema = new Schema({
     course: { type: Schema.Types.ObjectId, ref: 'course' },
     courseCode: { type: String },
     studentId: { type: String, required: true }, // Mã định danh học sinh (ID hoặc _id)
-    checkin: { type: Number, default: 0, enum: [0, 1, 2] }, // 0: Vắng, 1: Có mặt, 2: Vắng có phép
+    checkin: { type: Number, default: 0 }, // 0: Chưa điểm danh, 1: Có mặt, 2: Vắng, 3: Có phép
     cmt: { type: Array, default: [] },
     cmtFn: { type: String, default: '' },
     note: { type: String, default: '' },

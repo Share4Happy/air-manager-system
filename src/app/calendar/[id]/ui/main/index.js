@@ -93,6 +93,8 @@ export default function Main({ data }) {
             const res = await updateAttendance(course._id, session._id, [{ studentId: selStu.ID, checkin: checkinVal, comment: arr }]);
             if (res.status === 2) {
                 setNotiOK(true); setNotiMsg('Lưu nhận xét thành công!');
+                await Re_lesson(session._id);
+                router.refresh();
             } else {
                 setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
                 setNotiOK(false); setNotiMsg(res.mes || 'Lưu nhận xét thất bại!');
