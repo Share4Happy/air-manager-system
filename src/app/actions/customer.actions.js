@@ -27,22 +27,58 @@ export async function getCombinedData(params) {
                 modelToUse = Student;
                 const filterConditions = [];
                 if (query) {
-                    filterConditions.push({ $or: [{ Name: { $regex: query, $options: 'i' } }, { Phone: { $regex: query, $options: 'i' } }, { NameParent: { $regex: query, $options: 'i' } }] });
+                    filterConditions.push({
+                        $or: [
+                            { Name: { $regex: query, $options: 'i' } },
+                            { Phone: { $regex: query, $options: 'i' } },
+                            { Phones: { $regex: query, $options: 'i' } },
+                            { ParentName: { $regex: query, $options: 'i' } }
+                        ]
+                    });
                 }
                 if (currentParams.uidStatus === 'true') {
-                    filterConditions.push({ uid: { $exists: true, $ne: null, $ne: '', $ne: 'Không có UID' } });
+                    filterConditions.push({ Uid: { $exists: true, $ne: null, $ne: '', $ne: 'Không có UID' } });
                 } else if (currentParams.uidStatus === 'not_searched') {
-                    filterConditions.push({ $or: [{ uid: { $exists: false } }, { uid: [] }] });
+                    filterConditions.push({ $or: [{ Uid: { $exists: false } }, { Uid: null }, { Uid: '' }] });
                 } else if (currentParams.uidStatus === 'not_found') {
-                    filterConditions.push({ uid: 'Không có UID' });
+                    filterConditions.push({ Uid: 'Không có UID' });
                 }
                 const matchStage = filterConditions.length > 0 ? { $match: { $and: filterConditions } } : { $match: {} };
                 pipeline = [
                     matchStage,
+                    { $lookup: { from: 'areas', localField: 'Area', foreignField: '_id', as: 'areaInfo' } },
+                    { $unwind: { path: '$areaInfo', preserveNullAndEmptyArrays: true } },
                     { $lookup: { from: 'forms', localField: 'Source', foreignField: '_id', as: 'sourceInfo' } },
                     { $unwind: { path: '$sourceInfo', preserveNullAndEmptyArrays: true } },
-                    { $project: { _id: 1, name: "$Name", bd: "$bd", email: "$Email", phone: "$Phone", nameparent: "$NameParent", area: "$Area", uid: "$uid", createAt: "$createAt", type: { $literal: true }, source: "$sourceInfo.name", status: { $literal: null }, care: { $literal: [] }, roles: { $literal: [] } } }
                 ];
+                if (currentParams.area) {
+                    pipeline.push({
+                        $match: {
+                            $or: [
+                                { 'areaInfo.name': currentParams.area },
+                                ...(mongoose.Types.ObjectId.isValid(currentParams.area) ? [{ Area: new mongoose.Types.ObjectId(currentParams.area) }] : [])
+                            ]
+                        }
+                    });
+                }
+                pipeline.push({
+                    $project: {
+                        _id: 1,
+                        name: "$Name",
+                        bd: "$BD",
+                        email: "$Email",
+                        phone: "$Phone",
+                        nameparent: "$ParentName",
+                        area: { $ifNull: ["$areaInfo.name", "Khác"] },
+                        uid: "$Uid",
+                        createAt: "$_id",
+                        type: { $literal: true },
+                        source: { $ifNull: ["$sourceInfo.name", ""] },
+                        status: { $literal: null },
+                        care: { $literal: [] },
+                        roles: { $literal: [] }
+                    }
+                });
             } else {
                 shouldPopulate = true;
                 modelToUse = Customer;

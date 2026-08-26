@@ -1,5 +1,6 @@
 'use server';
 import connectDB from '@/config/connectDB';
+import mongoose from 'mongoose';
 import Course from '@/models/course';
 import Student from '@/models/student';
 import User from '@/models/users';
@@ -135,9 +136,24 @@ async function buildCareRecipients({ course, lesson, courseId, detailId }) {
         teacherName = t?.name || '';
     }
 
+    const Attendance = (await import('@/models/attendance')).default;
+    const atts = await Attendance.find({
+        $or: [
+            { session: detailId },
+            ...(mongoose.isValidObjectId(detailId) ? [{ session: new mongoose.Types.ObjectId(detailId) }] : []),
+            { course: courseId }
+        ]
+    }).lean();
+    const attMap = new Map();
+    atts.forEach(a => {
+        if (String(a.session) === String(detailId) && a.studentId) {
+            attMap.set(String(a.studentId), a);
+        }
+    });
+
     const learnByID = new Map();
     (course.Student || []).forEach(s => {
-        const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === detailId);
+        const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === String(detailId));
         if (learn) learnByID.set(String(s.ID), learn);
     });
 
@@ -151,16 +167,19 @@ async function buildCareRecipients({ course, lesson, courseId, detailId }) {
         .filter(s => s.Phone)
         .map(s => {
             const learn = learnByID.get(String(s.ID));
-            const img = (learn?.Image || [])[0];
+            const att = attMap.get(String(s.ID));
+            const checkinVal = att ? (att.checkin || 0) : (learn?.Checkin || 0);
+            const cmtVal = att?.cmtFn || learn?.CmtFn || '';
+            const img = (att?.images && att.images[0]) || (learn?.Image || [])[0];
             const vars = {
                 HoTen: s.Name || '',
                 TenPH: s.ParentName || '',
                 Lop: courseName,
                 Ngay: lessonDay,
                 GiaoVien: teacherName,
-                DiemDanh: checkinText(learn?.Checkin || 0),
+                DiemDanh: checkinText(checkinVal),
                 HinhAnh: img?.id ? srcImage(img.id) : '',
-                NhanXetGV: learn?.CmtFn || '',
+                NhanXetGV: cmtVal,
                 LinkEportfolio: `${getEportfolioUrl()}/e-portfolio/${s._id}`,
             };
             return { name: s.ParentName || s.Name, phone: s.Phone, _id: s._id, ID: s.ID, vars };
@@ -186,7 +205,21 @@ export async function sendCancelNotificationAction(formData) {
         if (!zalo || !zalo.botId) return { status: false, message: 'Tài khoản Zalo chưa có botId (ZaloLite).' };
 
         const course = await Course.findById(courseId).select('ID Name Detail Student').lean();
-        const lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId));
+        let lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId));
+        if (!lesson) {
+            const Session = (await import('@/models/session')).default;
+            const sess = await Session.findById(detailId).lean();
+            if (sess) {
+                lesson = {
+                    _id: sess._id,
+                    Day: sess.day,
+                    Note: sess.note,
+                    Teacher: sess.teacher,
+                    Room: sess.room,
+                    Time: sess.time,
+                };
+            }
+        }
         if (!course || !lesson) return { status: false, message: 'Không tìm thấy buổi học.' };
 
         let recipients = await buildCareRecipients({ course, lesson, courseId, detailId });
@@ -260,6 +293,80 @@ export async function sendCancelNotificationAction(formData) {
     } catch (err) {
         console.error('Send Cancel Notification Error:', err);
         return { status: false, message: err.message || 'Lỗi hệ thống, không thể gửi.' };
+    }
+}
+
+export async function sendTestCareNotificationAction(formData) {
+    const auth = await requireAdminSale();
+    if (!auth.ok) return { status: false, message: auth.message };
+    const courseId = (formData.get('courseId') || '').toString();
+    const detailId = (formData.get('detailId') || '').toString();
+    const message = (formData.get('message') || '').toString().trim();
+    const testPhone = (formData.get('testPhone') || '').toString().trim();
+
+    if (!testPhone) return { status: false, message: 'Vui lòng nhập số điện thoại nhận tin thử nghiệm.' };
+    if (!courseId || !detailId) return { status: false, message: 'Thiếu thông tin buổi học.' };
+    if (!message) return { status: false, message: 'Vui lòng nhập nội dung tin nhắn.' };
+
+    try {
+        await connectDB();
+        const dbUser = (await user_data({ _id: auth.user.id }))[0] || {};
+        const zaloId = dbUser?.zalo?._id;
+        if (!zaloId) return { status: false, message: 'Chưa chọn tài khoản Zalo hoạt động.' };
+        const zalo = await ZaloAccount.findById(zaloId).lean();
+        if (!zalo || !zalo.botId) return { status: false, message: 'Tài khoản Zalo chưa có botId (ZaloLite).' };
+
+        const course = await Course.findById(courseId).select('ID Name Detail Student').lean();
+        let lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId));
+        if (!lesson) {
+            const Session = (await import('@/models/session')).default;
+            const sess = await Session.findById(detailId).lean();
+            if (sess) {
+                lesson = {
+                    _id: sess._id,
+                    Day: sess.day,
+                    Note: sess.note,
+                    Teacher: sess.teacher,
+                    Room: sess.room,
+                    Time: sess.time,
+                };
+            }
+        }
+        if (!course || !lesson) return { status: false, message: 'Không tìm thấy buổi học.' };
+
+        const recipients = await buildCareRecipients({ course, lesson, courseId, detailId });
+        if (recipients.length === 0) {
+            return { status: false, message: 'Lớp học không có dữ liệu học sinh để lấy thông tin gửi thử.' };
+        }
+
+        const firstStudent = recipients[0];
+        const text = renderCareTemplate(message, firstStudent.vars);
+
+        const resp = await sendByPhone(zalo.botId, { phone: testPhone, text, mode: 'safe' });
+        let ok = false;
+        let errMsg = '';
+        if (resp.async) {
+            ok = true;
+        } else if (Array.isArray(resp.data?.results)) {
+            const rr = resp.data.results[0] || {};
+            ok = rr.status === 'success';
+            errMsg = rr.error_message || rr.message || '';
+        } else {
+            ok = resp.data?.success !== false;
+            errMsg = resp.data?.message || '';
+        }
+
+        if (!ok) {
+            return { status: false, message: `Gửi tin thử nghiệm thất bại: ${errMsg || 'Lỗi từ dịch vụ Zalo'}` };
+        }
+
+        return {
+            status: true,
+            message: `Đã gửi tin thử nghiệm thành công tới ${testPhone} (mẫu dữ liệu học sinh: ${firstStudent.vars.HoTen || firstStudent.name}).`
+        };
+    } catch (err) {
+        console.error('[sendTestCare] error:', err?.message);
+        return { status: false, message: err?.message || 'Lỗi gửi tin thử nghiệm.' };
     }
 }
 

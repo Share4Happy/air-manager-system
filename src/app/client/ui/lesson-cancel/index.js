@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import Noti from '@/components/(features)/(noti)/noti';
-import { sendCancelNotificationAction } from '@/app/actions/lessonCancel.actions';
+import { sendCancelNotificationAction, sendTestCareNotificationAction } from '@/app/actions/lessonCancel.actions';
 import { saveCareTemplateAction, deleteCareTemplateAction } from '@/app/actions/careTemplate.actions';
 import SettingZalo from '@/app/client/ui/zalo';
 import { srcImage } from '@/function/index';
@@ -123,6 +123,9 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
     const [sendSelectedIds, setSendSelectedIds] = useState([]);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
+    const [testPhone, setTestPhone] = useState('');
+    const [testOpen, setTestOpen] = useState(false);
+    const [sendingTest, setSendingTest] = useState(false);
 
     const [templates, setTemplates] = useState([]);
     const [templateListOpen, setTemplateListOpen] = useState(false);
@@ -204,11 +207,43 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
         setSendTarget(item);
         setSendSelectedIds((item.students || []).filter(s => s.Phone).map(s => s.ID));
         setMessage('Kính gửi quý phụ huynh,\nBuổi học hôm nay được thông báo nghỉ. Xin cảm ơn!');
+        setTestOpen(false);
+        setTestPhone('');
     };
 
     const applyTemplate = (id) => {
         const t = templates.find(x => x._id === id);
         if (t) setMessage(t.content);
+    };
+
+    const handleSendTest = async () => {
+        if (!testPhone.trim()) {
+            showNoti(false, 'Vui lòng nhập số điện thoại nhận tin thử nghiệm.');
+            return;
+        }
+        if (!message.trim()) {
+            showNoti(false, 'Vui lòng nhập nội dung tin nhắn.');
+            return;
+        }
+        if (!selectedZalo) {
+            showNoti(false, 'Chưa chọn tài khoản Zalo hoạt động. Vào tab Chăm sóc để chọn tài khoản Zalo.');
+            return;
+        }
+        setSendingTest(true);
+        try {
+            const fd = new FormData();
+            fd.append('courseId', sendTarget.courseId);
+            fd.append('detailId', sendTarget.detailId);
+            fd.append('message', message);
+            fd.append('testPhone', testPhone.trim());
+            const res = await sendTestCareNotificationAction(fd);
+            showNoti(res.status, res.message);
+        } catch (err) {
+            console.error(err);
+            showNoti(false, err.message || 'Lỗi gửi tin thử nghiệm.');
+        } finally {
+            setSendingTest(false);
+        }
     };
 
     const handleSend = async () => {
@@ -669,11 +704,51 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                         <p className="text-xs text-[var(--text-secondary)]">
                             Sẽ gửi cho {sendSelectedIds.filter(id => withPhone.some(s => s.ID === id)).length} học sinh được chọn, cách nhau 3–5 phút (giới hạn theo cài đặt gửi tin chung). Nếu đạt giới hạn tin/giờ, số còn lại sẽ vào hàng chờ và gửi tiếp vào giờ sau. Các biến như {'{HoTen}'}, {'{DiemDanh}'}, {'{HinhAnh}'} sẽ được thay bằng dữ liệu riêng của từng học sinh.
                         </p>
-                        <div className="flex justify-end pt-3 border-t border-[var(--border-color)]">
-                            <button onClick={handleSend} disabled={sending || sendSelectedIds.length === 0}
-                                className="px-4 py-2 rounded bg-blue-600 text-white text-sm font-medium cursor-pointer border-none hover:bg-blue-700 disabled:opacity-50">
-                                {sending ? 'Đang gửi...' : `Gửi thông báo (${sendSelectedIds.length})`}
-                            </button>
+                        <div className="flex flex-col gap-2 pt-3 border-t border-[var(--border-color)]">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => setTestOpen(prev => !prev)}
+                                    className="px-3 py-1.5 rounded border border-gray-300 bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer hover:bg-gray-100 transition-colors"
+                                >
+                                    {testOpen ? '▲ Đóng gửi test' : '🧪 Gửi test (thử nghiệm)'}
+                                </button>
+                                <button onClick={handleSend} disabled={sending || sendSelectedIds.length === 0}
+                                    className="px-4 py-2 rounded bg-blue-600 text-white text-sm font-medium cursor-pointer border-none hover:bg-blue-700 disabled:opacity-50">
+                                    {sending ? 'Đang gửi...' : `Gửi thông báo (${sendSelectedIds.length})`}
+                                </button>
+                            </div>
+                            {testOpen && (
+                                <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-amber-50/80 border border-amber-200 mt-1">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <span className="text-xs font-semibold text-amber-800">
+                                            Gửi tin thử nghiệm tới số điện thoại:
+                                        </span>
+                                        {withPhone[0] && (
+                                            <span className="text-[11px] text-amber-700">
+                                                (Lấy mẫu dữ liệu của: <b>{withPhone[0].Name}</b>)
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="tel"
+                                            placeholder="Nhập số điện thoại nhận tin thử (VD: 0912345678)..."
+                                            className="flex-1 px-3 py-1.5 border border-amber-300 rounded bg-white text-xs text-gray-800 outline-none focus:border-amber-500"
+                                            value={testPhone}
+                                            onChange={e => setTestPhone(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleSendTest}
+                                            disabled={sendingTest || !testPhone.trim()}
+                                            className="px-3.5 py-1.5 rounded bg-amber-600 text-white text-xs font-medium cursor-pointer border-none hover:bg-amber-700 disabled:opacity-50 whitespace-nowrap"
+                                        >
+                                            {sendingTest ? 'Đang gửi test...' : 'Gửi test ngay'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                     );

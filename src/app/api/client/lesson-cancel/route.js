@@ -20,24 +20,39 @@ async function requireAdminSale() {
     return { ok: true, auth }
 }
 
-function buildLessonData(course, detail) {
-    const detailId = String(detail._id)
+function buildLessonData(course, detailId, attendances = []) {
+    const dId = String(detailId)
     const byId = {}
     let enrolled = 0
     let rollCallChecked = 0
     let withImage = 0
     let withComment = 0
-    ;(course.Student || []).forEach(s => {
-        const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === detailId)
-        if (!learn) return
+
+    const attMap = new Map()
+    ;(attendances || []).forEach(att => {
+        if (att.studentId) attMap.set(String(att.studentId), att)
+    })
+
+    ;(course?.Student || []).forEach(s => {
+        const studentId = String(s.ID)
+        const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === dId)
+        const att = attMap.get(studentId)
+
         enrolled++
-        if (learn.Checkin >= 1) rollCallChecked++
-        if (learn.Image && learn.Image.length) withImage++
-        if (learn.CmtFn && String(learn.CmtFn).trim()) withComment++
-        byId[String(s.ID)] = {
-            checkin: learn.Checkin || 0,
-            cmtfn: learn.CmtFn || '',
-            images: (learn.Image || []).map(img => ({ id: img.id, type: img.type || '' })),
+        const checkin = att ? (att.checkin || 0) : (learn?.Checkin || 0)
+        const cmtfn = att?.cmtFn || learn?.CmtFn || ''
+        const images = (att?.images && att.images.length)
+            ? att.images.map(img => ({ id: img.id || img, type: img.type || '' }))
+            : ((learn?.Image || []).map(img => ({ id: img.id, type: img.type || '' })))
+
+        if (checkin >= 1) rollCallChecked++
+        if (images.length > 0) withImage++
+        if (cmtfn && String(cmtfn).trim()) withComment++
+
+        byId[studentId] = {
+            checkin,
+            cmtfn,
+            images,
         }
     })
     return { enrolled, rollCallChecked, withImage, withComment, byId }
@@ -123,16 +138,33 @@ export async function GET(request) {
         }
 
         const Session = (await import('@/models/session')).default;
+        const Attendance = (await import('@/models/attendance')).default;
         const sessions = await Session.find({
             $or: [
                 { type: 'Báo nghỉ' },
                 { day: { $gte: todayStart, $lt: todayEnd } },
             ],
-        }).populate('course', 'ID Name Area').lean();
+        }).lean();
 
         const rows = [];
 
         if (sessions.length > 0) {
+            const courseIds = [...new Set(sessions.map(s => s.course).filter(Boolean))];
+            const courses = await Course.find({ _id: { $in: courseIds } })
+                .populate('Area', 'name')
+                .lean();
+            const courseMap = new Map(courses.map(c => [String(c._id), c]));
+
+            const sessionIds = sessions.map(s => s._id);
+            const attendances = await Attendance.find({ session: { $in: sessionIds } }).lean();
+            const attBySession = new Map();
+            attendances.forEach(a => {
+                const sid = String(a.session);
+                const list = attBySession.get(sid) || [];
+                list.push(a);
+                attBySession.set(sid, list);
+            });
+
             sessions.forEach(s => {
                 const isCancel = s.type === 'Báo nghỉ';
                 const day = s.day ? new Date(s.day) : null;
@@ -154,11 +186,17 @@ export async function GET(request) {
                         if (!isToday) return;
                     }
                 }
+
+                const course = courseMap.get(String(s.course));
+                const areaName = course?.Area?.name || 'Khác';
+                const sessionAtts = attBySession.get(String(s._id)) || [];
+
                 rows.push({
                     kind: isCancel ? 'cancel' : 'today',
-                    courseId: s.course ? String(s.course._id || s.course) : '',
-                    courseCode: s.courseCode || (s.course && s.course.ID) || '',
-                    areaId: s.course?.Area ? String(s.course.Area) : '',
+                    courseId: course ? String(course._id) : (s.course ? String(s.course) : ''),
+                    courseID: course?.ID || s.courseCode || '',
+                    courseName: course?.Name || course?.ID || s.courseCode || '',
+                    areaName,
                     detailId: String(s._id),
                     day: s.day || null,
                     time: s.time || '',
@@ -166,8 +204,8 @@ export async function GET(request) {
                     reason: s.note || '',
                     statusType: s.type || '',
                     teacher: s.teacher ? String(s.teacher) : null,
-                    students: (s.students || []).map(x => x.ID || x).filter(Boolean),
-                    lesson: isCancel ? null : null, // To be fetched/linked if needed
+                    students: (course?.Student || []).map(st => st.ID).filter(Boolean),
+                    lesson: isCancel ? null : buildLessonData(course, s._id, sessionAtts),
                 });
             });
         } else {
@@ -325,7 +363,17 @@ export async function POST(request) {
 
         await connectDB()
         const course = await Course.findById(courseId).select('ID Detail').lean()
-        const lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId))
+        let lesson = (course?.Detail || []).find(d => String(d._id) === String(detailId))
+        if (!lesson) {
+            const Session = (await import('@/models/session')).default
+            const sess = await Session.findById(detailId).lean()
+            if (sess) {
+                lesson = {
+                    Day: sess.day,
+                    Note: sess.note
+                }
+            }
+        }
 
         // Cập nhật trạng thái chăm sóc cho TỪNG học sinh / NHIỀU học sinh cùng lúc
         const bulkIds = Array.isArray(studentIds) ? studentIds.filter(Boolean) : (studentId ? [studentId] : [])
