@@ -37,7 +37,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { user } = await authenticate(request)
-    if (!user.role.some(r => /^admin$/i.test(r))) {
+    if (!user.role.some(r => /^admin$/i.test(r)) && !user.role.some(r => /^academic$/i.test(r))) {
       return NextResponse.json({ success: false, message: 'Không có quyền' }, { status: 403 })
     }
 

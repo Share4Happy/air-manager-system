@@ -9,7 +9,7 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
     const [showCreate, setShowCreate] = useState(false);
     const [showStudent, setShowStudent] = useState(false);
     const [newCourseData, setNewCourseData] = useState(null);
-    const isAdmin = currentUser.role?.includes('Admin') || currentUser.role?.includes('Acadamic');
+    const isAdmin = currentUser.role?.includes('Admin') || currentUser.role?.includes('Academic');
     const teacherMap = new Map();
     const teachingAsMap = new Map();
 

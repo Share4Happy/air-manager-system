@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Re_lesson } from '@/data/course';
+import { reloadCourse } from '@/data/actions/reload';
 import CenterPopup from '@/components/(features)/(popup)/popup_center';
 import CommentForm from '../formcmt';
 import BoxFile from '@/components/(ui)/(box)/file';
@@ -119,6 +120,7 @@ export default function Main({ data }) {
                 setAtt(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
                 setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
                 await Re_lesson(session._id);
+                if (course?._id) await reloadCourse(course._id, course.ID);
                 router.refresh();
             } else {
                 setCmts(p => { const n = { ...p }; delete n[selStu.ID]; return n; });
@@ -160,6 +162,7 @@ export default function Main({ data }) {
         setReloading(true);
         try {
             await Re_lesson(data.session._id);
+            if (course?._id) await reloadCourse(course._id, course.ID);
             router.refresh();
         } catch (e) {
             console.error('Reload error:', e);
@@ -207,6 +210,7 @@ export default function Main({ data }) {
             setNotiOK(true); setNotiMsg('Lưu ghi chú thành công!'); setNotiOpen(true);
             setShowNote(false);
             await Re_lesson(session._id);
+            if (course?._id) await reloadCourse(course._id, course.ID);
             router.refresh();
         } catch (err) {
             setNotiOK(false); setNotiMsg(err.message); setNotiOpen(true);
@@ -231,6 +235,7 @@ export default function Main({ data }) {
                 setCmts({});
                 setNotiOK(true); setNotiMsg('Lưu thành công!'); setNotiOpen(true);
                 await Re_lesson(session._id);
+                if (course?._id) await reloadCourse(course._id, course.ID);
                 router.refresh();
             } else {
                 setNotiOK(false); setNotiMsg(res.mes || 'Lưu thất bại!'); setNotiOpen(true);

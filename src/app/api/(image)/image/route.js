@@ -78,12 +78,17 @@ export async function POST(request) {
                 { image: folderId },
                 { $push: { detailImage: newMediaObject } }
             );
-        } catch (e) { }
+        } catch (e) {
+            console.error('Session.updateOne detailImage error in image/route.js:', e.message);
+        }
 
         const updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        ).catch(() => ({ matchedCount: 0 }));
+        ).catch(err => {
+            console.error('PostCourse.updateOne DetailImage error in image/route.js:', err.message);
+            return { matchedCount: 0 };
+        });
 
         // --- Prepare data for response: Return the _id of the affected Detail object ---
         const updatedCourse = await PostCourse.findOne(
@@ -242,7 +247,9 @@ export async function PUT(request) {
                     { arrayFilters: [{ 'elem.id': oldImageId }] }
                 )
             ]);
-        } catch (e) { }
+        } catch (e) {
+            console.error('Session/Attendance update error in image PUT:', e.message);
+        }
 
         const updateOperations = [];
 
@@ -259,7 +266,7 @@ export async function PUT(request) {
                         }
                     },
                     { arrayFilters: [{ 'detailElem._id': affectedDetailObjectId }, { 'elem.id': oldImageId }] }
-                ).catch(() => { })
+                ).catch(err => console.error('PostCourse.updateOne detailElem error in image PUT:', err.message))
             );
         } else if (affectedCourseId) {
             updateOperations.push(
@@ -279,7 +286,7 @@ export async function PUT(request) {
                             { 'imageElem.id': oldImageId }
                         ]
                     }
-                ).catch(() => { })
+                ).catch(err => console.error('PostCourse.updateOne learnElem error in image PUT:', err.message))
             );
         }
 
@@ -328,7 +335,7 @@ export async function DELETE(request) {
         await Promise.all([
             Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
             Attendance.updateMany({}, { $pull: { images: { id: id } } }),
-            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => { })
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(err => console.error('PostCourse.updateMany pull error in image DELETE:', err.message))
         ]);
 
         try {

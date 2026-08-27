@@ -6,11 +6,20 @@ import Debt from '@/models/debt'
 import '@/models/book'
 import Session from '@/models/session'
 import Attendance from '@/models/attendance'
+import checkAuthToken from "@/utils/checktoken"
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function DebtPage() {
+    const user = await checkAuthToken()
+    if (!user || (!user.role?.includes('Admin') && !user.role?.includes('Academic'))) {
+        return (
+            <div className="flex items-center justify-center h-full w-full">
+                <h4 style={{ fontStyle: 'italic' }}>Bạn không có quyền truy cập trang này</h4>
+            </div>
+        )
+    }
     const allStudents = await student_data()
 
     await connectDB()

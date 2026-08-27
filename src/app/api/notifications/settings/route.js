@@ -17,8 +17,8 @@ export async function GET(request) {
 export async function PUT(request) {
   try {
     const { user } = await authenticate(request)
-    if (!user.role.some(r => r.toLowerCase() === 'admin')) {
-      return NextResponse.json({ success: false, error: 'Chỉ Admin Sys mới có quyền này' }, { status: 403 })
+    if (!user.role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'academic')) {
+      return NextResponse.json({ success: false, error: 'Chỉ Admin Sys hoặc Học vụ mới có quyền này' }, { status: 403 })
     }
 
     const body = await request.json()

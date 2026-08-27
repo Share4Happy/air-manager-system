@@ -28,12 +28,12 @@ const COLLAPSED_W = '60px';
 const EXPANDED_W = '240px';
 
 const academicChildren = [
-  { href: '/academic/report', content: 'Báo cáo & Thông báo' },
-  { href: '/academic/program', content: 'Quản lý chương trình học' },
-  { href: '/academic/rooms', content: 'Quản lý phòng học' },
-  { href: '/academic/course-manager', content: 'Quản lý khóa học' },
-  { href: '/academic/debt', content: 'Quản lý học phí' },
-  { href: '/academic/makeup', content: 'Quản lý học bù' },
+  { href: '/academic/report', content: 'Báo cáo & Thông báo', roles: ['Admin', 'Academic'] },
+  { href: '/academic/program', content: 'Quản lý chương trình học', roles: ['Admin', 'Academic'] },
+  { href: '/academic/rooms', content: 'Quản lý phòng học', roles: ['Admin', 'Academic'] },
+  { href: '/academic/course-manager', content: 'Quản lý khóa học', roles: ['Admin', 'Academic', 'Sale'] },
+  { href: '/academic/debt', content: 'Quản lý học phí', roles: ['Admin', 'Academic'] },
+  { href: '/academic/makeup', content: 'Quản lý học bù', roles: ['Admin', 'Academic', 'Teacher'] },
 ];
 
 const initialNavItems = [
@@ -50,9 +50,27 @@ const initialNavItems = [
     roles: ['Admin', 'Academic', 'Teacher', 'Sale']
   },
   {
+    href: '/tools',
+    icon: (
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}>
+          <path d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-67.7-67.7L19.9 396.1z" />
+        </svg>
+      </div>
+    ),
+    content: 'Công cụ',
+    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
+  },
+  {
     href: '/course',
     icon: <Svg_Course w={22} h={22} c={'var(--text-secondary)'} />,
     content: 'Khóa học',
+    roles: ['Admin', 'Academic', 'Teacher']
+  },
+  {
+    href: '/e-portfolio',
+    icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />,
+    content: 'Eportfolio',
     roles: ['Admin', 'Academic', 'Teacher', 'Sale']
   },
   {
@@ -66,31 +84,7 @@ const initialNavItems = [
     ),
     content: 'Học vụ',
     children: academicChildren,
-    roles: ['Admin', 'Academic']
-  },
-  {
-    href: '/student/list',
-    icon: <Svg_Student w={22} h={22} c={'var(--text-secondary)'} />,
-    content: 'Học sinh',
-    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
-  },
-  {
-    href: '/e-portfolio',
-    icon: <Svg_Profile w={22} h={22} c={'var(--text-secondary)'} />,
-    content: 'Eportfolio',
-    roles: ['Admin', 'Academic', 'Teacher']
-  },
-  {
-    href: '/tools',
-    icon: (
-      <div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height={22} width={22} fill={'var(--text-secondary)'}>
-          <path d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-67.7-67.7L19.9 396.1z" />
-        </svg>
-      </div>
-    ),
-    content: 'Công cụ',
-    roles: ['Admin', 'Academic', 'Teacher']
+    roles: ['Admin', 'Academic', 'Sale']
   },
   {
     href: '/client',
@@ -146,14 +140,28 @@ export default function Nav({ data }) {
 
   const orderedItems = useMemo(() => {
     const isAdmin = currentRoles.some(r => /^admin$/i.test(r));
+
+    const filterChildren = (item) => {
+      if (!item.children) return item;
+      const filtered = item.children.filter(child => {
+        if (!child.roles) return true;
+        return child.roles.some(reqRole =>
+          currentRoles.some(r => r.toLowerCase() === reqRole.toLowerCase())
+        );
+      });
+      return { ...item, children: filtered };
+    };
+
     if (isAdmin) return initialNavItems;
 
-    return initialNavItems.filter(item => {
-      if (!item.roles) return true;
-      return item.roles.some(reqRole =>
-        currentRoles.some(r => r.toLowerCase() === reqRole.toLowerCase())
-      );
-    });
+    return initialNavItems
+      .filter(item => {
+        if (!item.roles) return true;
+        return item.roles.some(reqRole =>
+          currentRoles.some(r => r.toLowerCase() === reqRole.toLowerCase())
+        );
+      })
+      .map(filterChildren);
   }, [currentRoles]);
 
   const handleSwitchBack = async () => {

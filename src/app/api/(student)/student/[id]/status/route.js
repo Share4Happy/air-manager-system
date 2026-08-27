@@ -51,11 +51,11 @@ export async function PATCH(request, { params }) {
                             course: { $in: activeCourseIds },
                             studentId: student.ID,
                             checkin: 0
-                        }).catch(() => {}),
+                        }).catch(err => console.error('Attendance.deleteMany error in student leave:', err.message)),
                         PostCourse.updateMany(
                             { _id: { $in: activeCourseIds }, 'Student.ID': student.ID },
                             { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
-                        ).catch(() => {})
+                        ).catch(err => console.error('PostCourse.updateMany error in student leave:', err.message))
                     ]);
                 }
 
@@ -105,7 +105,7 @@ export async function PATCH(request, { params }) {
                     });
 
                     if (missingDocs.length > 0) {
-                        await Attendance.insertMany(missingDocs, { ordered: false }).catch(() => {});
+                        await Attendance.insertMany(missingDocs, { ordered: false }).catch(err => console.error('Attendance.insertMany error in student reactivate:', err.message));
                     }
 
                     await PostStudent.updateOne(
@@ -135,11 +135,11 @@ export async function PATCH(request, { params }) {
                         course: courseId,
                         studentId: student.ID,
                         checkin: 0
-                    }).catch(() => {}),
+                    }).catch(err => console.error('Attendance.deleteMany error in leave_course:', err.message)),
                     PostCourse.updateOne(
                         { _id: courseId, 'Student.ID': student.ID },
                         { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
-                    ).catch(() => {})
+                    ).catch(err => console.error('PostCourse.updateOne error in leave_course:', err.message))
                 ]);
 
                 const studentUpdateOps = { $set: { 'Course.$[elem].status': 1 } };

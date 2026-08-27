@@ -17,10 +17,14 @@ export async function reloadArea(_id) {
     revalidateTag('areas', 'max'); clearCacheByTag('areas')
 }
 
-export async function reloadCourse(_id) {
+export async function reloadCourse(_id, code) {
     if (_id) {
         revalidateTag(`course:${_id}`, 'max');
         clearCacheByTag(`course:${_id}`);
+    }
+    if (code && String(code) !== String(_id)) {
+        revalidateTag(`course:${code}`, 'max');
+        clearCacheByTag(`course:${code}`);
     }
     revalidateTag('courses', 'max');
     clearCacheByTag('courses');
@@ -32,9 +36,7 @@ export async function reloadBook(_id) {
 }
 
 export async function reloadCoursetry() {
-    console.log('[reloadCoursetry] CALLED')
     revalidateTag('data_coursetry', 'max'); clearCacheByTag('data_coursetry')
-    console.log('[reloadCoursetry] DONE')
 }
 
 export async function reloadUser(_id) {

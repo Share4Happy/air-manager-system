@@ -7,7 +7,7 @@ import authenticate from '@/utils/authenticate'
 export async function POST(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role.includes('Admin')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập chức năng này.', data: [] })
         }
         await connectDB()

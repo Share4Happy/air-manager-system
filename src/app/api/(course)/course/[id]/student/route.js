@@ -70,7 +70,7 @@ export async function POST(request, { params }) {
         await Promise.all([
             PostStudent.bulkWrite(studentBulkUpdateOps),
             PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudentDocs } } }),
-            attDocs.length > 0 ? Attendance.insertMany(attDocs, { ordered: false }).catch(() => {}) : Promise.resolve()
+            attDocs.length > 0 ? Attendance.insertMany(attDocs, { ordered: false }).catch(err => console.error('Attendance.insertMany error in add student to course:', err.message)) : Promise.resolve()
         ]);
         reloadStudent();
         reloadCourse(id);

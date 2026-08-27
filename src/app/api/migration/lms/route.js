@@ -5,7 +5,7 @@ import { getMigrationStats, runLmsMigration, cleanupLegacyEmbeddedData } from '@
 export async function GET() {
     try {
         const user = await checkAuthToken();
-        if (!user || !user.role?.includes('Admin')) {
+        if (!user || (!user.role?.includes('Admin') && !user.role?.includes('Academic'))) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(req) {
     try {
         const user = await checkAuthToken();
-        if (!user || !user.role?.includes('Admin')) {
+        if (!user || (!user.role?.includes('Admin') && !user.role?.includes('Academic'))) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
         }
 

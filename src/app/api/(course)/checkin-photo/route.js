@@ -218,13 +218,13 @@ export async function POST(request) {
         await PostCourse.updateOne(
             { _id: ctx.courseId, 'Detail._id': sessionId },
             { $set: { 'Detail.$.Checkin': checkinData } }
-        ).catch(() => {});
+        ).catch(err => console.error('[Checkin Photo] PostCourse.updateOne error:', err.message));
         reloadCourse(ctx.courseId);
     } else {
         await TrialCourse.updateOne(
             { _id: ctx.trialId, 'sessions._id': sessionId },
             { $set: { 'sessions.$.checkin': checkinData } }
-        ).catch(() => {});
+        ).catch(err => console.error('[Checkin Photo] TrialCourse.updateOne error:', err.message));
         reloadCoursetry();
     }
 

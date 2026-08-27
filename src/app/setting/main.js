@@ -319,7 +319,7 @@ function SlaTab() {
           setSettings(map)
         }
       })
-      .catch(() => {})
+      .catch(err => console.error('Fetch notification settings error:', err))
       .finally(() => setLoading(false))
   }, [])
 
@@ -391,7 +391,7 @@ function ZaloLiteTab() {
           })
         }
       })
-      .catch(() => {})
+      .catch(err => console.error('Fetch ZaloLite settings error:', err))
       .finally(() => setLoading(false))
   }, [])
 

@@ -37,7 +37,7 @@ export async function PATCH(req, { params }) {
                         studentId: session.studentId
                     },
                     { $set: { makeupStatus: body.makeupStatus } }
-                ).catch(() => {}),
+                ).catch(err => console.error('Attendance.updateOne makeupStatus error in makeup PUT:', err.message)),
                 PostCourse.updateOne(
                     {
                         _id: session.course,
@@ -46,7 +46,7 @@ export async function PATCH(req, { params }) {
                     },
                     { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': body.makeupStatus } },
                     { arrayFilters: [{ 'stu.ID': session.studentId }, { 'les.Lesson': session.lesson }] }
-                ).catch(() => {})
+                ).catch(err => console.error('PostCourse.updateOne makeupStatus error in makeup PUT:', err.message))
             ]);
         }
 

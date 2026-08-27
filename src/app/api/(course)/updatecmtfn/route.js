@@ -36,13 +36,13 @@ export async function POST(req) {
                     { 'les.Lesson': new mongoose.Types.ObjectId(lessonId) }
                 ]
             }
-        ).catch(() => {});
+        ).catch(err => console.error('PostCourse.updateOne CmtFn error:', err.message));
 
         await TrialCourse.updateOne(
             { _id: courseId },
             { $set: { 'sessions.$[ses].students.$[stu].cmt': commentText } },
             { arrayFilters: [{ 'ses._id': new mongoose.Types.ObjectId(lessonId) }, { 'stu.studentId': studentId }] }
-        ).catch(() => {});
+        ).catch(err => console.error('TrialCourse.updateOne cmt error:', err.message));
 
         return jsonRes(200, { status: true, mes: 'Comment updated successfully.', data: null })
 

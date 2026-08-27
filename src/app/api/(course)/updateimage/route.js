@@ -82,18 +82,25 @@ export async function POST(request) {
                 { image: folderId },
                 { $push: { detailImage: newMediaObject } }
             );
-        } catch (e) { }
+        } catch (e) {
+            console.error('Session.updateOne detailImage error:', e.message);
+        }
 
         let updateResult = await PostCourse.updateOne(
             { 'Detail.Image': folderId },
             { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        ).catch(() => ({ matchedCount: 0 }));
+        ).catch(err => {
+            console.error('PostCourse.updateOne DetailImage error:', err.message);
+            return { matchedCount: 0 };
+        });
 
         if (updateResult.matchedCount === 0) {
             await TrialCourse.updateOne(
                 { 'sessions.folderId': folderId },
                 { $push: { 'sessions.$.images': newMediaObject } }
-            ).catch(() => { });
+            ).catch(err => {
+                console.error('TrialCourse.updateOne images error:', err.message);
+            });
         }
 
         // --- 4. Trả về thành công ---
@@ -215,19 +222,19 @@ export async function PUT(request) {
             { 'detailImage.id': oldImageId },
             { $set: { 'detailImage.$[elem].id': newImageId, 'detailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
-        ).catch(() => { });
+        ).catch(err => console.error('Session.updateOne detailImage PUT error:', err.message));
 
         await PostCourse.updateOne(
             { 'Detail.DetailImage.id': oldImageId },
             { $set: { 'Detail.$.DetailImage.$[elem].id': newImageId, 'Detail.$.DetailImage.$[elem].size': fileBuffer.length } },
             { arrayFilters: [{ 'elem.id': oldImageId }] }
-        ).catch(() => { });
+        ).catch(err => console.error('PostCourse.updateOne DetailImage PUT error:', err.message));
 
         await TrialCourse.updateOne(
             { 'sessions.images.id': oldImageId },
             { $set: { 'sessions.$[ses].images.$[img].id': newImageId, 'sessions.$[ses].images.$[img].size': fileBuffer.length } },
             { arrayFilters: [{ 'ses.images.id': oldImageId }, { 'img.id': oldImageId }] }
-        ).catch(() => { });
+        ).catch(err => console.error('TrialCourse.updateOne images PUT error:', err.message));
 
         // --- 4. Xóa file cũ khỏi Google Drive ---
         try {
@@ -268,8 +275,8 @@ export async function DELETE(request) {
         await Promise.all([
             Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
             Attendance.updateMany({}, { $pull: { images: { id: id } } }),
-            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(() => { }),
-            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(() => { })
+            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(err => console.error('PostCourse.updateMany pull error:', err.message)),
+            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(err => console.error('TrialCourse.updateMany pull error:', err.message))
         ]);
 
         try {

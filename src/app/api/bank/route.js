@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role?.includes('Admin')) {
+        if (!user.role?.includes('Admin') && !user.role?.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
         }
         await connectDB()
@@ -38,7 +38,7 @@ export async function POST(request) {
 export async function PUT(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role?.includes('Admin')) {
+        if (!user.role?.includes('Admin') && !user.role?.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
         }
         await connectDB()
@@ -60,7 +60,7 @@ export async function PUT(request) {
 export async function DELETE(request) {
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role?.includes('Admin')) {
+        if (!user.role?.includes('Admin') && !user.role?.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập.', data: [] })
         }
         await connectDB()

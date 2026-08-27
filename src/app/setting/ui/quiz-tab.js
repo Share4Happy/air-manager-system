@@ -126,7 +126,7 @@ export default function QuizTab() {
                 const setting = s.success ? s.data.find(x => x.key === 'quiz_pass_rate') : null
                 const val = Number(setting?.value)
                 setPassPercent(Number.isFinite(val) && val > 0 && val <= 1 ? Math.round(val * 100) : 80)
-                setIsAdmin(a.user?.role?.some(r => /^admin$/i.test(r)) || false)
+                setIsAdmin(a.user?.role?.some(r => /^admin$/i.test(r) || /^academic$/i.test(r)) || false)
             } catch {
                 setPassPercent(80)
                 setIsAdmin(false)

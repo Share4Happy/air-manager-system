@@ -116,7 +116,7 @@ export async function createNotification({ title, content, type, level, priority
     }
   }
 
-  broadcast(notification._id).catch(() => {})
+  broadcast(notification._id).catch(err => console.error('[Notification] Broadcast error:', err.message))
 
   return notification
 }

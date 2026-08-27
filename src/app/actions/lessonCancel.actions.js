@@ -58,7 +58,6 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
                 rec.batchId = batchId || '';
                 await rec.save();
             }
-            console.log(`[sendCare] hourly limit reached, queued ${pendingQueue.length} recipients, resume at ${fmtTime(rec?.queueResumeAt)}`);
             return { blocked: true, queued: pendingQueue.length, resumeAt: rec?.queueResumeAt || null };
         }
         const r = recipients[i];
@@ -125,7 +124,6 @@ async function runCancelSendLoop({ courseId, detailId, recipients, message, zalo
         rec.queueResumeAt = null;
         await rec.save();
     }
-    console.log(`[sendCare] done: sent ${sent}/${recipients.length}`);
     return { blocked: false, sent };
 }
 

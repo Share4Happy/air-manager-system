@@ -242,7 +242,7 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                         >
                             {isReloading ? 'Đang tải...' : 'Làm mới'}
                         </button>
-                        {(user.role.includes('Admin') || user.role.includes('Acadamic')) && <Create teachers={teacher} books={book} areas={areas} />}
+                        {(user.role.includes('Admin') || user.role.includes('Academic')) && <Create teachers={teacher} books={book} areas={areas} />}
                     </div>
                 </div>
 

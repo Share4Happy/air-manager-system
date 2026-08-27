@@ -51,8 +51,8 @@ export async function PATCH(request, { params }) {
         if (!course) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học.' }, { status: 404 });
 
         const isTeacherHR = course.TeacherHR?.toString() === user.id;
-        const isAdmin = user.role?.includes('Admin');
-        if (!isAdmin && !isTeacherHR) return NextResponse.json({ status: 1, mes: 'Bạn không có quyền thực hiện hành động này.' }, { status: 403 });
+        const isAdminOrAcademic = user.role?.includes('Admin') || user.role?.includes('Academic');
+        if (!isAdminOrAcademic && !isTeacherHR) return NextResponse.json({ status: 1, mes: 'Bạn không có quyền thực hiện hành động này.' }, { status: 403 });
 
         delete body.ID;
         const updatedCourse = await PostCourse.findOneAndUpdate({ _id: id }, { $set: body }, { new: true }).populate('Book', 'ID Name').lean();

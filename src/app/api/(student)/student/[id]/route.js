@@ -87,7 +87,7 @@ export async function DELETE(request, { params }) {
     }
     try {
         const { user, body } = await authenticate(request);
-        if (!user.role.includes('Admin') && !user.role.includes('Academic') && !user.role.includes('Sales')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Academic') && !user.role.includes('Sale') && !user.role.includes('Sales')) {
             return jsonRes(403, { status: false, mes: 'Bạn không có quyền truy cập chức năng này.' });
         }
         const { mes } = body;

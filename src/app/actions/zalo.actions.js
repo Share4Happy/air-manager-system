@@ -89,8 +89,8 @@ export async function updateZaloRolesAction(previousState, formData) {
     if (!user || !user.id) {
         return { message: 'Bạn cần đăng nhập để thực hiện hành động này.', status: false };
     }
-    // Chỉ Admin mới có quyền phân quyền
-    if (!user.role.includes('Admin')) {
+    // Chỉ Admin hoặc Học vụ mới có quyền phân quyền
+    if (!user.role.includes('Admin') && !user.role.includes('Academic')) {
         return { message: 'Bạn không có quyền thực hiện chức năng này.', status: false };
     }
 

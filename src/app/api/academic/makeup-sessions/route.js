@@ -224,7 +224,7 @@ export async function POST(req) {
                 absenceReason: '',
                 makeupStatus: 'MAKEUP_SCHEDULED'
             }));
-            await Attendance.insertMany(attDocs).catch(() => {});
+            await Attendance.insertMany(attDocs).catch(err => console.error('Attendance.insertMany error in makeup session create:', err.message));
         }
 
         // Tạo các bản ghi trong MakeupSession
@@ -248,12 +248,12 @@ export async function POST(req) {
                     Attendance.updateOne(
                         { session: new mongoose.Types.ObjectId(lessonId), studentId: stId },
                         { $set: { makeupStatus: session.makeupStatus } }
-                    ).catch(() => {}),
+                    ).catch(err => console.error('Attendance.updateOne makeupStatus error:', err.message)),
                     PostCourse.updateOne(
                         { _id: new mongoose.Types.ObjectId(courseId), 'Student.ID': stId, 'Student.Learn.Lesson': new mongoose.Types.ObjectId(lessonId) },
                         { $set: { 'Student.$[stu].Learn.$[les].makeupStatus': session.makeupStatus } },
                         { arrayFilters: [{ 'stu.ID': stId }, { 'les.Lesson': new mongoose.Types.ObjectId(lessonId) }] }
-                    ).catch(() => {})
+                    ).catch(err => console.error('PostCourse.updateOne makeupStatus error:', err.message))
                 ]);
             }
         }

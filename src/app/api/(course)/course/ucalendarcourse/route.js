@@ -171,7 +171,7 @@ export async function POST(request) {
             const Session = (await import('@/models/session')).default;
             await Session.findByIdAndUpdate(detailId, {
                 $set: { type: type, note: data.Note || '' }
-            }).catch(() => {});
+            }).catch(err => console.error('Session.findByIdAndUpdate type/note error:', err.message));
 
             const updated = await PostCourse.findOneAndUpdate(
                 { _id: courseId, 'Detail._id': detailId },
@@ -221,7 +221,7 @@ export async function POST(request) {
         const Attendance = (await import('@/models/attendance')).default;
 
         if (Object.keys(sessionSetObj).length > 0) {
-            await Session.findByIdAndUpdate(detailId, { $set: sessionSetObj }).catch(() => {});
+            await Session.findByIdAndUpdate(detailId, { $set: sessionSetObj }).catch(err => console.error('Session.findByIdAndUpdate sessionSetObj error:', err.message));
         }
 
         let courseAfterUpdate;
@@ -248,7 +248,7 @@ export async function POST(request) {
             const toAdd = [...newStudentIdsSet].filter(sId => !existingStudentIds.has(sId));
 
             if (toRemove.length > 0) {
-                await Attendance.deleteMany({ session: lessonObjectId, studentId: { $in: toRemove } }).catch(() => {});
+                await Attendance.deleteMany({ session: lessonObjectId, studentId: { $in: toRemove } }).catch(err => console.error('Attendance.deleteMany error in ucalendarcourse:', err.message));
             }
             if (toAdd.length > 0) {
                 const newAttDocs = toAdd.map(sId => ({
@@ -264,7 +264,7 @@ export async function POST(request) {
                     absenceReason: '',
                     makeupStatus: 'NOT_REQUIRED'
                 }));
-                await Attendance.insertMany(newAttDocs).catch(() => {});
+                await Attendance.insertMany(newAttDocs).catch(err => console.error('Attendance.insertMany error in ucalendarcourse:', err.message));
             }
         }
         reloadCourse(courseId);

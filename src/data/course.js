@@ -3,7 +3,6 @@ import fetchApi from '@/utils/fetchApi';
 import { revalidateTag } from 'next/cache';
 
 export async function Data_coursetry() {
-    console.log('[Data_coursetry] CALLED')
     try {
         const res = await fetchApi(`/coursetry`, {
             method: 'GET',

@@ -77,7 +77,7 @@ export async function POST(request) {
             );
         }
 
-        if (!user.role.includes('Admin')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Academic')) {
             return NextResponse.json(
                 { status: 1, mes: 'Không có quyền truy cập chức năng này.', data: [] },
                 { status: 403 }

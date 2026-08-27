@@ -32,10 +32,18 @@ export default function Timeline({ data = [], props, selectedLessonId }) {
 
             <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
                 {data.Detail?.map((e, i) => {
-                    let datalesson = e
-                    datalesson.Student = (data.Student || []).flatMap((s) => {
-                        let g = (s.Learn || []).filter(t => String(t.Lesson) == String(e._id))
-                        return g
+                    let datalesson = { ...e }
+                    datalesson.Student = (data.Student || []).map((s) => {
+                        const learnItem = (s.Learn || []).find(t => String(t.Lesson) === String(e._id))
+                        return {
+                            studentId: s.ID,
+                            studentName: s.Name,
+                            Checkin: learnItem ? Number(learnItem.Checkin) : 0,
+                            Cmt: learnItem?.Cmt || [],
+                            CmtFn: learnItem?.CmtFn || '',
+                            Image: learnItem?.Image || [],
+                            absenceReason: learnItem?.absenceReason || ''
+                        }
                     })
                     return (
                         i == data.Detail.length - 1 ?

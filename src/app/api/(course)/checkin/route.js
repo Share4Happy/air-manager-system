@@ -117,7 +117,7 @@ export async function POST(req) {
             { _id: course._id },
             { $set: updateCourseFields },
             { arrayFilters: [{ 'stu.ID': a.studentId }, { 'les.Lesson': sessionIdObj }] }
-          ).catch(() => {})
+          ).catch(err => console.error('PostCourse.updateOne error in checkin:', err.message))
         }
       }
 
@@ -137,7 +137,7 @@ export async function POST(req) {
               { _id: trialCourse._id },
               { $set: updateTrial },
               { arrayFilters: [{ 'ses._id': sessionIdObj }, { 'stu.studentId': stuDoc._id }] }
-            ).catch(() => {})
+            ).catch(err => console.error('TrialCourse.updateOne error in checkin:', err.message))
           }
         }
       }
@@ -146,9 +146,12 @@ export async function POST(req) {
     // Revalidate cache
     revalidateTag(`data_lesson${sessionId}`, 'max')
     revalidateTag('running-schedules', 'max')
-    if (course?._id) reloadCourse(course._id)
-    if (courseId && (!course || String(course._id) !== String(courseId))) reloadCourse(courseId)
-    reloadCoursetry()
+    if (course?._id) await reloadCourse(course._id, course.ID)
+    if (course?.ID) {
+      revalidateTag(`course:${course.ID}`, 'max')
+    }
+    if (courseId && (!course || String(course._id) !== String(courseId))) await reloadCourse(courseId)
+    await reloadCoursetry()
 
     return NextResponse.json({ status: 2, mes: 'Cập nhật điểm danh và nhận xét thành công!' })
   } catch (err) {

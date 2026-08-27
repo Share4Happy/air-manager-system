@@ -30,22 +30,39 @@ const statusLesson2 = (data) => {
 
 export default function TimeLine_Dot({ course, type, index, data, props, selectedLessonId }) {
     let statusLesson = [1, 1, 1];
-    let num = 0
-    data.Student.forEach(element => {
-        if (element.Checkin == 0) { statusLesson[0] = 0 }
-        if (element.Checkin == 1) {
-            num++;
-            if ((element.Cmt || []).length == 0) {
-                statusLesson[1] = 0;
+    let numCheckedIn = 0;
+    const students = data?.Student || [];
+
+    if (students.length === 0) {
+        statusLesson = [0, 0, 0];
+    } else {
+        students.forEach(element => {
+            const checkinVal = Number(element.Checkin);
+            if (!checkinVal || checkinVal === 0) {
+                statusLesson[0] = 0;
             }
-            if ((element.Image || []).length == 0) {
+            if (checkinVal === 1) {
+                numCheckedIn++;
+                if (!element.Cmt || element.Cmt.length === 0) {
+                    statusLesson[1] = 0;
+                }
+                if (!element.Image || element.Image.length === 0) {
+                    statusLesson[2] = 0;
+                }
+            }
+        });
+
+        if (numCheckedIn === 0) {
+            const allAbsentChecked = students.length > 0 && students.every(s => Number(s.Checkin) === 2 || Number(s.Checkin) === 3);
+            if (allAbsentChecked) {
+                statusLesson[0] = 1;
+                statusLesson[1] = 1;
+                statusLesson[2] = 1;
+            } else {
+                statusLesson[1] = 0;
                 statusLesson[2] = 0;
             }
         }
-    });
-    if (num == 0) {
-        statusLesson[1] = 0
-        statusLesson[2] = 0
     }
 
     const lessonPropId = Array.isArray(props) ? (props[1] || '') : (props || '');

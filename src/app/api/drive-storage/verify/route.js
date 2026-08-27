@@ -90,7 +90,7 @@ async function repointDb(ref, newId) {
             await PostCourse.updateOne(
                 { _id: ref.courseId, 'Detail.Image': ref.folderId },
                 { $set: { 'Detail.$.Image': newId } }
-            ).catch(() => {});
+            ).catch(err => console.error('PostCourse.updateOne Detail.Image repointDb error:', err.message));
         }
     } else if (ref.kind === 'course-detail') {
         await PostCourse.updateOne(

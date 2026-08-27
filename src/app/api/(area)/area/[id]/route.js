@@ -12,7 +12,7 @@ export async function PUT(request, { params }) {
     const { id } = await params
     try {
         const { user, body } = await authenticate(request)
-        if (!user.role.includes('Admin')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập chức năng này.', data: [] })
         }
         const { name, rooms, color } = body
@@ -47,7 +47,7 @@ export async function DELETE(request, { params }) {
     const { id } = await params
     try {
         const { user } = await authenticate(request)
-        if (!user.role.includes('Admin')) {
+        if (!user.role.includes('Admin') && !user.role.includes('Academic')) {
             return jsonRes(403, { status: false, mes: 'Không có quyền truy cập chức năng này.', data: [] })
         }
         const { searchParams } = new URL(request.url)
