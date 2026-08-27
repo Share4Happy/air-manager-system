@@ -250,7 +250,7 @@ const Main = ({ initialTeachers }) => {
           localStorage.setItem('backupUser', JSON.stringify(result.user))
         }
         setNotification({ open: true, status: true, message: `🔀 Đã chuyển sang ${result.user.name} (${result.user.role?.join(', ')})` });
-        setTimeout(() => window.location.reload(), 1200);
+        setTimeout(() => window.location.reload(), 2500);
       } else {
         setNotification({ open: true, status: false, message: result.error || 'Chuyển đổi thất bại' });
       }
@@ -295,7 +295,7 @@ const Main = ({ initialTeachers }) => {
         localStorage.removeItem('backupToken')
         localStorage.removeItem('backupUser')
         setNotification({ open: true, status: true, message: '✅ Đã quay lại tài khoản gốc' });
-        setTimeout(() => window.location.reload(), 1200);
+        setTimeout(() => window.location.reload(), 2500);
       } else {
         setNotification({ open: true, status: false, message: result.error || 'Không thể quay lại. Vui lòng đăng nhập lại.' });
         localStorage.removeItem('backupToken')

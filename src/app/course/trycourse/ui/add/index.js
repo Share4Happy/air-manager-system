@@ -94,7 +94,7 @@ export default function Add({ book = [], student = [], teacher = [], area = [], 
                 setNoti({ open: true, status: true, mes: 'Thêm buổi học thử thành công!' });
                 setOpen(false);
                 onCreate && onCreate(res.data);
-                setTimeout(() => window.location.reload(), 600);
+                setTimeout(() => window.location.reload(), 2500);
             }
         } catch (e) {
             setNoti({ open: true, status: false, mes: 'Lỗi mạng hoặc máy chủ' });

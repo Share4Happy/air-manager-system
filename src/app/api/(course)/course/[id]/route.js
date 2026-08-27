@@ -11,6 +11,7 @@ import { reloadCourse, reloadStudent } from '@/data/actions/reload';
 import { course_data } from '@/data/actions/get';
 import { clearCacheByTag } from '@/lib/cache';
 import { revalidatePath } from 'next/cache';
+import mongoose from 'mongoose';
 
 export async function POST(request, { params }) {
     try {
@@ -23,14 +24,23 @@ export async function POST(request, { params }) {
         }
 
         await connectDB();
-        const newStudents = students.map(s => ({ ID: s.ID, Learn: [] }));
-        await PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudents } } });
+        const course = await PostCourse.findOne({ _id: id });
+        if (!course) {
+            return NextResponse.json({ mes: 'Không tìm thấy khóa học' }, { status: 404 });
+        }
 
-        clearCacheByTag('courses');
-        clearCacheByTag(`course:${id}`);
-        revalidatePath(`/course/${id}`);
+        const user = await authenticate(request);
+        const isAdminOrAcademic = user?.role?.includes('Admin') || user?.role?.includes('Academic');
+        if (!isAdminOrAcademic) {
+            return NextResponse.json({ mes: 'Bạn không có quyền thực hiện hành động này' }, { status: 403 });
+        }
 
-        return NextResponse.json({ mes: `Đã thêm ${students.length} học viên` }, { status: 200 });
+        course.Student = students;
+        await course.save();
+
+        reloadCourse(id);
+
+        return NextResponse.json({ status: 2, mes: 'Thành công' });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ mes: 'Lỗi: ' + error.message }, { status: 500 });
@@ -50,19 +60,24 @@ export async function PATCH(request, { params }) {
         const course = await course_data(id);
         if (!course) return NextResponse.json({ status: 1, mes: 'Không tìm thấy khóa học.' }, { status: 404 });
 
-        const isTeacherHR = course.TeacherHR?.toString() === user.id;
-        const isAdminOrAcademic = user.role?.includes('Admin') || user.role?.includes('Academic');
+        const teacherHRId = course.TeacherHR?._id ? String(course.TeacherHR._id) : (course.TeacherHR ? String(course.TeacherHR) : '');
+        const isTeacherHR = teacherHRId === String(user.id);
+        const isAdminOrAcademic = user.role?.some(r => /^(admin|academic)$/i.test(r));
         if (!isAdminOrAcademic && !isTeacherHR) return NextResponse.json({ status: 1, mes: 'Bạn không có quyền thực hiện hành động này.' }, { status: 403 });
 
         delete body.ID;
-        const updatedCourse = await PostCourse.findOneAndUpdate({ _id: id }, { $set: body }, { new: true }).populate('Book', 'ID Name').lean();
+        const filterQuery = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { ID: id };
+        const updatedCourse = await PostCourse.findOneAndUpdate(filterQuery, { $set: body }, { new: true }).populate('Book', 'ID Name').lean();
         if (!updatedCourse) return NextResponse.json({ status: 1, mes: 'Cập nhật khóa học thất bại.' }, { status: 404 });
 
         if (body.Status === true) {
-            const studentIDsInCourse = updatedCourse.Student.map(s => s.ID);
+            const studentIDsInCourse = (updatedCourse.Student || []).map(s => s.ID).filter(Boolean);
             if (studentIDsInCourse.length > 0) {
                 const students = await PostStudent.find({ ID: { $in: studentIDsInCourse } }).select('_id ID Course Profile');
                 const bulkOperations = [];
+
+                const bookId = updatedCourse.Book?.ID || updatedCourse.Book?._id?.toString() || updatedCourse.Book?.toString() || 'CHUA_XAC_DINH';
+                const bookName = updatedCourse.Book?.Name || 'Chương trình học';
 
                 for (const student of students) {
                     await reloadStudent(student._id);
@@ -70,31 +85,34 @@ export async function PATCH(request, { params }) {
                         student.Profile = { Present: [] };
                     }
 
-                    const studentInCourseData = updatedCourse.Student.find(s => s.ID === student.ID);
-                    const allComments = studentInCourseData?.Learn.flatMap(l => l.Cmt || []).filter(cmt => cmt && cmt.trim() !== '');
+                    const studentInCourseData = (updatedCourse.Student || []).find(s => s.ID === student.ID);
+                    const allComments = (studentInCourseData?.Learn || []).flatMap(l => l.Cmt || []).filter(cmt => cmt && typeof cmt === 'string' && cmt.trim() !== '');
                     const summaryComment = allComments?.length > 0 ? allComments.join('. ') : "Học sinh đã hoàn thành khóa học.";
 
                     const newPresentation = {
                         course: updatedCourse._id,
-                        bookId: updatedCourse.Book.ID,
-                        bookName: updatedCourse.Book.Name,
+                        bookId: bookId,
+                        bookName: bookName,
                         Comment: summaryComment,
                         Video: '',
                         Img: ''
                     };
                     
-                    const currentPresentations = student.Profile?.Present || [];
-                    const otherPresentations = currentPresentations.filter(p => p.bookId !== updatedCourse.Book.ID);
+                    const currentPresentations = Array.isArray(student.Profile?.Present) ? student.Profile.Present : [];
+                    const otherPresentations = currentPresentations.filter(p => p && p.bookId !== bookId);
                     const newPresentArray = [...otherPresentations, newPresentation];
                     const newProfileObject = {
-                        ...student.Profile, 
+                        ...(student.Profile || {}), 
                         Present: newPresentArray 
                     };
 
-                    const hasOtherActiveCourses = student.Course.some(c => c.course.toString() !== updatedCourse._id.toString() && c.status === 0);
+                    const studentCourses = Array.isArray(student.Course) ? student.Course : [];
+                    const hasOtherActiveCourses = studentCourses.some(c => c && c.course && c.course.toString() !== updatedCourse._id.toString() && c.status === 0);
                     const newStatusForStudent = {
-                        status: hasOtherActiveCourses ? 2 : 1, act: hasOtherActiveCourses ? 'học' : 'chờ',
-                        date: new Date(), note: `Hoàn thành khóa học ${updatedCourse.ID}`
+                        status: hasOtherActiveCourses ? 2 : 1,
+                        act: hasOtherActiveCourses ? 'học' : 'chờ',
+                        date: new Date(),
+                        note: `Hoàn thành khóa học ${updatedCourse.ID || updatedCourse._id}`
                     };
                     
                     bulkOperations.push({
@@ -118,7 +136,10 @@ export async function PATCH(request, { params }) {
             }
         }
 
-        reloadCourse(id);
+        await reloadCourse(updatedCourse._id, updatedCourse.ID);
+        if (id && String(id) !== String(updatedCourse._id)) {
+            await reloadCourse(id);
+        }
 
         return NextResponse.json({ status: 2, mes: 'Cập nhật thành công.' }, { status: 200 });
     } catch (error) {

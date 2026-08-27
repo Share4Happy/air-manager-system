@@ -66,7 +66,7 @@ export default function SessionPopup({ open, onClose, session, student = [], tea
                 body: JSON.stringify({ sessionId: session._id, ...payload })
             }).then(r => r.json());
             setNoti({ open: true, ok: res.status, msg: res.message || (res.status ? 'Cập nhật thành công!' : 'Thao tác thất bại.') });
-            if (res.status) setTimeout(() => window.location.reload(), 600);
+            if (res.status) setTimeout(() => window.location.reload(), 2500);
         } catch (error) {
             setNoti({ open: true, ok: false, msg: 'Lỗi kết nối hoặc máy chủ.' });
         } finally {

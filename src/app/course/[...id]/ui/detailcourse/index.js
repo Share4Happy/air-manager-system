@@ -91,12 +91,12 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                 }
             }
 
-            const lessonIds = new Set(data.Detail.filter(d => d.Type !== 'Báo nghỉ').map(d => d._id.toString()));
-            for (const student of data.Student) {
+            const lessonIds = new Set((data.Detail || []).filter(d => d.Type !== 'Báo nghỉ').map(d => d._id?.toString()).filter(Boolean));
+            for (const student of (data.Student || [])) {
                 if (student.Learn && Array.isArray(student.Learn)) {
-                    const relevantLearnHistory = student.Learn.filter(learnItem => lessonIds.has(learnItem.Lesson.toString()));
+                    const relevantLearnHistory = student.Learn.filter(learnItem => learnItem.Lesson && lessonIds.has(learnItem.Lesson?.toString()));
                     for (const learnItem of relevantLearnHistory) {
-                        const lesson = data.Detail.find(d => d._id.toString() === learnItem.Lesson.toString());
+                        const lesson = data.Detail?.find(d => d._id?.toString() === learnItem.Lesson?.toString());
                         const lessonDate = lesson ? formatDate(new Date(lesson.Day)) : 'không rõ ngày';
                         if (learnItem.Checkin === 0) {
                             issues.push(`Học sinh ${student.Name || student.StudentId} chưa được điểm danh (buổi ${lessonDate}).`);
@@ -126,12 +126,15 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
             const result = await response.json();
 
             if (response.ok) {
+                data.Status = true;
                 setNotification({
                     open: true,
                     status: true,
                     mes: result.mes || 'Xác nhận hoàn thành khóa học thành công!'
                 });
-                router.refresh();
+                setTimeout(() => {
+                    router.refresh();
+                }, 3500);
             } else {
                 throw new Error(result.mes || 'Có lỗi xảy ra, vui lòng thử lại.');
             }
@@ -619,9 +622,23 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
 
             <Noti
                 open={notification.open}
-                onClose={() => setNotification({ ...notification, open: false })}
+                onClose={() => {
+                    setNotification({ ...notification, open: false });
+                    router.refresh();
+                }}
                 status={notification.status}
                 mes={notification.mes}
+                button={
+                    <button
+                        onClick={() => {
+                            setNotification({ ...notification, open: false });
+                            router.refresh();
+                        }}
+                        className="px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-full rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)]"
+                    >
+                        Đã hiểu
+                    </button>
+                }
             />
 
             <CenterPopup open={showCompletePopup} onClose={() => setShowCompletePopup(false)} title="Chưa thể hoàn thành khóa học" size="md">
@@ -683,11 +700,14 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     });
                                     const result = await response.json();
                                     if (response.ok) {
+                                        data.Status = true;
                                         setNotification({
                                             open: true, status: true,
                                             mes: result.mes || 'Xác nhận hoàn thành khóa học thành công!'
                                         });
-                                        router.refresh();
+                                        setTimeout(() => {
+                                            router.refresh();
+                                        }, 3500);
                                     } else {
                                         throw new Error(result.mes || 'Có lỗi xảy ra, vui lòng thử lại.');
                                     }
