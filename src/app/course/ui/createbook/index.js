@@ -240,18 +240,18 @@ export default function Create({ availableTypes = [], typeCounts = {}, onTypeDel
             <input name="Price" value={programData.Price} onChange={handleProgramDataChange} type='number' className='px-3 py-2.5 border border-gray-200 bg-white text-sm outline-none text-gray-700 resize-none' placeholder='Học phí' />
             <textarea name="Describe" value={programData.Describe} onChange={handleProgramDataChange} className='px-3 py-2.5 border border-gray-200 bg-white text-sm outline-none text-gray-700 resize-none' placeholder='Mô tả chương trình' style={{ height: 100, resize: 'none' }} />
             <TextNoti title="Hình ảnh chương trình học" color="blue" mes="Hình ảnh bìa và huy hiệu sẽ được sử dụng cho hồ sơ điện tử học sinh." />
-            <div className='grid grid-cols-2 gap-3'>
-                <div className={'flex flex-col gap-1 font-sans border border-[#ddd] p-2'}>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3'>
+                <div className={'flex flex-col gap-1 font-sans border border-[#ddd] p-2 rounded-lg'}>
                     <input type="file" id="cover-image-upload" name="Image" className={'w-[0.1px] h-[0.1px] opacity-0 overflow-hidden absolute z-[-1]'} onChange={handleFileChange} accept="image/*" />
-                    <label htmlFor="cover-image-upload" className={'inline-flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] cursor-pointer font-medium justify-center'}>
+                    <label htmlFor="cover-image-upload" className={'inline-flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] cursor-pointer font-medium justify-center rounded'}>
                         <Svg_Save w={16} h={16} c="white" />
                         <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Tải ảnh bìa</p>
                     </label>
                     <span className={'text-xs text-[#555] text-center truncate'}>{programData.Image?.name || "Chưa chọn ảnh"}</span>
                 </div>
-                <div className={'flex flex-col gap-1 font-sans border border-[#ddd] p-2'}>
+                <div className={'flex flex-col gap-1 font-sans border border-[#ddd] p-2 rounded-lg'}>
                     <input type="file" id="badge-image-upload" name="Badge" className={'w-[0.1px] h-[0.1px] opacity-0 overflow-hidden absolute z-[-1]'} onChange={handleFileChange} accept="image/*" />
-                    <label htmlFor="badge-image-upload" className={'inline-flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] cursor-pointer font-medium justify-center'}>
+                    <label htmlFor="badge-image-upload" className={'inline-flex items-center gap-2 px-4 py-2 bg-[var(--main_d)] cursor-pointer font-medium justify-center rounded'}>
                         <Svg_Save w={16} h={16} c="white" />
                         <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Tải ảnh huy hiệu</p>
                     </label>
@@ -262,18 +262,18 @@ export default function Create({ availableTypes = [], typeCounts = {}, onTypeDel
             {errorMsg && <p className={'text-red-600 text-xs font-medium'} style={{ marginTop: 8 }}>{errorMsg}</p>}
             <TextNoti title="Danh sách chủ đề" color="blue" mes="Thêm các chủ đề sẽ có trong chương trình này." />
             <div className={'flex gap-2'}>
-                <button type="button" style={{ display: 'flex', gap: 8, alignItems: 'center' }} className={'px-4 py-2 bg-[var(--main_d)] text-white border-none cursor-pointer font-semibold'} onClick={openAddTopicForm}>
+                <button type="button" style={{ display: 'flex', gap: 8, alignItems: 'center' }} className={'px-4 py-2 bg-[var(--main_d)] text-white border-none cursor-pointer font-semibold rounded'} onClick={openAddTopicForm}>
                     <Svg_Add w={16} h={16} c="white" />
                     <span className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Thêm chủ đề</span>
                 </button>
             </div>
             <TopicList />
-            <button type="submit" className={'self-end px-5 py-2 bg-[var(--main_d)] text-white border-none cursor-pointer font-semibold'} disabled={isLoading}>{isLoading ? 'Đang lưu...' : 'Lưu chương trình'}</button>
+            <button type="submit" className={'self-end px-5 py-2 bg-[var(--main_d)] text-white border-none cursor-pointer font-semibold rounded'} disabled={isLoading}>{isLoading ? 'Đang lưu...' : 'Lưu chương trình'}</button>
         </form>
     );
     return (
         <>
-            <div className={'px-4 py-2 bg-[var(--main_d)] flex items-center gap-2 w-max text-white text-sm font-medium cursor-pointer'} onClick={openPopupHandler}>
+            <div className={'px-3 sm:px-4 py-2 bg-[var(--main_d)] flex items-center justify-center gap-2 w-full sm:w-max rounded-lg text-white text-sm font-medium cursor-pointer hover:bg-[var(--main_b)] transition-colors whitespace-nowrap'} onClick={openPopupHandler}>
                 <Svg_Add w={16} h={16} c="white" />
                 <span className='text-sm' style={{ color: 'white' }}>Thêm chương trình</span>
             </div>

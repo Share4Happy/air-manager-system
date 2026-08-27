@@ -23,8 +23,8 @@ const reorder = (list, startIndex, endIndex) => {
 // --- Sub-components for better structure ---
 
 const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
-    <aside className={'flex-1 min-w-[300px] flex flex-col'}>
-        <div className={'w-full rounded-md overflow-hidden mb-6 shadow-[var(--boxshaw2)] flex gap-2'}>
+    <aside className="w-full lg:w-1/3 lg:max-w-[340px] shrink-0 flex flex-col">
+        <div className="w-full rounded-lg overflow-hidden mb-4 sm:mb-6 shadow-[var(--boxshaw2)] flex gap-2 justify-center max-w-[280px] sm:max-w-[320px] lg:max-w-none mx-auto lg:mx-0">
             {bookData.Image && <Image
                 src={srcImage(bookData.Image)}
                 alt={bookData.Name}
@@ -32,7 +32,7 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
                 height={533}
                 priority
                 sizes="(max-width: 768px) 100vw, 33vw"
-                className={'w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block'}
+                className="w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block rounded"
                 style={{ width: bookData.Badge ? 'calc(50% - 4px)' : '100%' }}
             />}
             {bookData.Badge && <Image
@@ -42,23 +42,23 @@ const InfoPanel = React.memo(({ bookData, formattedPrice, onEditClick }) => (
                 height={533}
                 priority
                 sizes="(max-width: 768px) 100vw, 33vw"
-                className={'w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block'}
+                className="w-[calc(50%-4px)] h-auto aspect-[3/4] object-cover block rounded"
             />}
             {!bookData.Image && !bookData.Badge && (
-                <div className={'w-full aspect-[3/4] bg-gray-100 flex items-center justify-center text-gray-400 text-sm'}>Không có ảnh</div>
+                <div className="w-full aspect-[3/4] bg-gray-100 flex items-center justify-center text-gray-400 text-sm rounded">Không có ảnh</div>
             )}
         </div>
-        <p className='text-xl font-semibold text-[var(--text-primary)]' style={{ marginBottom: '8px' }}>{bookData.Name}</p>
-        <div className={'flex flex-col gap-1 mb-4'}>
-            <p className='text-sm font-normal text-[var(--text-primary)]'><strong>Loại chương trình:</strong> {bookData.Type}</p>
-            <p className='text-sm font-normal text-[var(--text-primary)]'><strong>Học phí:</strong> {formattedPrice}</p>
-            <p className='text-sm font-normal text-[var(--text-primary)]'><strong>Số chủ đề:</strong> {bookData.Topics.length} chủ đề</p>
-            <p className='text-sm font-normal text-[var(--text-primary)]'><strong>Số tiết quy định:</strong> {bookData.Topics.reduce((total, item) => total + (item.Period || 0), 0)} tiết</p>
-            <p className='text-sm font-normal text-[var(--text-primary)]'><strong>Mô tả:</strong> {bookData.Describe}</p>
+        <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-2">{bookData.Name}</p>
+        <div className="flex flex-col gap-1.5 mb-4 text-xs sm:text-sm">
+            <p className="text-[var(--text-primary)]"><strong>Loại:</strong> {bookData.Type}</p>
+            <p className="text-[var(--text-primary)]"><strong>Học phí:</strong> <span className="text-blue-600 font-semibold">{formattedPrice}</span></p>
+            <p className="text-[var(--text-primary)]"><strong>Số chủ đề:</strong> {bookData.Topics?.length || 0} chủ đề</p>
+            <p className="text-[var(--text-primary)]"><strong>Số tiết quy định:</strong> {bookData.Topics?.reduce((total, item) => total + (item.Period || 0), 0) || 0} tiết</p>
+            {bookData.Describe && <p className="text-[var(--text-primary)] mt-1"><strong>Mô tả:</strong> {bookData.Describe}</p>}
         </div>
-        <button onClick={onEditClick} className={`${'inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5'} ${'border-[var(--main_b)] bg-[var(--main_b)] mt-auto p-[10px] text-white hover:border-[var(--main_d)] hover:bg-[var(--main_d)]'}`}>
-            <Svg_Pen w={18} h={18} c='white' />
-            <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Chỉnh sửa thông tin</p>
+        <button onClick={onEditClick} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer border border-transparent transition-all duration-200 text-white bg-[var(--main_b)] hover:bg-[var(--main_d)] w-full mt-auto text-sm font-medium">
+            <Svg_Pen w={16} h={16} c='white' />
+            <span>Chỉnh sửa thông tin</span>
         </button>
     </aside>
 ));
@@ -66,11 +66,11 @@ InfoPanel.displayName = 'InfoPanel';
 
 const TopicItem = React.memo(({ topic, index, i, dragHandlers, actionHandlers }) => {
     const isDragging = dragHandlers.draggedIndex === index;
-    const dragItemClass = `${'flex gap-2 mb-2 cursor-move transition-all duration-200'} ${isDragging ? 'opacity-50 scale-[1.01] shadow-[0_5px_15px_rgba(0,0,0,0.2)]' : ''}`;
+    const dragItemClass = `flex gap-2 mb-2 cursor-move transition-all duration-200 items-stretch ${isDragging ? 'opacity-50 scale-[1.01] shadow-[0_5px_15px_rgba(0,0,0,0.2)]' : ''}`;
 
     return (
         <React.Fragment>
-            {dragHandlers.dragOverIndex === index && !isDragging && <div className={'h-[70px] bg-[rgba(0,123,255,0.1)] border-2 border-dashed border-[var(--main_b)] rounded-lg my-1'} />}
+            {dragHandlers.dragOverIndex === index && !isDragging && <div className="h-[70px] bg-[rgba(0,123,255,0.1)] border-2 border-dashed border-[var(--main_b)] rounded-lg my-1" />}
             <div
                 draggable
                 onDragStart={(e) => dragHandlers.onDragStart(e, index)}
@@ -78,16 +78,18 @@ const TopicItem = React.memo(({ topic, index, i, dragHandlers, actionHandlers })
                 onDragEnd={dragHandlers.onDragEnd}
                 className={dragItemClass}
             >
-                <div className={'w-[100px] aspect-[4/3] overflow-hidden rounded-lg flex items-center justify-center bg-[var(--border-color)]'}><p className='text-xs font-semibold text-[var(--text-primary)]'>Chủ đề: {i}</p></div>
-                <li className={'flex-1 flex items-center gap-4 bg-transparent p-4 rounded-lg border border-[var(--border-color)] border-l-3 border-[var(--border-color)] transition-all duration-200 hover:bg-[var(--bg-secondary)]'}>
-                    <div className={'flex-1'}>
-                        <p className='text-base font-semibold text-[var(--text-primary)]'>{topic.Name}</p>
-                        <p className={'text-[0.9rem] text-[var(--text-secondary)] m-0'}>Thời lượng: {topic.Period || 'N/A'} tiết</p>
+                <div className="w-14 sm:w-20 md:w-24 shrink-0 aspect-[4/3] overflow-hidden rounded-lg flex items-center justify-center bg-gray-100 border border-gray-200 text-center px-1">
+                    <p className="text-[11px] sm:text-xs font-semibold text-[var(--text-primary)]">#{i}</p>
+                </div>
+                <li className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 bg-white p-2.5 sm:p-3.5 rounded-lg border border-[var(--border-color)] transition-all duration-200 hover:bg-[var(--bg-secondary)] shadow-sm">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm sm:text-base font-semibold text-[var(--text-primary)] line-clamp-1">{topic.Name}</p>
+                        <p className="text-xs sm:text-sm text-[var(--text-secondary)] m-0">Thời lượng: {topic.Period || 'N/A'} tiết</p>
                     </div>
-                    <div className={'flex gap-2'}>
-                        <div className={`p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 ${'bg-[var(--yellow)]'}`} onClick={() => actionHandlers.onEdit(topic)}><Svg_Pen w={18} h={18} c='white' /></div>
-                        <a href={topic.Slide} target="_blank" rel="noopener noreferrer" className={`p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 ${'bg-[var(--main_b)]'}`}><Svg_Slide w={18} h={18} c='white' /></a>
-                        <div className={`p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 ${'bg-[var(--red)] m-0'}`} onClick={() => actionHandlers.onDelete(topic._id, topic.Name)}><Svg_Delete w={15} h={15} c='white' /></div>
+                    <div className="flex items-center gap-1.5 self-end sm:self-center">
+                        <button type="button" className="p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 bg-[var(--yellow)] border-none cursor-pointer" onClick={() => actionHandlers.onEdit(topic)} title="Sửa chủ đề"><Svg_Pen w={15} h={15} c='white' /></button>
+                        {topic.Slide && <a href={topic.Slide} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 bg-[var(--main_b)] no-underline" title="Xem slide"><Svg_Slide w={15} h={15} c='white' /></a>}
+                        <button type="button" className="p-1.5 rounded flex items-center justify-center transition-all duration-100 hover:-translate-y-0.5 bg-[var(--red)] border-none cursor-pointer" onClick={() => actionHandlers.onDelete(topic._id, topic.Name)} title="Xóa chủ đề"><Svg_Delete w={15} h={15} c='white' /></button>
                     </div>
                 </li>
             </div>
@@ -99,21 +101,21 @@ TopicItem.displayName = 'TopicItem';
 const TopicsPanel = React.memo(({ topics, dragHandlers, actionHandlers, onAddTopic, onImport }) => {
     let i = 0;
     return (
-        <main className={'flex-[3] min-w-[400px] flex flex-col border-l border-[var(--border-color)] pl-4'} onDrop={dragHandlers.onDrop} onDragOver={(e) => e.preventDefault()}>
-            <div className={'flex justify-between items-center pb-4 mb-2 border-b border-[var(--border-color)]'}>
-                <p className='text-xl font-semibold text-[var(--text-primary)]'>Danh sách chủ đề</p>
-                <div className="flex gap-2">
-                    <button onClick={onImport} className={'inline-flex items-center justify-center gap-[0.6rem] px-4 py-2.5 rounded-md cursor-pointer border border-[var(--border-color)] transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-transparent text-[var(--text-primary)] hover:bg-[var(--border-color)]'}>
-                        <Svg_Add w={16} h={16} c='currentColor' />
-                        <p className='text-sm font-normal'>Import</p>
+        <main className="flex-1 min-w-0 flex flex-col border-t lg:border-t-0 lg:border-l border-[var(--border-color)] pt-4 lg:pt-0 lg:pl-4 min-h-[350px]" onDrop={dragHandlers.onDrop} onDragOver={(e) => e.preventDefault()}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 sm:pb-4 mb-2 border-b border-[var(--border-color)]">
+                <p className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">Danh sách chủ đề ({topics?.filter(t => t.Status !== false).length || 0})</p>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button onClick={onImport} className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg cursor-pointer border border-[var(--border-color)] transition-all duration-200 bg-white text-[var(--text-primary)] hover:bg-gray-50 text-xs sm:text-sm font-medium">
+                        <Svg_Add w={15} h={15} c='currentColor' />
+                        <span>Import</span>
                     </button>
-                    <button onClick={onAddTopic} className={'inline-flex items-center justify-center gap-[0.6rem] px-5 py-2.5 rounded-md cursor-pointer border border-transparent transition-all duration-200 no-underline whitespace-nowrap hover:-translate-y-0.5 bg-[var(--main_b)] text-white hover:bg-[var(--main_d)]'}>
-                        <Svg_Add w={18} h={18} c='white' />
-                        <p className='text-sm font-normal' style={{ color: 'white' }}>Thêm chủ đề</p>
+                    <button onClick={onAddTopic} className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg cursor-pointer border border-transparent transition-all duration-200 bg-[var(--main_b)] text-white hover:bg-[var(--main_d)] text-xs sm:text-sm font-medium">
+                        <Svg_Add w={15} h={15} c='white' />
+                        <span>Thêm chủ đề</span>
                     </button>
                 </div>
             </div>
-            <ul className={'flex-1 list-none p-0 m-0 overflow-y-auto pr-[10px]'}>
+            <ul className="flex-1 list-none p-0 m-0 overflow-y-auto pr-1">
                 {topics.map((topic, index) => {
                     if (topic.Status === false) return null;
                     i++;
@@ -300,7 +302,7 @@ const BookDetail = ({ data: initialData }) => {
 
     return (
         <>
-            <div className={'flex w-[calc(100%-34px)] h-[calc(100%-34px)] border border-[var(--border-color)] rounded-lg overflow-hidden p-4 gap-4'}>
+            <div className="flex flex-col lg:flex-row w-full min-h-0 h-auto lg:h-[calc(100%-34px)] border border-[var(--border-color)] rounded-lg overflow-y-auto lg:overflow-hidden p-3 sm:p-4 gap-4 bg-white">
                 <InfoPanel
                     bookData={bookData}
                     formattedPrice={formattedPrice}

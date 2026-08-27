@@ -287,43 +287,43 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                     <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>
                         {lessonId ? `Thông tin buổi học (${lesson?.Type === 'Báo nghỉ' ? 'Báo nghỉ' : lesson?.Type === 'Học bù' ? 'Học bù' : (new Date(lesson?.Day) < new Date().setHours(0,0,0,0) ? 'Đã diễn ra' : 'Chưa diễn ra')})` : 'Thông tin khóa học'}
                     </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexWrap: 'wrap' }}>
                         {!lessonId ?
                             <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" width={14} height={14} fill='var(--text-primary)'><path d="M249.6 471.5c10.8 3.8 22.4-4.1 22.4-15.5l0-377.4c0-4.2-1.6-8.4-5-11C247.4 52 202.4 32 144 32C93.5 32 46.3 45.3 18.1 56.1C6.8 60.5 0 71.7 0 83.8L0 454.1c0 11.9 12.8 20.2 24.1 16.5C55.6 460.1 105.5 448 144 448c33.9 0 79 14 105.6 23.5zm76.8 0C353 462 398.1 448 432 448c38.5 0 88.4 12.1 119.9 22.6c11.3 3.8 24.1-4.6 24.1-16.5l0-370.3c0-12.1-6.8-23.3-18.1-27.6C529.7 45.3 482.5 32 432 32c-58.4 0-103.4 20-123 35.6c-3.3 2.6-5 6.8-5 11L304 456c0 11.4 11.7 19.3 22.4 15.5z" /></svg>
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Chương trình học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{data.Book.Name}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width={14} height={14} fill='var(--text-primary)'>
                                         <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z" /></svg>
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Tên khóa học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{data.ID}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Student w={15} h={15} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Sỉ số khóa :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{data.Student.length} học sinh</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Canlendar w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Thời gian học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{dateRange[0] || 'Trống'} - {dateRange[1] || 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Profile w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Giáo viên chủ nhiệm :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{data.TeacherHR?.name || 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Map w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Phòng học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">
                                         {uniqueRooms.length > 0 ? uniqueRooms.join(', ') : (data.Area?.name || 'Trống')}
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width={14} height={14} fill='var(--text-primary)'>
                                         <path d="M0 24C0 10.7 10.7 0 24 0L360 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-8 0 0 19c0 40.3-16 79-44.5 107.5L225.9 256l81.5 81.5C336 366 352 404.7 352 445l0 19 8 0c13.3 0 24 10.7 24 24s-10.7 24-24 24L24 512c-13.3 0-24-10.7-24-24s10.7-24 24-24l8 0 0-19c0-40.3 16-79 44.5-107.5L158.1 256 76.5 174.5C48 146 32 107.3 32 67l0-19-8 0C10.7 48 0 37.3 0 24zM110.5 371.5c-3.9 3.9-7.5 8.1-10.7 12.5l184.4 0c-3.2-4.4-6.8-8.6-10.7-12.5L192 289.9l-81.5 81.5zM284.2 128C297 110.4 304 89 304 67l0-19L80 48l0 19c0 22.1 7 43.4 19.8 61l184.4 0z" /></svg>
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Tiến độ :</span>
@@ -331,27 +331,27 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 </div>
                             </> :
                             <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Course w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Chủ đề học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{lesson.LessonDetails.Name || 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Canlendar w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Thời gian học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{lesson.Time || 'Trống'} - {formatDate(new Date(lesson.Day)) || 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Map w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Phòng học :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{lesson.Room && !/^[0-9a-fA-F]{24}$/.test(lesson.Room) ? lesson.Room : 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                     <Svg_Area w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Khu vực :</span>
                                     <span className="text-sm font-normal text-[var(--text-primary)]">{data.Area?.name || 'Trống'}</span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                                     <Svg_Map w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Trạng thái lớp học :</span>
                                 </div>
@@ -370,7 +370,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     </p>
                                 </div>
                             </>}
-                        <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <div className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ marginTop: 8, borderRadius: 5, background: 'var(--main_d)' }} onClick={reload}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill='white'>
                                     <path d="M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160 352 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l111.5 0c0 0 0 0 0 0l.4 0c17.7 0 32-14.3 32-32l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 35.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0C73.2 122 55.6 150.7 44.8 181.4c-5.9 16.7 2.9 34.9 19.5 40.8s34.9-2.9 40.8-19.5zM39 289.3c-5 1.5-9.8 4.2-13.7 8.2c-4 4-6.7 8.8-8.1 14c-.3 1.2-.6 2.5-.8 3.8c-.3 1.7-.4 3.4-.4 5.1L16 432c0 17.7 14.3 32 32 32s32-14.3 32-32l0-35.1 17.6 17.5c0 0 0 0 0 0c87.5 87.4 229.3 87.4 316.7 0c24.4-24.4 42.1-53.1 52.9-83.8c5.9-16.7-2.9-34.9-19.5-40.8s-34.9 2.9-40.8 19.5c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0l-.1-.1L125.6 352l34.4 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L48.4 288c-1.6 0-3.2 .1-4.8 .3s-3.1 .5-4.6 1z" /></svg>
