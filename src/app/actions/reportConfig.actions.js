@@ -28,23 +28,44 @@ async function requireAuth() {
 }
 
 function readReportOptions(formData) {
-    const attendance = ['classes', 'present', 'absent', 'unchecked', 'lessonCount', 'studentTurns', 'perClass', 'violations', 'checkinLate'];
-    const monthly = ['tuition', 'enrollments', 'quits', 'upgrades', 'classesByArea', 'studentRank', 'trialCount', 'trialRate'];
-    const attendanceOptions = {};
-    const monthlyOptions = {};
-    attendance.forEach(k => { attendanceOptions[k] = formData.get(`opt_attendance_${k}`) === '1'; });
-    monthly.forEach(k => { monthlyOptions[k] = formData.get(`opt_monthly_${k}`) === '1'; });
-    monthlyOptions.comparePrevMonth = formData.get('opt_monthly_comparePrevMonth') === '1';
-    monthlyOptions.areas = formData.getAll('opt_monthly_areas')
-        .map(v => v.toString().trim())
-        .filter(Boolean);
-    return { attendance: attendanceOptions, monthly: monthlyOptions };
+    const areas = [
+        ...formData.getAll('areas'),
+        ...formData.getAll('opt_monthly_areas'),
+    ].map(v => v.toString().trim()).filter(Boolean);
+
+    return {
+        attendance: {
+            classes: true,
+            present: true,
+            absent: true,
+            unchecked: true,
+            lessonCount: true,
+            studentTurns: true,
+            perClass: true,
+            violations: true,
+            checkinLate: true,
+            areas: [...new Set(areas)],
+        },
+        monthly: {
+            tuition: true,
+            enrollments: true,
+            quits: true,
+            upgrades: true,
+            classesByArea: true,
+            studentRank: true,
+            trialCount: true,
+            trialRate: true,
+            comparePrevMonth: true,
+            areas: [...new Set(areas)],
+        },
+    };
 }
 
 function buildConfigPayload(formData) {
     const raw = formData.getAll('recipientUserIds')
         .map(v => v.toString().trim())
         .filter(Boolean)
+    const skipVal = formData.get('skipIfNoClasses')
     return {
         name: (formData.get('name') || '').toString().trim(),
         recipientUserIds: [...new Set(raw)],
@@ -56,6 +77,7 @@ function buildConfigPayload(formData) {
         sendTime: (formData.get('sendTime') || '08:00').toString(),
         weekday: parseInt(formData.get('weekday') || '1', 10),
         monthDay: parseInt(formData.get('monthDay') || '1', 10),
+        skipIfNoClasses: skipVal === '1' || skipVal === 'true' || skipVal === 'on',
     };
 }
 
@@ -158,9 +180,10 @@ export async function prepareReportSendAction(_prevState, formData) {
     try {
         await connectDB();
         const id = (formData.get('_id') || '').toString();
+        const customTemplate = formData.get('messageTemplate') !== null ? (formData.get('messageTemplate') || '').toString() : undefined;
         const cfg = await ReportConfig.findById(id);
         if (!cfg) return { status: false, message: 'Không tìm thấy cấu hình báo cáo.' };
-        const data = await prepareReportSend(cfg);
+        const data = await prepareReportSend(cfg, customTemplate);
         return { status: true, message: 'Sẵn sàng gửi tin.', data };
     } catch (error) {
         console.error('Prepare Report Send Error:', error);

@@ -42,6 +42,7 @@ const ReportConfigSchema = new Schema(
         sendTime: { type: String, trim: true, default: '08:00' },
         weekday: { type: Number, default: 1 },
         monthDay: { type: Number, default: 1 },
+        skipIfNoClasses: { type: Boolean, default: true },
         isActive: { type: Boolean, default: true },
         lastSentAt: { type: Date, default: null },
         nextRunAt: { type: Date, default: null },

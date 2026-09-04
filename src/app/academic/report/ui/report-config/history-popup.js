@@ -1,7 +1,7 @@
 'use client'
 
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right'
-import { fmtDate, logContent } from './constants'
+import { fmtDate } from './constants'
 
 export default function HistoryPopup({
     open,
@@ -15,7 +15,7 @@ export default function HistoryPopup({
             open={open}
             onClose={onClose}
             title="Lịch sử gửi tin báo cáo"
-            width="900px"
+            width="800px"
             renderItemList={() => (
                 <div className="flex flex-col gap-3 p-4">
                     {historyLoading ? (
@@ -31,7 +31,6 @@ export default function HistoryPopup({
                                         <th className="p-2 font-medium text-left">Zalo gửi</th>
                                         <th className="p-2 font-medium text-left">Người tạo</th>
                                         <th className="p-2 font-medium text-left">Trạng thái</th>
-                                        <th className="p-2 font-medium text-left">Nội dung</th>
                                         <th className="p-2 font-medium text-center">Xem</th>
                                     </tr>
                                 </thead>
@@ -47,7 +46,6 @@ export default function HistoryPopup({
                                                 </span>
                                                 <span className="block text-xs text-[var(--text-secondary)] mt-0.5">{l.status?.message}</span>
                                             </td>
-                                            <td className="p-2 text-xs text-[var(--text-secondary)] whitespace-pre-wrap line-clamp-3 max-w-xs">{logContent(l) || '—'}</td>
                                             <td className="p-2 text-center">
                                                 <button onClick={() => onSelectLog(l)}
                                                     className="px-2 py-1 rounded bg-blue-600 text-white text-xs cursor-pointer border-none hover:bg-blue-700">

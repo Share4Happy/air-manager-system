@@ -203,7 +203,8 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
             sendTime: cfg.sendTime || '08:00',
             weekday: cfg.weekday || 1,
             monthDay: cfg.monthDay || 1,
-            areas: (cfg.reportOptions?.monthly?.areas || []),
+            skipIfNoClasses: cfg.skipIfNoClasses !== false,
+            areas: (cfg.reportOptions?.monthly?.areas || cfg.reportOptions?.attendance?.areas || []),
         })
         setConfigPopupOpen(true)
     }
@@ -294,9 +295,30 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
         setSendBlocked(false)
     }
 
-    const startSendNow = async () => {
+    const changeSendNowTemplate = async (templateContent) => {
+        if (!sendNowConfig) return
+        setSendNowPrep(p => ({ ...p, loading: true, error: '' }))
+        const fd = new FormData()
+        fd.append('_id', sendNowConfig._id)
+        if (templateContent !== undefined && templateContent !== null) {
+            fd.append('messageTemplate', templateContent)
+        }
+        const res = await prepareReportSendAction(null, fd)
+        if (res.status && res.data) {
+            setSendNowPrep({ loading: false, error: '', data: res.data })
+        } else {
+            setSendNowPrep(p => ({ ...p, loading: false, error: res.message || 'Không thể tạo nội dung theo mẫu mới.' }))
+        }
+    }
+
+    const startSendNow = async (overrideText) => {
         const d = sendNowPrep.data
         if (!d || !sendNowConfig) return
+        const textToSend = overrideText !== undefined ? overrideText : d.text
+        if (!textToSend || !textToSend.trim()) {
+            showNoti(false, 'Nội dung tin nhắn trống.')
+            return
+        }
         sendNowAbortRef.current = false
         setSendStep('sending')
         setSendBlocked(false)
@@ -311,7 +333,7 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
             fd.append('_id', sendNowConfig._id)
             fd.append('phone', target.phone)
             fd.append('name', target.name)
-            fd.append('text', d.text)
+            fd.append('text', textToSend)
             const res = await sendOneReportAction(null, fd)
             current++
             if (sendNowAbortRef.current) break
@@ -387,6 +409,7 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
                 action={tmpAction}
                 templateForm={templateForm}
                 setTemplateForm={setTemplateForm}
+                templates={templates}
             />
 
             {/* ───── POPUP THƯ VIỆN MẪU ───── */}
@@ -418,12 +441,15 @@ export default function ReportConfigTab({ users = [], zalo = [], areas = [] }) {
             <SendNowPopup
                 open={sendNowOpen}
                 onClose={closeSendNow}
+                config={sendNowConfig}
+                templates={templates}
                 sendNowPrep={sendNowPrep}
                 sendStep={sendStep}
                 sendProgress={sendProgress}
                 sendResults={sendResults}
                 sendBlocked={sendBlocked}
                 onStartSend={startSendNow}
+                onChangeTemplate={changeSendNowTemplate}
             />
         </div>
     )

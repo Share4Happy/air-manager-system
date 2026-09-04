@@ -6,8 +6,7 @@ import {
     WEEKDAY_LABELS,
     FREQ_LABELS,
     TYPE_LABELS,
-    ATTENDANCE_OPTIONS,
-    MONTHLY_OPTIONS,
+    renderPreviewTemplate,
     inputCls,
     labelCls,
     SubmitButton,
@@ -29,11 +28,16 @@ export default function ConfigPopup({
 }) {
     const [recipientSearch, setRecipientSearch] = useState('')
     const [recipientDropdownOpen, setRecipientDropdownOpen] = useState(false)
-    const [selectedTemplateId, setSelectedTemplateId] = useState('')
+    const [previewMode, setPreviewMode] = useState(false)
     const recipientBoxRef = useRef(null)
 
     const eligibleUsers = users.filter(u => u.phone && u.status !== false)
     const eligibleZalo = zalo.filter(z => z.botId)
+
+    const filteredSaved = templates.filter(t => {
+        if (!form.reportType || form.reportType === 'all') return true
+        return t.reportType === 'all' || t.reportType === form.reportType
+    })
 
     const toggleRecipient = (id) => {
         setForm(f => {
@@ -69,7 +73,7 @@ export default function ConfigPopup({
             open={open}
             onClose={onClose}
             title={form._id ? 'Cập nhật cấu hình báo cáo' : 'Tạo cấu hình báo cáo'}
-            width="720px"
+            width="760px"
             renderItemList={() => (
                 <form action={action} className="flex flex-col gap-3 p-4">
                     <input type="hidden" name="_id" value={form._id} />
@@ -183,66 +187,29 @@ export default function ConfigPopup({
                                     onChange={e => setForm(f => ({ ...f, monthDay: Number(e.target.value) }))} />
                             </div>
                         )}
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                            <label className="text-sm font-medium text-[var(--text-primary)]">
-                                Nội dung báo cáo {form.reportType === 'monthly' ? '(thống kê tháng)' : '(chuyên cần)'}
-                            </label>
-                            <div className="flex items-center gap-2 text-xs text-[var(--main_d)]">
-                                <button type="button" onClick={() => setForm(f => {
-                                    const group = f.reportType === 'monthly' ? 'monthly' : 'attendance'
-                                    const list = (f.reportType === 'monthly' ? MONTHLY_OPTIONS : ATTENDANCE_OPTIONS).map(o => o[0])
-                                    return { ...f, reportOptions: { ...f.reportOptions, [group]: Object.fromEntries(Object.keys(f.reportOptions[group]).map(k => [k, list.includes(k)])) } }
-                                })}
-                                    className="cursor-pointer border-none bg-transparent hover:underline">
-                                    Chọn tất cả
-                                </button>
-                                <button type="button" onClick={() => {
-                                    const group = form.reportType === 'monthly' ? 'monthly' : 'attendance'
-                                    const list = Object.keys(form.reportOptions[group])
-                                    setForm(f => ({ ...f, reportOptions: { ...f.reportOptions, [group]: Object.fromEntries(list.map(k => [k, false])) } }))
-                                }}
-                                    className="cursor-pointer border-none bg-transparent hover:underline">
-                                    Bỏ chọn
-                                </button>
+                        {form.reportType === 'attendance' && (
+                            <div className="md:col-span-2 pt-1">
+                                <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        name="skipIfNoClasses"
+                                        value="1"
+                                        checked={form.skipIfNoClasses !== false}
+                                        onChange={e => setForm(f => ({ ...f, skipIfNoClasses: e.target.checked }))}
+                                    />
+                                    <span className="text-gray-700 font-medium">
+                                        Không gửi tin nếu không có lớp học nào diễn ra trong ngày
+                                    </span>
+                                </label>
                             </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                            {(form.reportType === 'monthly' ? MONTHLY_OPTIONS : ATTENDANCE_OPTIONS).map(([k, label]) => (
-                                <label key={k} className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer">
-                                    <input type="checkbox"
-                                        checked={form.reportOptions?.[form.reportType]?.[k]}
-                                        onChange={e => setForm(f => ({
-                                            ...f,
-                                            reportOptions: { ...f.reportOptions, [f.reportType]: { ...f.reportOptions[f.reportType], [k]: e.target.checked } },
-                                        }))} />
-                                    {label}
-                                </label>
-                            ))}
-                            {form.reportType === 'monthly' && (
-                                <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer sm:col-span-2">
-                                    <input type="checkbox"
-                                        checked={form.reportOptions?.monthly?.comparePrevMonth}
-                                        onChange={e => setForm(f => ({ ...f, reportOptions: { ...f.reportOptions, monthly: { ...f.reportOptions.monthly, comparePrevMonth: e.target.checked } } }))} />
-                                    So sánh với tháng trước (thêm dòng tăng/giảm)
-                                </label>
-                            )}
-                        </div>
-                        {(form.reportType === 'attendance' ? ATTENDANCE_OPTIONS : MONTHLY_OPTIONS).map(([k]) => (
-                            <input key={`h-${k}`} type="hidden" name={`opt_${form.reportType}_${k}`} value={form.reportOptions?.[form.reportType]?.[k] ? '1' : '0'} />
-                        ))}
-                        {form.reportType === 'monthly' && (
-                            <input type="hidden" name="opt_monthly_comparePrevMonth" value={form.reportOptions?.monthly?.comparePrevMonth ? '1' : '0'} />
                         )}
                     </div>
 
-                    {form.reportType === 'monthly' && areas.length > 0 && (
+                    {areas.length > 0 && (
                         <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
                             <div className="flex items-center justify-between flex-wrap gap-2">
                                 <label className="text-sm font-medium text-[var(--text-primary)]">
-                                    Khu vực (lọc phần lớp học) {form.areas?.length > 0 ? `(${form.areas.length} đã chọn)` : '(tất cả)'}
+                                    Khu vực cơ sở (lọc lớp học) {form.areas?.length > 0 ? `(${form.areas.length} đã chọn)` : '(tất cả)'}
                                 </label>
                                 <div className="flex items-center gap-2 text-xs text-[var(--main_d)]">
                                     <button type="button" onClick={() => setForm(f => ({ ...f, areas: areas.map(a => String(a._id)) }))}
@@ -272,35 +239,66 @@ export default function ConfigPopup({
                                     )
                                 })}
                             </div>
-                            <p className="text-xs text-[var(--text-secondary)]">Bỏ chọn hết = áp dụng cho tất cả khu vực. Chỉ ảnh hưởng phần lớp học.</p>
-                            {(form.areas || []).map(id => <input key={`ha-${id}`} type="hidden" name="opt_monthly_areas" value={id} />)}
+                            <p className="text-xs text-[var(--text-secondary)]">Bỏ chọn hết = áp dụng cho tất cả khu vực.</p>
+                            {(form.areas || []).map(id => (
+                                <span key={`ha-${id}`}>
+                                    <input type="hidden" name="areas" value={id} />
+                                    <input type="hidden" name="opt_monthly_areas" value={id} />
+                                </span>
+                            ))}
                         </div>
                     )}
 
-                    <div>
-                        <label className={labelCls}>Mẫu tin nhắn</label>
-                        {templates.length > 0 && (
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">Dùng mẫu từ thư viện:</span>
-                                <select className={`${inputCls} max-w-xs`} value={selectedTemplateId}
-                                    onChange={e => {
-                                        const id = e.target.value
-                                        setSelectedTemplateId('')
-                                        if (!id) return
-                                        const t = templates.find(x => x._id === id)
-                                        if (t) onUseTemplate(t)
-                                    }}>
-                                    <option value="">Chọn mẫu...</option>
-                                    {templates.filter(t => t.reportType === 'all' || t.reportType === form.reportType).map(t => (
-                                        <option key={t._id} value={t._id}>{t.name}</option>
-                                    ))}
-                                </select>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <label className={labelCls}>Mẫu tin nhắn</label>
+                            <button type="button" onClick={() => setPreviewMode(p => !p)}
+                                className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer border transition-colors ${previewMode ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'}`}>
+                                {previewMode ? 'Quay lại sửa' : 'Xem trước'}
+                            </button>
+                        </div>
+
+                        <div>
+                            <select
+                                className={inputCls}
+                                value=""
+                                onChange={e => {
+                                    const selected = templates.find(t => String(t._id) === e.target.value)
+                                    if (selected) {
+                                        setForm(f => ({ ...f, messageTemplate: selected.content }))
+                                    }
+                                }}
+                            >
+                                <option value="">
+                                    {filteredSaved.length === 0
+                                        ? '-- Thư viện chưa có mẫu phù hợp (hãy tạo trong Thư viện mẫu) --'
+                                        : `-- Chọn mẫu từ thư viện mẫu (${filteredSaved.length} mẫu) --`}
+                                </option>
+                                {filteredSaved.map(t => (
+                                    <option key={t._id} value={t._id}>
+                                        {t.name} - [{t.reportType === 'all' ? 'Tất cả' : (TYPE_LABELS[t.reportType] || t.reportType)}]
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {previewMode ? (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs text-gray-500 font-medium">Nội dung xem trước (với số liệu minh họa):</span>
+                                <pre className="w-full p-3 border border-blue-200 rounded bg-blue-50/30 text-sm whitespace-pre-wrap text-gray-800 max-h-72 overflow-y-auto font-sans">
+                                    {renderPreviewTemplate(form.messageTemplate, form.reportType) || '(Chưa có nội dung mẫu tin nhắn)'}
+                                </pre>
                             </div>
+                        ) : (
+                            <textarea
+                                name="messageTemplate"
+                                rows="8"
+                                className={`${inputCls} resize-y font-mono text-xs sm:text-sm`}
+                                placeholder={'Nhập nội dung mẫu tin nhắn hoặc chọn mẫu từ ô chọn phía trên...'}
+                                value={form.messageTemplate}
+                                onChange={e => setForm(f => ({ ...f, messageTemplate: e.target.value }))}
+                            />
                         )}
-                        <textarea name="messageTemplate" rows="7" className={`${inputCls} resize-y`}
-                            placeholder={'Nhập nội dung mẫu...\n\nHỗ trợ placeholder:\n{body} - nội dung báo cáo tự sinh\n{period} - kỳ báo cáo\n{date} - ngày gửi'}
-                            value={form.messageTemplate}
-                            onChange={e => setForm(f => ({ ...f, messageTemplate: e.target.value }))} />
                     </div>
 
                     <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
@@ -321,3 +319,4 @@ export default function ConfigPopup({
         />
     )
 }
+
