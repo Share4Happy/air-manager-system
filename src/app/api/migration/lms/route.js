@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import checkAuthToken from '@/utils/checktoken';
-import { getMigrationStats, runLmsMigration, cleanupLegacyEmbeddedData } from '@/lib/migration/lms-migration';
+import { getMigrationStats, runLmsMigration, cleanupLegacyEmbeddedData, cleanupNotificationCollections } from '@/lib/migration/lms-migration';
 
 export async function GET() {
     try {
@@ -28,6 +28,14 @@ export async function POST(req) {
 
         if (body.mode === 'cleanup') {
             const cleanupResult = await cleanupLegacyEmbeddedData();
+            return NextResponse.json({
+                success: true,
+                data: cleanupResult
+            });
+        }
+
+        if (body.mode === 'cleanup-notifications') {
+            const cleanupResult = await cleanupNotificationCollections();
             return NextResponse.json({
                 success: true,
                 data: cleanupResult

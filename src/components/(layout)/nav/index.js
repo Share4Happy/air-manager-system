@@ -4,7 +4,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Svg_Logout, Svg_Menu, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile } from '../../(icon)/svg';
 import Menu from '../../(ui)/(button)/menu';
 import Loading from '@/components/(ui)/(loading)/loading';
-import NotificationBell from '@/components/(features)/(noti)/notificationBell';
 import Link from 'next/link';
 
 const Svg_More = (props) => (
@@ -270,15 +269,11 @@ export default function Nav({ data }) {
             {collapsed ? (
               <div className="flex flex-col items-center gap-2">
                 <span className="text-lg font-bold text-[var(--main_d)]">AI</span>
-                <NotificationBell collapsed={true} />
               </div>
             ) : (
-              <>
-                <p className="text-xl font-semibold text-[var(--text-primary)]">
-                  <span style={{ color: 'var(--main_d)' }}> AI</span><span>R</span>
-                </p>
-                <NotificationBell collapsed={false} />
-              </>
+              <p className="text-xl font-semibold text-[var(--text-primary)]">
+                <span style={{ color: 'var(--main_d)' }}> AI</span><span>R</span>
+              </p>
             )}
           </div>
 

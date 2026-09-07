@@ -11,12 +11,16 @@ export async function GET(req) {
         const { searchParams } = new URL(req.url)
         const q = searchParams.get('q')
 
-        // 1. Quét các khóa đang học (Status: true) HOẶC khóa đã kết thúc trong vòng 2 tuần (14 ngày)
-        const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        // 1. Quét các khóa đang học HOẶC khóa đã kết thúc trong vòng 4 tuần (28 ngày)
+        const now = new Date();
+        const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
         const baseStatusFilter = {
+            Type: { $ne: 'Học thử' },
             $or: [
-                { Status: true },
-                { Status: false, updatedAt: { $gte: twoWeeksAgo } }
+                { Status: false },
+                { Status: { $exists: false } },
+                { 'Detail.Day': { $gte: fourWeeksAgo } },
+                { updatedAt: { $gte: fourWeeksAgo } }
             ]
         };
 
@@ -37,8 +41,8 @@ export async function GET(req) {
 
         const courses = await PostCourse.find(filter)
             .populate('Book', 'Name Topics')
-            .select('ID Book Detail Student Status updatedAt')
-            .limit(100)
+            .select('ID Book Detail Student Status updatedAt createdAt')
+            .limit(200)
             .lean()
 
         const allStudentIds = new Set()
@@ -78,7 +82,6 @@ export async function GET(req) {
             attGroup.get(k).push(a);
         });
 
-        const now = new Date();
         const result = [];
 
         for (const course of courses) {
@@ -88,11 +91,56 @@ export async function GET(req) {
             // Sắp xếp các buổi học theo ngày/thứ tự buổi
             sList.sort((a, b) => new Date(a.day || a.Day || 0) - new Date(b.day || b.Day || 0));
 
+            // Xác định ngày buổi học cuối cùng (không tính buổi báo nghỉ / học bù)
+            const regularLessons = sList.filter(d => {
+                const t = d.type || d.Type || '';
+                return t !== 'Báo nghỉ' && t !== 'Học bù' && t !== 'makeup';
+            });
+
+            let lastLessonDate = null;
+            if (regularLessons.length > 0) {
+                const last = regularLessons[regularLessons.length - 1];
+                const lDate = last.day ? new Date(last.day) : (last.Day ? new Date(last.Day) : null);
+                if (lDate && !isNaN(lDate.getTime())) lastLessonDate = lDate;
+            }
+
+            const isExplicitlyCompleted = Boolean(course.Status);
+            const isAllLessonsPast = lastLessonDate ? (lastLessonDate < now) : false;
+
+            let isOngoing = false;
+            let isCompletedUnder4Weeks = false;
+            let statusText = 'Đang diễn ra';
+
+            if (isExplicitlyCompleted) {
+                // Khóa học đã được hoàn thành (Status === true)
+                const completionDate = course.updatedAt ? new Date(course.updatedAt) : lastLessonDate;
+                if (completionDate && completionDate < fourWeeksAgo) {
+                    // Đã hoàn thành quá 4 tuần -> không hiển thị ở danh sách có thể bù
+                    continue;
+                }
+                isCompletedUnder4Weeks = true;
+                statusText = 'Đã hoàn thành (< 4 tuần)';
+            } else {
+                // Khóa học chưa đánh dấu hoàn thành (Status === false)
+                if (isAllLessonsPast) {
+                    if (lastLessonDate && lastLessonDate < fourWeeksAgo) {
+                        // Toàn bộ buổi học đã kết thúc quá 4 tuần -> bỏ qua
+                        continue;
+                    }
+                    isCompletedUnder4Weeks = true;
+                    statusText = 'Đã hoàn thành (< 4 tuần)';
+                } else {
+                    // Vẫn đang trong lịch học (có buổi hôm nay hoặc tương lai)
+                    isOngoing = true;
+                    statusText = 'Đang diễn ra';
+                }
+            }
+
             // Chỉ tính những buổi học ĐÃ DIỄN RA (ngày <= hiện tại hoặc đã có dữ liệu checkin)
-            // và KHÔNG PHẢI là buổi Báo nghỉ
+            // và KHÔNG PHẢI là buổi Báo nghỉ / Học bù
             const pastOrCheckedLessons = sList.filter(d => {
                 const type = d.type || d.Type || '';
-                if (type === 'Báo nghỉ') return false;
+                if (type === 'Báo nghỉ' || type === 'Học bù' || type === 'makeup') return false;
                 const dDay = d.day ? new Date(d.day) : (d.Day ? new Date(d.Day) : null);
                 const isPast = dDay && dDay <= now;
                 const isChecked = Boolean(d.checkin || d.Checkin);
@@ -104,13 +152,16 @@ export async function GET(req) {
             const courseStudents = [];
             for (const student of (course.Student || [])) {
                 const studentAtts = attGroup.get(`${String(course._id)}_${student.ID}`) || [];
-                
+                const studentLearn = (student.Learn || []).filter(l => l.Checkin === 1 || l.makeupStatus === 'MAKEUP_COMPLETED');
+
                 // Tập hợp các buổi học sinh ĐÃ ĐI HỌC (checkin = 1) hoặc ĐÃ HOÀN THÀNH HỌC BÙ
-                const attendedSet = new Set(
-                    studentAtts
+                const attendedSet = new Set([
+                    ...studentAtts
                         .filter(a => a.checkin === 1 || a.makeupStatus === 'MAKEUP_COMPLETED')
-                        .map(a => String(a.session))
-                );
+                        .map(a => String(a.session)),
+                    ...studentLearn
+                        .map(l => String(l.Lesson))
+                ]);
 
                 // Buổi thiếu = Buổi đã diễn ra mà học sinh chưa có mặt
                 const missingDetail = pastOrCheckedLessons.filter(d => !attendedSet.has(String(d._id)));
@@ -146,9 +197,15 @@ export async function GET(req) {
                         ID: course.ID,
                         Name: course.ID,
                         Status: course.Status,
+                        isOngoing,
+                        isCompletedUnder4Weeks,
+                        lastLessonDate,
                         bookName: course.Book?.Name || 'N/A'
                     },
-                    statusText: course.Status ? 'Đang diễn ra' : 'Đã kết thúc (< 2 tuần)',
+                    isOngoing,
+                    isCompletedUnder4Weeks,
+                    canMakeup: true,
+                    statusText,
                     bookName: course.Book?.Name || 'N/A',
                     students: courseStudents,
                 });

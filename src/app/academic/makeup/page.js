@@ -34,11 +34,19 @@ const statusMap = {
     MAKEUP_CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700' },
 }
 
-const needStatuses = ['MAKEUP_PENDING', 'MAKEUP_REQUIRED', 'MAKEUP_SCHEDULED']
+const allStatuses = [
+    'MAKEUP_PENDING',
+    'MAKEUP_REQUIRED',
+    'MAKEUP_SCHEDULED',
+    'MAKEUP_COMPLETED',
+    'MAKEUP_ABSENT',
+    'MAKEUP_EXPIRED',
+    'MAKEUP_CANCELLED',
+]
 const historyStatuses = ['MAKEUP_COMPLETED', 'MAKEUP_ABSENT', 'MAKEUP_EXPIRED', 'MAKEUP_CANCELLED']
 
 export default function MakeupPage() {
-    const [tab, setTab] = useState('incomplete') // 'incomplete' | 'need' | 'history'
+    const [tab, setTab] = useState('overview') // 'overview' | 'all' | 'history'
     const [sessions, setSessions] = useState([])
     const [incompleteCourses, setIncompleteCourses] = useState([])
     const [stats, setStats] = useState({ total: 0, byStatus: {} })
@@ -94,7 +102,7 @@ export default function MakeupPage() {
     const fetchSessions = useCallback(async () => {
         setLoading(true)
         try {
-            if (tab === 'incomplete') {
+            if (tab === 'overview' || tab === 'incomplete') {
                 const params = new URLSearchParams()
                 if (searchQuery) params.set('q', searchQuery)
                 const res = await fetch(`/api/academic/makeup-sessions/incomplete?${params}`)
@@ -104,8 +112,10 @@ export default function MakeupPage() {
                 const params = new URLSearchParams()
                 if (statusFilter) {
                     params.set('status', statusFilter)
+                } else if (tab === 'history') {
+                    params.set('scope', 'history')
                 } else {
-                    params.set('scope', tab)
+                    params.set('scope', 'all')
                 }
                 const res = await fetch(`/api/academic/makeup-sessions?${params}`)
                 const json = await res.json()
@@ -246,7 +256,8 @@ export default function MakeupPage() {
         )
     }, [sessions, searchQuery])
 
-    const currentFilters = tab === 'need' ? needStatuses : historyStatuses
+    const isOverview = tab === 'overview' || tab === 'incomplete'
+    const currentFilters = tab === 'history' ? historyStatuses : allStatuses
 
     return (
         <div className="flex flex-col gap-3 p-4 h-full">
@@ -254,23 +265,23 @@ export default function MakeupPage() {
             <div className="flex gap-0 border-b border-[var(--border-color)]">
                 <button
                     className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        tab === 'incomplete'
+                        isOverview
                             ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
-                    onClick={() => handleTabChange('incomplete')}
+                    onClick={() => handleTabChange('overview')}
                 >
-                    Lớp cần bù ({incompleteCourses.length})
+                    Tổng quan
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        tab === 'need'
+                        tab === 'all'
                             ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
-                    onClick={() => handleTabChange('need')}
+                    onClick={() => handleTabChange('all')}
                 >
-                    Cần bù ({(stats.byStatus?.MAKEUP_PENDING || 0) + (stats.byStatus?.MAKEUP_REQUIRED || 0)})
+                    Danh sách tổng hợp
                 </button>
                 <button
                     className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
@@ -280,7 +291,7 @@ export default function MakeupPage() {
                     }`}
                     onClick={() => handleTabChange('history')}
                 >
-                    Lịch sử bù ({stats.byStatus?.MAKEUP_COMPLETED || 0})
+                    Lịch sử bù
                 </button>
             </div>
 
@@ -311,13 +322,13 @@ export default function MakeupPage() {
                         </svg>
                         <input
                             className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded bg-white text-xs md:text-sm outline-none text-gray-700"
-                            placeholder={tab === 'incomplete' ? 'Tìm tên / mã khóa học...' : 'Tìm học sinh, khóa học, bài học...'}
+                            placeholder={isOverview ? 'Tìm tên / mã khóa học...' : 'Tìm học sinh, khóa học, bài học...'}
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                         />
                     </div>
 
-                    {tab !== 'incomplete' && (
+                    {!isOverview && (
                         <div className="flex items-center gap-1.5 flex-wrap text-xs">
                             <button
                                 onClick={() => setStatusFilter('')}
@@ -384,24 +395,23 @@ export default function MakeupPage() {
                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-2 text-[var(--text-secondary)]">
                     <p className="text-sm">Đang tải dữ liệu học bù...</p>
                 </div>
-            ) : tab === 'incomplete' ? (
-                /* Tab 1: Lớp cần bù - Grouped Class Table */
+            ) : isOverview ? (
+                /* Tab 1: Tổng quan - Grouped Class Table */
                 <div className="overflow-x-auto bg-[var(--bg-primary)] rounded border border-[var(--border-color)] flex-1">
                     <table className="w-full text-sm table-fixed min-w-[950px]">
                         <thead className="sticky top-0 z-10">
                             <tr className="bg-[var(--main_d)] text-white">
-                                <th className="p-2.5 font-medium w-[25%] text-left">Khóa học</th>
-                                <th className="p-2.5 font-medium w-[22%] text-left">Giáo trình</th>
-                                <th className="p-2.5 font-medium w-[15%] text-center">Học sinh thiếu</th>
-                                <th className="p-2.5 font-medium w-[15%] text-center">Tổng số buổi thiếu</th>
-                                <th className="p-2.5 font-medium w-[13%] text-center">Trạng thái lớp</th>
-                                <th className="p-2.5 font-medium w-[10%] text-center">Thao tác</th>
+                                <th className="p-2.5 font-medium w-[22%] text-left">Khóa học / Học sinh</th>
+                                <th className="p-2.5 font-medium w-[18%] text-left">Giáo trình</th>
+                                <th className="p-2.5 font-medium w-[32%] text-left">Chủ đề cần bù</th>
+                                <th className="p-2.5 font-medium w-[14%] text-center">Số buổi thiếu</th>
+                                <th className="p-2.5 font-medium w-[14%] text-center">Trạng thái lớp</th>
                             </tr>
                         </thead>
                         <tbody>
                             {incompleteCourses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-sm text-[var(--text-secondary)] italic">
+                                    <td colSpan={5} className="p-8 text-center text-sm text-[var(--text-secondary)] italic">
                                         Tuyệt vời! Không có lớp học nào có học sinh bị thiếu buổi cần bù.
                                     </td>
                                 </tr>
@@ -420,7 +430,7 @@ export default function MakeupPage() {
                                                 onClick={() => toggleCourse(cid)}
                                                 className="border-t border-[var(--border-color)] bg-[var(--main_d)]/5 hover:bg-[var(--main_d)]/10 transition-colors cursor-pointer select-none"
                                             >
-                                                <td colSpan={6} className="p-2.5">
+                                                <td colSpan={5} className="p-2.5">
                                                     <div className="flex items-center gap-2.5 flex-wrap">
                                                         <div className="flex items-center gap-2 text-[var(--main_d)] font-semibold text-sm">
                                                             <svg
@@ -445,11 +455,11 @@ export default function MakeupPage() {
                                                         )}
 
                                                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                                            c.course?.Status
+                                                            c.isOngoing || (!c.isCompletedUnder4Weeks && !c.course?.Status)
                                                                 ? 'bg-green-100 text-green-700'
-                                                                : 'bg-yellow-100 text-yellow-700'
+                                                                : 'bg-amber-100 text-amber-700'
                                                         }`}>
-                                                            {c.statusText || (c.course?.Status ? 'Đang diễn ra' : 'Đã kết thúc (< 2 tuần)')}
+                                                            {c.statusText || (c.course?.Status ? 'Đã hoàn thành (< 4 tuần)' : 'Đang diễn ra')}
                                                         </span>
 
                                                         <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
@@ -476,6 +486,7 @@ export default function MakeupPage() {
                                                                     <span
                                                                         onClick={() => toggleStudent(key)}
                                                                         className="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                                                                        title={isStudentExpanded ? 'Thu gọn chi tiết' : 'Xem chi tiết ngày/giờ'}
                                                                     >
                                                                         <svg
                                                                             className={`shrink-0 transition-transform duration-150 ${isStudentExpanded ? 'rotate-90' : ''}`}
@@ -493,45 +504,51 @@ export default function MakeupPage() {
                                                             <td className="p-2.5 text-left text-xs text-[var(--text-secondary)] truncate">
                                                                 {c.bookName || '—'}
                                                             </td>
-                                                            <td className="p-2.5 text-center text-xs text-[var(--text-secondary)]">
-                                                                1 học sinh
+                                                            <td className="p-2.5 text-left">
+                                                                <div className="flex flex-wrap gap-1.5 items-center">
+                                                                    {st.missingDetail.map(d => (
+                                                                        <span
+                                                                            key={d.lessonId}
+                                                                            className="px-2 py-0.5 rounded text-xs bg-orange-50 text-orange-700 border border-orange-200 font-medium inline-flex items-center gap-1"
+                                                                            title={d.Day ? `Ngày học: ${new Date(d.Day).toLocaleDateString('vi-VN')} (${d.Time || '—'})` : ''}
+                                                                        >
+                                                                            <span>{d.Topic?.Name || d.Topic || 'Chủ đề bài học'}</span>
+                                                                            {d.Day && (
+                                                                                <span className="text-[10px] text-orange-500 font-normal">
+                                                                                    ({new Date(d.Day).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })})
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
                                                             </td>
                                                             <td className="p-2.5 text-center whitespace-nowrap">
                                                                 <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
                                                                     Thiếu {st.missingLessons}/{st.pastLessons || st.totalLessons} buổi
                                                                 </span>
                                                             </td>
-                                                            <td className="p-2.5 text-center text-xs text-[var(--text-secondary)]">
-                                                                {c.statusText || (c.course?.Status ? 'Đang diễn ra' : 'Đã kết thúc')}
-                                                            </td>
-                                                            <td className="p-2.5 text-center whitespace-nowrap">
-                                                                <button
-                                                                    onClick={() => openQuickSchedule(
-                                                                        cid,
-                                                                        st.studentId,
-                                                                        st.missingDetail?.[0]?.lessonId,
-                                                                        st.missingDetail?.[0]?.Topic?.Name
-                                                                    )}
-                                                                    className="px-2.5 py-1 rounded text-xs font-medium bg-[var(--main_d)] hover:bg-[var(--main_b)] text-white transition-colors cursor-pointer border-none inline-flex items-center gap-1"
-                                                                >
-                                                                    <Svg_Add w="10" h="10" c="white" />
-                                                                    <span>Xếp bù</span>
-                                                                </button>
+                                                            <td className="p-2.5 text-center text-xs">
+                                                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                                                    c.isOngoing || (!c.isCompletedUnder4Weeks && !c.course?.Status)
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : 'bg-amber-100 text-amber-700'
+                                                                }`}>
+                                                                    {c.statusText || (c.course?.Status ? 'Đã hoàn thành (< 4 tuần)' : 'Đang diễn ra')}
+                                                                </span>
                                                             </td>
                                                         </tr>
 
                                                         {/* Missing Lessons Detailed Table */}
                                                         {isStudentExpanded && (
                                                             <tr className="bg-gray-50/70 border-t border-[var(--border-color)]">
-                                                                <td colSpan={6} className="p-3 pl-14">
+                                                                <td colSpan={5} className="p-3 pl-14">
                                                                     <div className="bg-white rounded border border-[var(--border-color)] overflow-hidden">
                                                                         <table className="w-full text-xs text-left">
                                                                             <thead>
                                                                                 <tr className="bg-[var(--main_d)]/10 text-[var(--main_d)] font-semibold border-b border-[var(--border-color)]">
-                                                                                    <th className="p-2">Ngày học</th>
-                                                                                    <th className="p-2">Khung giờ</th>
-                                                                                    <th className="p-2">Chủ đề bài học</th>
-                                                                                    <th className="p-2 text-center">Thao tác</th>
+                                                                                    <th className="p-2 w-[25%]">Ngày học</th>
+                                                                                    <th className="p-2 w-[25%]">Khung giờ</th>
+                                                                                    <th className="p-2 w-[50%]">Chủ đề bài học cần bù</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody className="divide-y divide-[var(--border-color)]">
@@ -545,20 +562,6 @@ export default function MakeupPage() {
                                                                                         </td>
                                                                                         <td className="p-2 font-medium text-[var(--text-primary)]">
                                                                                             {d.Topic?.Name || d.Topic || 'Chủ đề bài học'}
-                                                                                        </td>
-                                                                                        <td className="p-2 text-center">
-                                                                                            <button
-                                                                                                onClick={() => openQuickSchedule(
-                                                                                                    cid,
-                                                                                                    st.studentId,
-                                                                                                    d.lessonId,
-                                                                                                    d.Topic?.Name
-                                                                                                )}
-                                                                                                className="px-2 py-0.5 rounded text-xs font-medium text-[var(--main_d)] hover:bg-[var(--main_d)]/10 border border-[var(--main_d)]/30 transition-colors cursor-pointer inline-flex items-center gap-1"
-                                                                                            >
-                                                                                                <Svg_Add w="10" h="10" c="currentColor" />
-                                                                                                <span>Xếp bài này</span>
-                                                                                            </button>
                                                                                         </td>
                                                                                     </tr>
                                                                                 ))}
@@ -729,7 +732,7 @@ export default function MakeupPage() {
                                 <option value="">-- Chọn khóa học --</option>
                                 {options.courses.map(c => (
                                     <option key={c._id} value={c._id}>
-                                        {c.ID} {c.Status ? '(Đang học)' : '(Đã kết thúc)'}
+                                        {c.ID} {c.Status ? '(Đã hoàn thành < 4 tuần)' : '(Đang diễn ra)'}
                                     </option>
                                 ))}
                             </select>

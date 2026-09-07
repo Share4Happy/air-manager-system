@@ -9,6 +9,7 @@ export default function MigrationTab() {
     const [logs, setLogs] = useState([]);
     const [showConfirm, setShowConfirm] = useState(false);
     const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
+    const [showNotiCleanupConfirm, setShowNotiCleanupConfirm] = useState(false);
     const [cleanupText, setCleanupText] = useState('');
     const [noti, setNoti] = useState({ open: false, status: false, message: '' });
 
@@ -37,6 +38,9 @@ export default function MigrationTab() {
             setShowCleanupConfirm(false);
             setCleanupText('');
         }
+        if (mode === 'cleanup-notifications') {
+            setShowNotiCleanupConfirm(false);
+        }
         try {
             const res = await fetch('/api/migration/lms', {
                 method: 'POST',
@@ -54,6 +58,12 @@ export default function MigrationTab() {
                         open: true,
                         status: true,
                         message: 'Đã dọn dẹp dữ liệu nhúng cũ thành công! Hệ thống hiện đã chuyển sang mô hình LMS độc lập.'
+                    });
+                } else if (mode === 'cleanup-notifications') {
+                    setNoti({
+                        open: true,
+                        status: true,
+                        message: 'Đã dọn dẹp và xóa sạch 4 collection thông báo cũ trên CSDL thành công!'
                     });
                 } else {
                     const isDry = json.data.dryRun;
@@ -221,6 +231,50 @@ export default function MigrationTab() {
                 </button>
             </div>
 
+            {/* Section 3: Cleanup Legacy Notification Collections */}
+            <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        3. Dọn dẹp CSDL Thông báo cũ (Legacy Notifications)
+                    </h4>
+                    {stats?.legacyNotifications?.total === 0 ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> ĐÃ DỌN DẸP SẠCH (0 BẢN GHI)
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                            {stats?.legacyNotifications?.total ?? 0} bản ghi rác
+                        </span>
+                    )}
+                </div>
+                <p className="text-xs text-amber-800 leading-relaxed mb-3">
+                    Xóa sạch 4 collection rác của hệ thống thông báo cũ trên CSDL (<code>notifications</code>, <code>notificationrecipients</code>, <code>notificationlogs</code>, <code>notificationtemplates</code>). 
+                    Bảng <code>notificationsettings</code> chứa cấu hình ZaloLite và Bài kiểm tra vẫn được giữ nguyên an toàn.
+                </p>
+                {stats?.legacyNotifications && stats.legacyNotifications.total > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4 text-xs text-amber-900 font-mono">
+                        {Object.entries(stats.legacyNotifications.details || {}).map(([cName, count]) => (
+                            <span key={cName} className="bg-amber-100 px-2 py-1 rounded">
+                                {cName}: <strong>{count}</strong>
+                            </span>
+                        ))}
+                    </div>
+                )}
+                <button
+                    onClick={() => setShowNotiCleanupConfirm(true)}
+                    disabled={running || stats?.legacyNotifications?.total === 0}
+                    className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-sm transition-all flex items-center gap-2 cursor-pointer border-none shadow-sm disabled:opacity-50"
+                >
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    {stats?.legacyNotifications?.total === 0 ? '✓ Đã dọn dẹp thông báo cũ' : 'Dọn dẹp & Xóa 4 collection thông báo cũ'}
+                </button>
+            </div>
+
             {/* Live Log Terminal Console */}
             {logs.length > 0 && (
                 <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 shadow-md">
@@ -311,6 +365,37 @@ export default function MigrationTab() {
                                 className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium cursor-pointer border-none shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 Xác nhận xóa vĩnh viễn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Modal for Legacy Notifications Cleanup */}
+            {showNotiCleanupConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150 border-2 border-amber-500">
+                        <h3 className="text-lg font-bold text-amber-800 mb-2 flex items-center gap-2">
+                            ⚠️ Xác nhận xóa bảng thông báo cũ
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                            Thao tác này sẽ drop (xóa vĩnh viễn) 4 collection thông báo cũ khỏi CSDL: <code>notifications</code>, <code>notificationrecipients</code>, <code>notificationlogs</code>, <code>notificationtemplates</code>.
+                        </p>
+                        <p className="text-xs text-emerald-700 font-semibold mb-4">
+                            ✓ Bảng <code>notificationsettings</code> (chứa cấu hình ZaloLite & Bài kiểm tra) được giữ nguyên an toàn 100%.
+                        </p>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setShowNotiCleanupConfirm(false)}
+                                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium cursor-pointer border-none"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                onClick={() => handleRunMigration('cleanup-notifications')}
+                                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium cursor-pointer border-none shadow-sm"
+                            >
+                                Xác nhận xóa sạch
                             </button>
                         </div>
                     </div>

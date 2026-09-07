@@ -9,10 +9,19 @@ export async function GET() {
     try {
         await connectDB()
 
+        const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
         const [teachers, areas, courses, books] = await Promise.all([
             User.find({ status: true }, '_id name code role').lean(),
             Area.find({}, '_id name rooms').lean(),
-            PostCourse.find({}, '_id ID Name Status TeacherHR Area').sort({ createdAt: -1 }).limit(200).lean(),
+            PostCourse.find({
+                Type: { $ne: 'Học thử' },
+                $or: [
+                    { Status: false },
+                    { Status: { $exists: false } },
+                    { 'Detail.Day': { $gte: fourWeeksAgo } },
+                    { updatedAt: { $gte: fourWeeksAgo } }
+                ]
+            }, '_id ID Name Status TeacherHR Area Detail updatedAt').sort({ _id: -1 }).limit(300).lean(),
             Book.find({}, '_id Name Topics').lean()
         ])
 

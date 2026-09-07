@@ -287,90 +287,6 @@ function DriveVerifyTab() {
   )
 }
 
-function SlaTab() {
-  const [settings, setSettings] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [noti, setNoti] = useState({ open: false, status: false, message: '' })
-
-  const LABELS = {
-    sla_reminder_minutes: 'Nhắc nhở điểm danh (phút)',
-    sla_warning_minutes: 'Cảnh báo nhật ký (phút)',
-    sla_resource_warning_minutes: 'Cảnh báo minh chứng (phút)',
-    sla_incident_minutes: 'Vi phạm SLA (phút)',
-    student_absent_threshold: 'Ngưỡng vắng học sinh',
-  }
-
-  const DESCRIPTIONS = {
-    sla_reminder_minutes: 'Sau bao nhiêu phút kết thúc buổi học thì nhắc giáo viên điểm danh',
-    sla_warning_minutes: 'Sau bao nhiêu phút thì cảnh báo thiếu nhật ký buổi học',
-    sla_resource_warning_minutes: 'Sau bao nhiêu phút thì cảnh báo thiếu minh chứng (ảnh/video)',
-    sla_incident_minutes: 'Sau bao nhiêu phút thì ghi nhận vi phạm SLA',
-    student_absent_threshold: 'Số buổi vắng tối đa trước khi cảnh báo',
-  }
-
-  useEffect(() => {
-    fetch('/api/notifications/settings')
-      .then(r => r.json())
-      .then(json => {
-        if (json.success) {
-          const map = {}
-          json.data.forEach(s => { map[s.key] = s.value })
-          setSettings(map)
-        }
-      })
-      .catch(err => console.error('Fetch notification settings error:', err))
-      .finally(() => setLoading(false))
-  }, [])
-
-  const handleChange = (key, val) => {
-    setSettings(p => ({ ...p, [key]: Number(val) }))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const entries = Object.entries(settings).filter(([k]) => LABELS[k])
-      const res = await fetch('/api/notifications/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: entries.map(([key, value]) => ({ key, value })) }),
-      })
-      const json = await res.json()
-      setNoti({ open: true, status: json.success, message: json.success ? 'Đã lưu cấu hình SLA' : json.error })
-    } catch (e) {
-      setNoti({ open: true, status: false, message: 'Lỗi kết nối' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (loading) return <div className="flex items-center justify-center h-32 text-sm text-[var(--text-secondary)]">Đang tải...</div>
-
-  return (
-    <div className="max-w-xl">
-      <p className="text-sm text-[var(--text-secondary)] mb-4">Cấu hình thời gian cảnh báo SLA cho từng giai đoạn sau khi buổi học kết thúc.</p>
-      <div className="flex flex-col gap-4">
-        {Object.keys(LABELS).map(key => (
-          <div key={key}>
-            <label className="block text-sm font-semibold text-[var(--text-primary)] mb-1">{LABELS[key]}</label>
-            <p className="text-xs text-[var(--text-secondary)] mb-1">{DESCRIPTIONS[key]}</p>
-            <input type="number" min={0} value={settings[key] ?? ''}
-              onChange={e => handleChange(key, e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700" />
-          </div>
-        ))}
-      </div>
-      <button onClick={handleSave} disabled={saving}
-        className="mt-6 px-4 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-40 cursor-pointer border-none">
-        {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
-      </button>
-      <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.message}
-        button={<button onClick={() => setNoti(p => ({ ...p, open: false }))}
-          className="px-3 py-2 bg-[var(--main_b)] rounded text-white text-sm font-medium cursor-pointer border-none mt-2">Đóng</button>} />
-    </div>
-  )
-}
 
 function ZaloLiteTab() {
   const [form, setForm] = useState({ baseUrl: '', apiKey: '' })
@@ -759,7 +675,6 @@ const TABS = [
   { key: 'guide', label: 'Hướng dẫn' },
   { key: 'quiz', label: 'Bài kiểm tra' },
   { key: 'zalo', label: 'Zalo Proxy' },
-  { key: 'sla', label: 'Cấu hình SLA' },
   { key: 'zalolite', label: 'ZaloLite' },
   { key: 'drive', label: 'Đồng bộ Drive' },
   { key: 'migration', label: 'Di chuyển CSDL' },
@@ -783,7 +698,6 @@ export default function SettingClient({ zaloAccounts, users }) {
         {tab === 'guide' && <GuideTab />}
         {tab === 'quiz' && <QuizTab />}
         {tab === 'zalo' && <ZaloTab zaloAccounts={zaloAccounts} users={users} />}
-        {tab === 'sla' && <SlaTab />}
         {tab === 'zalolite' && <ZaloLiteTab />}
         {tab === 'drive' && <DriveVerifyTab />}
         {tab === 'migration' && <MigrationTab />}

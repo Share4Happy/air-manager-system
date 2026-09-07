@@ -52,8 +52,11 @@ export function progressBadge(count, total) {
 }
 
 export function kindBadge(item) {
+    if (item.kind === 'cancel') return <span className="px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-600 whitespace-nowrap">Lớp nghỉ</span>;
     if (item.kind === 'today') return <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Buổi hôm nay</span>;
-    return <span className="px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-600 whitespace-nowrap">Lớp nghỉ</span>;
+    if (item.kind === 'past') return <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 whitespace-nowrap">Đã diễn ra</span>;
+    if (item.kind === 'future') return <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">Sắp diễn ra</span>;
+    return <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 whitespace-nowrap">Buổi học</span>;
 }
 
 export function checkinText(code) {

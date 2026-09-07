@@ -213,7 +213,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                             <tbody>
                                 {items.map(item => {
                                     const isOpen = !!expandedIds[item.detailId];
-                                    const isToday = item.kind === 'today';
+                                    const isCancel = item.kind === 'cancel';
+                                    const isRegular = !isCancel;
                                     return (
                                         <Fragment key={item.detailId}>
                                             <tr
@@ -241,12 +242,12 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                                 </td>
                                                 <td className="p-2.5 whitespace-nowrap text-[var(--text-secondary)]">{item.areaName}</td>
                                                 <td className="p-2.5">{kindBadge(item)}</td>
-                                                <td className={`p-2.5 whitespace-nowrap font-medium ${isToday ? '' : 'text-red-600'}`}>{fmtDate(item.day)}</td>
-                                                <td className="p-2.5 max-w-[200px] text-[var(--text-secondary)]">{isToday ? '—' : (item.reason || '—')}</td>
+                                                <td className={`p-2.5 whitespace-nowrap font-medium ${isCancel ? 'text-rose-600 font-semibold' : ''}`}>{fmtDate(item.day)}</td>
+                                                <td className="p-2.5 max-w-[200px] text-[var(--text-secondary)]">{isCancel ? (item.reason || '—') : '—'}</td>
                                                 <td className="p-2.5 whitespace-nowrap">{item.teacherName || '—'}</td>
-                                                <td className="p-2.5 text-center">{isToday ? progressBadge(item.lesson?.rollCallChecked || 0, item.lesson?.enrolled || 0) : '—'}</td>
-                                                <td className="p-2.5 text-center">{isToday ? progressBadge(item.lesson?.withImage || 0, item.lesson?.enrolled || 0) : '—'}</td>
-                                                <td className="p-2.5 text-center">{isToday ? progressBadge(item.lesson?.withComment || 0, item.lesson?.enrolled || 0) : '—'}</td>
+                                                <td className="p-2.5 text-center">{isRegular ? progressBadge(item.lesson?.rollCallChecked || 0, item.lesson?.enrolled || 0) : '—'}</td>
+                                                <td className="p-2.5 text-center">{isRegular ? progressBadge(item.lesson?.withImage || 0, item.lesson?.enrolled || 0) : '—'}</td>
+                                                <td className="p-2.5 text-center">{isRegular ? progressBadge(item.lesson?.withComment || 0, item.lesson?.enrolled || 0) : '—'}</td>
                                                 <td className="p-2.5 whitespace-nowrap">{careBadge(item)}</td>
                                                 <td className="p-2.5 whitespace-nowrap">{zaloBadge(item)}</td>
                                                 <td className="p-2.5" onClick={e => e.stopPropagation()}>

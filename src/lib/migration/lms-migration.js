@@ -47,6 +47,21 @@ export async function getMigrationStats() {
     const isFullySynced = totalOldSessions > 0 && totalNewSessions === totalOldSessions && totalNewAttendances === totalOldAttendances;
     const isCleanedLms = totalOldSessions === 0 && totalNewSessions > 0;
 
+    const notiCollections = ['notifications', 'notificationrecipients', 'notificationlogs', 'notificationtemplates'];
+    const legacyNotifications = { total: 0, details: {} };
+    const db = mongoose.connection.db;
+    if (db) {
+        for (const name of notiCollections) {
+            try {
+                const count = await db.collection(name).countDocuments().catch(() => 0);
+                legacyNotifications.details[name] = count;
+                legacyNotifications.total += count;
+            } catch {
+                legacyNotifications.details[name] = 0;
+            }
+        }
+    }
+
     return {
         coursesCount: courses.length,
         trialCoursesCount: trialCourses.length,
@@ -63,6 +78,7 @@ export async function getMigrationStats() {
             sessionsCount: totalNewSessions,
             attendancesCount: totalNewAttendances
         },
+        legacyNotifications,
         status: isCleanedLms ? 'CLEANED_LMS' : isFullySynced ? 'SYNCED' : totalNewSessions > 0 ? 'PARTIAL' : 'NOT_MIGRATED'
     };
 }
@@ -317,6 +333,51 @@ export async function cleanupLegacyEmbeddedData() {
     pushLog(`Đã dọn dẹp thành công ${trialRes.modifiedCount} khóa học thử.`);
 
     pushLog('Hoàn tất dọn dẹp CSDL! Hệ thống hiện đã chuyển hoàn toàn sang mô hình LMS tách rời.');
+
+    const stats = await getMigrationStats();
+
+    return {
+        success: true,
+        logs,
+        stats
+    };
+}
+
+/**
+ * Xóa sạch hoàn toàn 4 collection thông báo cũ trong MongoDB (Production / Dev).
+ */
+export async function cleanupNotificationCollections() {
+    await connectDB();
+    if (mongoose.connection.readyState !== 1) await mongoose.connection.asPromise();
+
+    const logs = [];
+    const pushLog = (msg) => {
+        const time = new Date().toLocaleTimeString('vi-VN');
+        logs.push(`[${time}] ${msg}`);
+    };
+
+    pushLog('Bắt đầu dọn dẹp các collection thông báo cũ (Notifications)...');
+
+    const notiCollections = ['notifications', 'notificationrecipients', 'notificationlogs', 'notificationtemplates'];
+    const db = mongoose.connection.db;
+    let droppedCount = 0;
+
+    for (const name of notiCollections) {
+        try {
+            const count = await db.collection(name).countDocuments().catch(() => 0);
+            await db.collection(name).drop();
+            pushLog(`✓ Đã xóa (drop) collection '${name}' (${count} bản ghi).`);
+            droppedCount++;
+        } catch (err) {
+            if (err.codeName === 'NamespaceNotFound' || err.message?.includes('ns not found')) {
+                pushLog(`- Collection '${name}' đã được xóa trước đó hoặc không tồn tại.`);
+            } else {
+                pushLog(`! Lỗi khi xóa '${name}': ${err.message}`);
+            }
+        }
+    }
+
+    pushLog(`Hoàn tất dọn dẹp hệ thống thông báo cũ! Bảng 'notificationsettings' (ZaloLite & Quiz) được giữ nguyên.`);
 
     const stats = await getMigrationStats();
 

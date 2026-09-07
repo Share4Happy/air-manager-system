@@ -46,7 +46,7 @@ export default function NotifyConfirmPopup({
             renderItemList={() => (
                 <div className="flex flex-col gap-3 p-4">
                     <p className="text-sm text-[var(--text-secondary)]">
-                        Xác nhận đã thông báo buổi {target.kind === 'today' ? '' : 'nghỉ '}
+                        Xác nhận đã thông báo buổi {target.kind === 'cancel' ? 'nghỉ ' : 'học '}
                         <span className="text-[var(--text-primary)] font-medium">{fmtDate(target.day)}</span> của lớp{' '}
                         <span className="text-[var(--text-primary)] font-medium">{target.courseID}</span> cho phụ huynh.
                     </p>

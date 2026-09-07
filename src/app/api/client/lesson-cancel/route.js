@@ -92,6 +92,17 @@ function buildLessonData(course, detailId, attendances = [], session = null) {
     return { enrolled, rollCallChecked, withImage, withComment, byId }
 }
 
+function matchesSelectedDate(dateVal, targetYMD) {
+    if (!dateVal || !targetYMD) return false;
+    const dt = new Date(dateVal);
+    if (isNaN(dt.getTime())) return false;
+    const ly = dt.getFullYear(), lm = String(dt.getMonth() + 1).padStart(2, '0'), ld = String(dt.getDate()).padStart(2, '0');
+    if (`${ly}-${lm}-${ld}` === targetYMD) return true;
+    const uy = dt.getUTCFullYear(), um = String(dt.getUTCMonth() + 1).padStart(2, '0'), ud = String(dt.getUTCDate()).padStart(2, '0');
+    if (`${uy}-${um}-${ud}` === targetYMD) return true;
+    return false;
+}
+
 export async function GET(request) {
     const authRes = await requireAdminSale()
     if (!authRes.ok) return NextResponse.json({ success: false, error: authRes.message }, { status: 403 })
@@ -160,141 +171,193 @@ export async function GET(request) {
         windowEnd.setDate(windowEnd.getDate() + 11)
 
         const dateParam = searchParams.get('date')
-        let dayStart = null
-        let dayEnd = null
+        let isSpecificDate = false
+        let searchMinDate = todayStart
+        let searchMaxDate = windowEnd
+
         if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
             const [yy, mm, dd] = dateParam.split('-').map(Number)
             if (!isNaN(yy) && !isNaN(mm) && !isNaN(dd)) {
-                dayStart = new Date(yy, mm - 1, dd)
-                dayEnd = new Date(dayStart)
-                dayEnd.setDate(dayEnd.getDate() + 1)
+                isSpecificDate = true
+                const d1 = new Date(Date.UTC(yy, mm - 1, dd - 1))
+                const d2 = new Date(yy, mm - 1, dd - 1)
+                const d3 = new Date(Date.UTC(yy, mm - 1, dd + 2))
+                const d4 = new Date(yy, mm - 1, dd + 2)
+                searchMinDate = new Date(Math.min(d1.getTime(), d2.getTime()))
+                searchMaxDate = new Date(Math.max(d3.getTime(), d4.getTime()))
             }
         }
 
-        const Session = (await import('@/models/session')).default;
-        const Attendance = (await import('@/models/attendance')).default;
-        const searchDayStart = dayStart || todayStart;
-        const searchDayEnd = dayEnd || todayEnd;
-        const sessions = await Session.find({
-            $or: [
-                { type: 'Báo nghỉ' },
-                { day: { $gte: searchDayStart, $lt: searchDayEnd } },
-            ],
-        }).lean();
+        const Session = (await import('@/models/session')).default
+        const Attendance = (await import('@/models/attendance')).default
 
-        const rows = [];
+        let sessionQuery = {}
+        if (history) {
+            sessionQuery = { type: 'Báo nghỉ' }
+        } else if (isSpecificDate) {
+            sessionQuery = { day: { $gte: searchMinDate, $lte: searchMaxDate } }
+        } else {
+            sessionQuery = {
+                $or: [
+                    { type: 'Báo nghỉ', day: { $gte: todayStart, $lt: windowEnd } },
+                    { day: { $gte: todayStart, $lt: todayEnd } },
+                ]
+            }
+        }
 
-        if (sessions.length > 0) {
-            const courseIds = [...new Set(sessions.map(s => s.course).filter(Boolean))];
-            const courses = await Course.find({ _id: { $in: courseIds } })
-                .populate('Area', 'name')
-                .lean();
-            const courseMap = new Map(courses.map(c => [String(c._id), c]));
+        let courseQuery = {}
+        if (history) {
+            courseQuery = { 'Detail.Type': 'Báo nghỉ' }
+        } else if (isSpecificDate) {
+            courseQuery = { 'Detail.Day': { $gte: searchMinDate, $lte: searchMaxDate } }
+        } else {
+            courseQuery = {
+                $or: [
+                    { 'Detail.Type': 'Báo nghỉ', 'Detail.Day': { $gte: todayStart, $lt: windowEnd } },
+                    { 'Detail.Day': { $gte: todayStart, $lt: todayEnd } },
+                ]
+            }
+        }
 
-            const sessionIds = sessions.map(s => s._id);
-            const attendances = await Attendance.find({ session: { $in: sessionIds } }).lean();
-            const attBySession = new Map();
-            attendances.forEach(a => {
-                const sid = String(a.session);
-                const list = attBySession.get(sid) || [];
-                list.push(a);
-                attBySession.set(sid, list);
-            });
+        const [sessions, legacyCourses] = await Promise.all([
+            Session.find(sessionQuery).lean(),
+            Course.find(courseQuery).populate('Area', 'name').lean(),
+        ])
 
-            sessions.forEach(s => {
-                const isCancel = s.type === 'Báo nghỉ';
-                const day = s.day ? new Date(s.day) : null;
-                const inDay = dayStart ? (!!day && day >= dayStart && day < dayEnd) : false;
-                const isToday = !!day && day >= todayStart && day < todayEnd;
+        const rows = []
+        const courseIds = [...new Set(sessions.map(s => s.course).filter(Boolean))]
+        const courses = courseIds.length
+            ? await Course.find({ _id: { $in: courseIds } }).populate('Area', 'name').lean()
+            : []
+        const courseMap = new Map(courses.map(c => [String(c._id), c]))
 
+        const sessionIds = sessions.map(s => s._id)
+        const attendances = sessionIds.length
+            ? await Attendance.find({ session: { $in: sessionIds } }).lean()
+            : []
+        const attBySession = new Map()
+        attendances.forEach(a => {
+            const sid = String(a.session)
+            const list = attBySession.get(sid) || []
+            list.push(a)
+            attBySession.set(sid, list)
+        })
+
+        const addedKeys = new Set()
+
+        sessions.forEach(s => {
+            const isCancel = s.type === 'Báo nghỉ'
+            const day = s.day ? new Date(s.day) : null
+
+            if (history) {
+                if (!isCancel) return
+            } else if (isSpecificDate) {
+                if (!matchesSelectedDate(s.day, dateParam)) return
+            } else {
                 if (isCancel) {
-                    if (history) {
-                    } else if (dayStart) {
-                        if (!inDay) return;
-                    } else {
-                        if (!day || day < todayStart || day >= windowEnd) return;
-                    }
+                    if (!day || day < todayStart || day >= windowEnd) return
                 } else {
-                    if (history) return;
-                    if (dayStart) {
-                        if (!inDay) return;
+                    const isToday = !!day && day >= todayStart && day < todayEnd
+                    if (!isToday) return
+                }
+            }
+
+            let kind = 'today'
+            if (isCancel) {
+                kind = 'cancel'
+            } else if (day) {
+                if (day < todayStart) {
+                    kind = 'past'
+                } else if (day >= todayEnd) {
+                    kind = 'future'
+                } else {
+                    kind = 'today'
+                }
+            }
+
+            const course = courseMap.get(String(s.course))
+            const areaName = course?.Area?.name || 'Khác'
+            const sessionAtts = attBySession.get(String(s._id)) || []
+            const detailIdStr = String(s._id)
+
+            if (course) addedKeys.add(`${String(course._id)}_${s.day ? new Date(s.day).toISOString() : ''}`)
+            if (s.courseCode) addedKeys.add(`${s.courseCode}_${s.day ? new Date(s.day).toISOString() : ''}`)
+            addedKeys.add(detailIdStr)
+
+            rows.push({
+                kind,
+                courseId: course ? String(course._id) : (s.course ? String(s.course) : ''),
+                courseID: course?.ID || s.courseCode || '',
+                courseName: course?.Name || course?.ID || s.courseCode || '',
+                areaName,
+                detailId: detailIdStr,
+                day: s.day || null,
+                time: s.time || '',
+                room: s.room ? String(s.room) : '',
+                reason: s.note || '',
+                statusType: s.type || '',
+                teacher: s.teacher ? String(s.teacher) : null,
+                students: (course?.Student || []).map(st => st.ID).filter(Boolean),
+                lesson: isCancel ? null : buildLessonData(course, s._id, sessionAtts, s),
+            })
+        })
+
+        legacyCourses.forEach(course => {
+            ;(course.Detail || []).forEach(d => {
+                const isCancel = d.Type === 'Báo nghỉ'
+                const day = d.Day ? new Date(d.Day) : null
+                const dIdStr = String(d._id)
+                const dedupKeyCourse = `${String(course._id)}_${d.Day ? new Date(d.Day).toISOString() : ''}`
+                const dedupKeyCode = `${course.ID}_${d.Day ? new Date(d.Day).toISOString() : ''}`
+
+                if (addedKeys.has(dIdStr) || addedKeys.has(dedupKeyCourse) || addedKeys.has(dedupKeyCode)) return
+
+                if (history) {
+                    if (!isCancel) return
+                } else if (isSpecificDate) {
+                    if (!matchesSelectedDate(d.Day, dateParam)) return
+                } else {
+                    if (isCancel) {
+                        if (!day || day < todayStart || day >= windowEnd) return
                     } else {
-                        if (!isToday) return;
+                        const isToday = !!day && day >= todayStart && day < todayEnd
+                        if (!isToday) return
                     }
                 }
 
-                const course = courseMap.get(String(s.course));
-                const areaName = course?.Area?.name || 'Khác';
-                const sessionAtts = attBySession.get(String(s._id)) || [];
+                let kind = 'today'
+                if (isCancel) {
+                    kind = 'cancel'
+                } else if (day) {
+                    if (day < todayStart) {
+                        kind = 'past'
+                    } else if (day >= todayEnd) {
+                        kind = 'future'
+                    } else {
+                        kind = 'today'
+                    }
+                }
 
                 rows.push({
-                    kind: isCancel ? 'cancel' : 'today',
-                    courseId: course ? String(course._id) : (s.course ? String(s.course) : ''),
-                    courseID: course?.ID || s.courseCode || '',
-                    courseName: course?.Name || course?.ID || s.courseCode || '',
-                    areaName,
-                    detailId: String(s._id),
-                    day: s.day || null,
-                    time: s.time || '',
-                    room: s.room ? String(s.room) : '',
-                    reason: s.note || '',
-                    statusType: s.type || '',
-                    teacher: s.teacher ? String(s.teacher) : null,
-                    students: (course?.Student || []).map(st => st.ID).filter(Boolean),
-                    lesson: isCancel ? null : buildLessonData(course, s._id, sessionAtts, s),
-                });
-            });
-        } else {
-            const courses = await Course.find({
-                $or: [
-                    { 'Detail.Type': 'Báo nghỉ' },
-                    { 'Detail.Day': { $gte: searchDayStart, $lt: searchDayEnd } },
-                ],
-            })
-                .populate('Area', 'name')
-                .lean();
-
-            courses.forEach(course => {
-                ;(course.Detail || []).forEach(d => {
-                    const isCancel = d.Type === 'Báo nghỉ'
-                    const day = d.Day ? new Date(d.Day) : null
-                    const inDay = dayStart ? (!!day && day >= dayStart && day < dayEnd) : false
-                    const isToday = !!day && day >= todayStart && day < todayEnd
-
-                    if (isCancel) {
-                        if (history) {
-                            // hiển thị toàn bộ lịch sử lớp nghỉ
-                        } else if (dayStart) {
-                            if (!inDay) return
-                        } else {
-                            if (!day || day < todayStart || day >= windowEnd) return
-                        }
-                    } else {
-                        if (history) return
-                        if (dayStart) {
-                            if (!inDay) return
-                        } else {
-                            if (!isToday) return
-                        }
-                    }
-                    rows.push({
-                        kind: isCancel ? 'cancel' : 'today',
-                        courseId: String(course._id),
-                        courseID: course.ID,
-                        courseName: course.Name || course.ID,
-                        areaName: course.Area?.name || 'Khác',
-                        detailId: String(d._id),
-                        day,
-                        reason: d.Note || '',
-                        teacher: d.Teacher ? String(d.Teacher) : null,
-                        students: (course.Student || []).map(s => s.ID).filter(Boolean),
-                        lesson: isCancel ? null : buildLessonData(course, d._id),
-                    })
+                    kind,
+                    courseId: String(course._id),
+                    courseID: course.ID,
+                    courseName: course.Name || course.ID,
+                    areaName: course.Area?.name || 'Khác',
+                    detailId: dIdStr,
+                    day,
+                    time: d.Time || '',
+                    room: d.Room ? String(d.Room) : '',
+                    reason: d.Note || '',
+                    statusType: d.Type || '',
+                    teacher: d.Teacher ? String(d.Teacher) : null,
+                    students: (course.Student || []).map(s => s.ID).filter(Boolean),
+                    lesson: isCancel ? null : buildLessonData(course, d._id),
                 })
             })
-        }
+        })
 
-        rows.sort((a, b) => (a.day ? a.day - 0 : 0) - (b.day ? b.day - 0 : 0))
+        rows.sort((a, b) => (a.day ? new Date(a.day) - 0 : 0) - (b.day ? new Date(b.day) - 0 : 0))
 
         const allStudentIds = [...new Set(rows.flatMap(c => c.students))]
         const students = allStudentIds.length
@@ -332,9 +395,12 @@ export async function GET(request) {
                 areaName: c.areaName,
                 detailId: c.detailId,
                 day: c.day,
+                time: c.time,
+                room: c.room,
                 reason: c.reason,
+                statusType: c.statusType,
                 teacherName: c.teacher ? (teacherMap.get(c.teacher) || '') : '',
-                lesson: c.kind === 'today' && c.lesson
+                lesson: c.kind !== 'cancel' && c.lesson
                     ? {
                         enrolled: c.lesson.enrolled,
                         rollCallChecked: c.lesson.rollCallChecked,
