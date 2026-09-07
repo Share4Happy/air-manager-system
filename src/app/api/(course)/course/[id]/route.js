@@ -134,6 +134,28 @@ export async function PATCH(request, { params }) {
                     await PostStudent.bulkWrite(bulkOperations);
                 }
             }
+
+            // Vô hiệu hóa toàn bộ các buổi học trong tương lai của khóa học này trong Session
+            try {
+                const Session = (await import('@/models/session')).default;
+                await Session.updateMany(
+                    {
+                        $or: [
+                            { course: updatedCourse._id },
+                            { courseCode: updatedCourse.ID }
+                        ],
+                        day: { $gt: new Date() }
+                    },
+                    {
+                        $set: {
+                            status: false,
+                            note: 'Khóa học đã kết thúc'
+                        }
+                    }
+                );
+            } catch (sessionErr) {
+                console.error('[COURSE_COMPLETE_SESSION_SYNC_ERROR]', sessionErr.message);
+            }
         }
 
         await reloadCourse(updatedCourse._id, updatedCourse.ID);

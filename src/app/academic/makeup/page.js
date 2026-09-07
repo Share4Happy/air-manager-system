@@ -1,46 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import DateInput from '@/components/(ui)/(input)/DateInput'
+import CenterPopup from '@/components/(features)/(popup)/popup_center'
+import Title from '@/components/(features)/(popup)/title'
 import {
-    Svg_Canlendar,
-    Svg_History,
     Svg_Reload,
     Svg_Delete,
-    Svg_Course,
     Svg_Add,
     Svg_Close,
     Svg_Waring,
     Svg_Check
 } from '@/components/(icon)/svg'
-
-// Inline SVG Icon Helpers
-function SearchIcon({ className = "w-4 h-4 text-[var(--text-secondary)]" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-    )
-}
-
-function ClockIcon({ className = "w-3.5 h-3.5 text-[var(--text-secondary)]" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-        </svg>
-    )
-}
-
-function ChevronRightIcon({ className = "w-3.5 h-3.5" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-        </svg>
-    )
-}
 
 function ExternalLinkIcon({ className = "w-3 h-3" }) {
     return (
@@ -52,42 +24,14 @@ function ExternalLinkIcon({ className = "w-3 h-3" }) {
     )
 }
 
-function BookIcon({ className = "w-3.5 h-3.5 text-[var(--text-secondary)]" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-        </svg>
-    )
-}
-
-function EmptyBoxIcon({ className = "w-10 h-10 text-[var(--text-secondary)]/40" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-            <path d="m3.3 7 8.7 5 8.7-5" />
-            <path d="M12 22V12" />
-        </svg>
-    )
-}
-
-function SpinnerIcon({ className = "w-4 h-4 animate-spin" }) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-    )
-}
-
 const statusMap = {
-    MAKEUP_PENDING: { label: 'Chờ xếp lịch', color: 'bg-amber-50 text-amber-700 border border-amber-200' },
-    MAKEUP_REQUIRED: { label: 'Cần học bù', color: 'bg-orange-50 text-orange-700 border border-orange-200' },
-    MAKEUP_SCHEDULED: { label: 'Đã xếp lịch', color: 'bg-blue-50 text-blue-700 border border-blue-200' },
-    MAKEUP_COMPLETED: { label: 'Đã học bù', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-    MAKEUP_ABSENT: { label: 'Vắng buổi bù', color: 'bg-rose-50 text-rose-700 border border-rose-200' },
-    MAKEUP_EXPIRED: { label: 'Quá hạn', color: 'bg-purple-50 text-purple-700 border border-purple-200' },
-    MAKEUP_CANCELLED: { label: 'Đã hủy', color: 'bg-slate-100 text-slate-600 border border-slate-200' },
+    MAKEUP_PENDING: { label: 'Chờ xếp lịch', color: 'bg-amber-100 text-amber-700' },
+    MAKEUP_REQUIRED: { label: 'Cần học bù', color: 'bg-orange-100 text-orange-700' },
+    MAKEUP_SCHEDULED: { label: 'Đã xếp lịch', color: 'bg-blue-100 text-blue-700' },
+    MAKEUP_COMPLETED: { label: 'Đã học bù', color: 'bg-green-100 text-green-700' },
+    MAKEUP_ABSENT: { label: 'Vắng buổi bù', color: 'bg-red-100 text-red-700' },
+    MAKEUP_EXPIRED: { label: 'Quá hạn', color: 'bg-purple-100 text-purple-700' },
+    MAKEUP_CANCELLED: { label: 'Đã hủy', color: 'bg-gray-100 text-gray-700' },
 }
 
 const needStatuses = ['MAKEUP_PENDING', 'MAKEUP_REQUIRED', 'MAKEUP_SCHEDULED']
@@ -305,24 +249,111 @@ export default function MakeupPage() {
     const currentFilters = tab === 'need' ? needStatuses : historyStatuses
 
     return (
-        <div className="flex flex-col gap-5 p-4 md:p-6 max-w-[1600px] mx-auto w-full">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <span>Quản lý học bù</span>
-                    </h1>
-                    <p className="text-xs md:text-sm text-[var(--text-secondary)] mt-0.5">
-                        Theo dõi danh sách học sinh cần học bù, xếp lịch bù riêng và đồng bộ tiến độ học tập
-                    </p>
+        <div className="flex flex-col gap-3 p-4 h-full">
+            {/* Page Top Tabs */}
+            <div className="flex gap-0 border-b border-[var(--border-color)]">
+                <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                        tab === 'incomplete'
+                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                    onClick={() => handleTabChange('incomplete')}
+                >
+                    Lớp cần bù ({incompleteCourses.length})
+                </button>
+                <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                        tab === 'need'
+                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                    onClick={() => handleTabChange('need')}
+                >
+                    Cần bù ({(stats.byStatus?.MAKEUP_PENDING || 0) + (stats.byStatus?.MAKEUP_REQUIRED || 0)})
+                </button>
+                <button
+                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                        tab === 'history'
+                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                    onClick={() => handleTabChange('history')}
+                >
+                    Lịch sử bù ({stats.byStatus?.MAKEUP_COMPLETED || 0})
+                </button>
+            </div>
+
+            {/* Notification Toast */}
+            {msg.text && (
+                <div className={`px-3 py-2 rounded text-xs sm:text-sm flex justify-between items-center ${
+                    msg.type === 'error'
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-green-50 text-green-700 border border-green-200'
+                }`}>
+                    <span className="flex items-center gap-2">
+                        {msg.type === 'error' ? <Svg_Waring w={14} h={14} c="#b91c1c" /> : <Svg_Check w={14} h={14} c="#15803d" />}
+                        <span>{msg.text}</span>
+                    </span>
+                    <button onClick={() => setMsg({ text: '', type: 'success' })} className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer">
+                        <Svg_Close w={12} h={12} c="currentColor" />
+                    </button>
                 </div>
+            )}
+
+            {/* Toolbar & Filter Bar */}
+            <div className="flex items-center justify-between gap-2.5 flex-wrap">
+                {/* Search & Status Filters */}
+                <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
+                    <div className="relative w-full sm:w-72">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={13} height={13} fill="var(--text-secondary)">
+                            <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+                        </svg>
+                        <input
+                            className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded bg-white text-xs md:text-sm outline-none text-gray-700"
+                            placeholder={tab === 'incomplete' ? 'Tìm tên / mã khóa học...' : 'Tìm học sinh, khóa học, bài học...'}
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    {tab !== 'incomplete' && (
+                        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                            <button
+                                onClick={() => setStatusFilter('')}
+                                className={`px-3 py-1.5 rounded transition-colors cursor-pointer border font-medium ${
+                                    statusFilter === ''
+                                        ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                        : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--main_d)] hover:text-[var(--text-primary)]'
+                                }`}
+                            >
+                                Tất cả
+                            </button>
+                            {currentFilters.map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setStatusFilter(f)}
+                                    className={`px-3 py-1.5 rounded transition-colors cursor-pointer border font-medium ${
+                                        statusFilter === f
+                                            ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                            : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--main_d)] hover:text-[var(--text-primary)]'
+                                    }`}
+                                >
+                                    {statusMap[f]?.label || f}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => { fetchSessions(); fetchStats(); }}
-                        className="p-2 md:px-3.5 md:py-2 text-xs md:text-sm rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2"
+                        className="px-3 py-1.5 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
                         title="Tải lại dữ liệu"
                     >
-                        <Svg_Reload w="14" h="14" c="currentColor" />
+                        <Svg_Reload w="13" h="13" c="currentColor" />
                         <span className="hidden sm:inline">Làm mới</span>
                     </button>
                     <button
@@ -340,622 +371,477 @@ export default function MakeupPage() {
                             })
                             setShowForm(true)
                         }}
-                        className="px-3.5 py-2 text-xs md:text-sm font-medium rounded-lg bg-[#1565c0] hover:bg-[#0d47a1] text-white shadow-sm transition-all flex items-center gap-2"
+                        className="px-3 py-1.5 rounded text-xs font-medium bg-[var(--main_d)] hover:bg-[var(--main_b)] text-white transition-colors flex items-center gap-1.5 cursor-pointer border-none shadow-xs"
                     >
                         <Svg_Add w="13" h="13" c="white" />
-                        <span>Tạo buổi bù riêng</span>
+                        <span>Tạo ca học bù</span>
                     </button>
                 </div>
             </div>
 
-            {/* Notification Toast */}
-            {msg.text && (
-                <div className={`px-4 py-2.5 rounded-lg text-sm flex justify-between items-center transition-all ${
-                    msg.type === 'error'
-                        ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                }`}>
-                    <span className="flex items-center gap-2">
-                        {msg.type === 'error' ? (
-                            <Svg_Waring w="16" h="16" c="#b91c1c" />
-                        ) : (
-                            <Svg_Check w="16" h="16" c="#15803d" />
-                        )}
-                        <span>{msg.text}</span>
-                    </span>
-                    <button
-                        onClick={() => setMsg({ text: '', type: 'success' })}
-                        className="p-1 rounded hover:bg-black/5 transition-colors leading-none"
-                    >
-                        <Svg_Close w="12" h="12" c="currentColor" />
-                    </button>
+            {/* Table Area */}
+            {loading ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 gap-2 text-[var(--text-secondary)]">
+                    <p className="text-sm">Đang tải dữ liệu học bù...</p>
                 </div>
-            )}
-
-            {/* Main Panel Card */}
-            <div className="bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)] shadow-xs overflow-hidden flex flex-col">
-                {/* Navigation Tabs */}
-                <div className="flex items-center justify-between border-b border-[var(--border-color)] px-4 pt-2 bg-[var(--bg-secondary)]/30 overflow-x-auto">
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => handleTabChange('incomplete')}
-                            className={`px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 -mb-px whitespace-nowrap ${
-                                tab === 'incomplete'
-                                    ? 'border-[#1565c0] text-[#1565c0]'
-                                    : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            <Svg_Course w="14" h="14" c="currentColor" />
-                            <span>Lớp cần bù</span>
-                            {incompleteCourses.length > 0 && (
-                                <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-800 font-medium">
-                                    {incompleteCourses.length}
-                                </span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('need')}
-                            className={`px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 -mb-px whitespace-nowrap ${
-                                tab === 'need'
-                                    ? 'border-[#1565c0] text-[#1565c0]'
-                                    : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            <Svg_Canlendar w="14" h="14" c="currentColor" />
-                            <span>Cần bù</span>
-                            {(stats.byStatus?.MAKEUP_PENDING || 0) + (stats.byStatus?.MAKEUP_REQUIRED || 0) > 0 && (
-                                <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-medium">
-                                    {(stats.byStatus?.MAKEUP_PENDING || 0) + (stats.byStatus?.MAKEUP_REQUIRED || 0)}
-                                </span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('history')}
-                            className={`px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 -mb-px whitespace-nowrap ${
-                                tab === 'history'
-                                    ? 'border-[#1565c0] text-[#1565c0]'
-                                    : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            <Svg_History w="14" h="14" c="currentColor" />
-                            <span>Lịch sử bù</span>
-                            {(stats.byStatus?.MAKEUP_COMPLETED || 0) > 0 && (
-                                <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-medium">
-                                    {stats.byStatus?.MAKEUP_COMPLETED || 0}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Filter & Search Bar */}
-                <div className="p-4 border-b border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[var(--bg-primary)]">
-                    {/* Search Input */}
-                    <div className="relative w-full md:w-80">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2">
-                            <SearchIcon />
-                        </span>
-                        <input
-                            className="w-full pl-9 pr-3 py-1.5 text-xs md:text-sm rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[#1565c0]"
-                            placeholder={tab === 'incomplete' ? 'Tìm tên/mã khóa học...' : 'Tìm học sinh, khóa học, bài học...'}
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Status Filter Chips (For need & history tabs) */}
-                    {tab !== 'incomplete' && (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                                onClick={() => setStatusFilter('')}
-                                className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
-                                    statusFilter === ''
-                                        ? 'bg-[#1565c0] text-white border-[#1565c0] font-medium'
-                                        : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:bg-[var(--bg-hover)]'
-                                }`}
-                            >
-                                Tất cả
-                            </button>
-                            {currentFilters.map(f => (
-                                <button
-                                    key={f}
-                                    onClick={() => setStatusFilter(f)}
-                                    className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
-                                        statusFilter === f
-                                            ? 'bg-[#1565c0] text-white border-[#1565c0] font-medium'
-                                            : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:bg-[var(--bg-hover)]'
-                                    }`}
-                                >
-                                    {statusMap[f]?.label || f}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Content Area */}
-                <div className="p-4">
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-secondary)]">
-                            <SpinnerIcon className="w-6 h-6 text-[#1565c0]" />
-                            <p className="text-sm">Đang tải dữ liệu học bù...</p>
-                        </div>
-                    ) : tab === 'incomplete' ? (
-                        /* Tab: Lớp cần bù */
-                        incompleteCourses.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-14 gap-2 text-[var(--text-secondary)]">
-                                <EmptyBoxIcon />
-                                <p className="text-sm font-medium">Tuyệt vời! Không có lớp học nào có học sinh bị thiếu buổi cần bù.</p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-3">
-                                {incompleteCourses.map(c => {
+            ) : tab === 'incomplete' ? (
+                /* Tab 1: Lớp cần bù - Grouped Class Table */
+                <div className="overflow-x-auto bg-[var(--bg-primary)] rounded border border-[var(--border-color)] flex-1">
+                    <table className="w-full text-sm table-fixed min-w-[950px]">
+                        <thead className="sticky top-0 z-10">
+                            <tr className="bg-[var(--main_d)] text-white">
+                                <th className="p-2.5 font-medium w-[25%] text-left">Khóa học</th>
+                                <th className="p-2.5 font-medium w-[22%] text-left">Giáo trình</th>
+                                <th className="p-2.5 font-medium w-[15%] text-center">Học sinh thiếu</th>
+                                <th className="p-2.5 font-medium w-[15%] text-center">Tổng số buổi thiếu</th>
+                                <th className="p-2.5 font-medium w-[13%] text-center">Trạng thái lớp</th>
+                                <th className="p-2.5 font-medium w-[10%] text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {incompleteCourses.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-sm text-[var(--text-secondary)] italic">
+                                        Tuyệt vời! Không có lớp học nào có học sinh bị thiếu buổi cần bù.
+                                    </td>
+                                </tr>
+                            ) : (
+                                incompleteCourses.map(c => {
+                                    const cid = c.course?._id || c.courseId
+                                    const courseIdStr = c.course?.ID || c.courseName || ''
+                                    const courseName = c.course?.Name || c.courseName || 'Khóa học'
                                     const totalMissingInCourse = c.students.reduce((sum, s) => sum + s.missingLessons, 0)
-                                    const isExpanded = expandedCourses[c.course?._id || c.courseId]
+                                    const isExpanded = expandedCourses[cid]
 
                                     return (
-                                        <div
-                                            key={c.course?._id || c.courseId}
-                                            className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] overflow-hidden transition-all shadow-2xs"
-                                        >
-                                            {/* Course Row Header */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 md:p-4 gap-3 bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-hover)]/60 transition-colors">
-                                                <button
-                                                    onClick={() => toggleCourse(c.course?._id || c.courseId)}
-                                                    className="flex items-center gap-3 text-left flex-1"
-                                                >
-                                                    <span className={`w-6 h-6 rounded-md bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
-                                                        <ChevronRightIcon />
-                                                    </span>
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <div className="flex items-center flex-wrap gap-2">
-                                                            <span className="text-sm md:text-base font-bold text-[var(--text-primary)]">
-                                                                {c.course?.Name || c.courseName}
-                                                            </span>
-                                                            <span className="text-xs text-[var(--text-secondary)] font-mono">
-                                                                ({c.course?.ID || c.courseName})
-                                                            </span>
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                                                                c.course?.Status
-                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                            }`}>
-                                                                {c.statusText || (c.course?.Status ? 'Đang diễn ra' : 'Đã kết thúc (< 2 tuần)')}
-                                                            </span>
+                                        <React.Fragment key={cid}>
+                                            {/* Course Group Header */}
+                                            <tr
+                                                onClick={() => toggleCourse(cid)}
+                                                className="border-t border-[var(--border-color)] bg-[var(--main_d)]/5 hover:bg-[var(--main_d)]/10 transition-colors cursor-pointer select-none"
+                                            >
+                                                <td colSpan={6} className="p-2.5">
+                                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                                        <div className="flex items-center gap-2 text-[var(--main_d)] font-semibold text-sm">
+                                                            <svg
+                                                                className={`shrink-0 transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`}
+                                                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height={10} width={10} fill="currentColor"
+                                                            >
+                                                                <path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z" />
+                                                            </svg>
+                                                            <Link
+                                                                href={`/course/${c.course?.ID || c.course?._id || c.courseName}`}
+                                                                onClick={e => e.stopPropagation()}
+                                                                className="px-2 py-0.5 rounded-md text-xs font-semibold text-[var(--main_d)] bg-[var(--main_d)]/10 hover:bg-[var(--main_d)]/20 transition-colors"
+                                                            >
+                                                                {courseName} ({courseIdStr})
+                                                            </Link>
                                                         </div>
-                                                        {c.bookName && c.bookName !== 'N/A' && (
-                                                            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                                                                <BookIcon />
-                                                                <span>Giáo trình: {c.bookName}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </button>
 
-                                                <div className="flex items-center justify-between sm:justify-end gap-3 pl-9 sm:pl-0">
-                                                    <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 border border-rose-100">
-                                                        {totalMissingInCourse} buổi thiếu / {c.students.length} học sinh
-                                                    </span>
-                                                    <Link
-                                                        href={`/course/${c.course?.ID || c.course?._id || c.courseName}`}
-                                                        className="text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#e3f2fd] text-[#1565c0] hover:bg-[#bbdefb] transition-colors flex items-center gap-1"
-                                                    >
-                                                        <span>Xem khóa</span>
-                                                        <ExternalLinkIcon />
+                                                        {c.bookName && c.bookName !== 'N/A' && (
+                                                            <span className="text-xs text-[var(--text-secondary)]">
+                                                                Giáo trình: <span className="font-medium text-[var(--text-primary)]">{c.bookName}</span>
+                                                            </span>
+                                                        )}
+
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                                            c.course?.Status
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : 'bg-yellow-100 text-yellow-700'
+                                                        }`}>
+                                                            {c.statusText || (c.course?.Status ? 'Đang diễn ra' : 'Đã kết thúc (< 2 tuần)')}
+                                                        </span>
+
+                                                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                                            Thiếu: {totalMissingInCourse} buổi ({c.students.length} học sinh)
+                                                        </span>
+
+                                                        <span className="ml-auto text-xs text-[var(--text-secondary)] font-normal">
+                                                            {c.students.length} học sinh
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            {/* Sub-rows for Students in Course */}
+                                            {isExpanded && c.students.map(st => {
+                                                const key = `${cid}-${st.studentId}`
+                                                const isStudentExpanded = expandedStudents[key]
+
+                                                return (
+                                                    <React.Fragment key={st.studentId}>
+                                                        <tr className="border-t border-[var(--border-color)] hover:bg-[var(--hover)] transition-colors">
+                                                            <td className="p-2.5 pl-8 text-left">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span
+                                                                        onClick={() => toggleStudent(key)}
+                                                                        className="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                                                                    >
+                                                                        <svg
+                                                                            className={`shrink-0 transition-transform duration-150 ${isStudentExpanded ? 'rotate-90' : ''}`}
+                                                                            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" height={9} width={9} fill="currentColor"
+                                                                        >
+                                                                            <path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z" />
+                                                                        </svg>
+                                                                    </span>
+                                                                    <span className="font-mono text-xs text-[var(--text-secondary)]">[{st.studentId}]</span>
+                                                                    <Link href={`/${st.studentId}`} className="text-[var(--main_d)] hover:underline font-semibold text-sm">
+                                                                        {st.studentName}
+                                                                    </Link>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-2.5 text-left text-xs text-[var(--text-secondary)] truncate">
+                                                                {c.bookName || '—'}
+                                                            </td>
+                                                            <td className="p-2.5 text-center text-xs text-[var(--text-secondary)]">
+                                                                1 học sinh
+                                                            </td>
+                                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                                <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                                                    Thiếu {st.missingLessons}/{st.pastLessons || st.totalLessons} buổi
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-2.5 text-center text-xs text-[var(--text-secondary)]">
+                                                                {c.statusText || (c.course?.Status ? 'Đang diễn ra' : 'Đã kết thúc')}
+                                                            </td>
+                                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                                <button
+                                                                    onClick={() => openQuickSchedule(
+                                                                        cid,
+                                                                        st.studentId,
+                                                                        st.missingDetail?.[0]?.lessonId,
+                                                                        st.missingDetail?.[0]?.Topic?.Name
+                                                                    )}
+                                                                    className="px-2.5 py-1 rounded text-xs font-medium bg-[var(--main_d)] hover:bg-[var(--main_b)] text-white transition-colors cursor-pointer border-none inline-flex items-center gap-1"
+                                                                >
+                                                                    <Svg_Add w="10" h="10" c="white" />
+                                                                    <span>Xếp bù</span>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+
+                                                        {/* Missing Lessons Detailed Table */}
+                                                        {isStudentExpanded && (
+                                                            <tr className="bg-gray-50/70 border-t border-[var(--border-color)]">
+                                                                <td colSpan={6} className="p-3 pl-14">
+                                                                    <div className="bg-white rounded border border-[var(--border-color)] overflow-hidden">
+                                                                        <table className="w-full text-xs text-left">
+                                                                            <thead>
+                                                                                <tr className="bg-[var(--main_d)]/10 text-[var(--main_d)] font-semibold border-b border-[var(--border-color)]">
+                                                                                    <th className="p-2">Ngày học</th>
+                                                                                    <th className="p-2">Khung giờ</th>
+                                                                                    <th className="p-2">Chủ đề bài học</th>
+                                                                                    <th className="p-2 text-center">Thao tác</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-[var(--border-color)]">
+                                                                                {st.missingDetail.map(d => (
+                                                                                    <tr key={d.lessonId} className="hover:bg-[var(--hover)] transition-colors">
+                                                                                        <td className="p-2 font-medium text-[var(--text-primary)]">
+                                                                                            {d.Day ? new Date(d.Day).toLocaleDateString('vi-VN') : '—'}
+                                                                                        </td>
+                                                                                        <td className="p-2 text-[var(--text-secondary)] font-mono">
+                                                                                            {d.Time || '—'}
+                                                                                        </td>
+                                                                                        <td className="p-2 font-medium text-[var(--text-primary)]">
+                                                                                            {d.Topic?.Name || d.Topic || 'Chủ đề bài học'}
+                                                                                        </td>
+                                                                                        <td className="p-2 text-center">
+                                                                                            <button
+                                                                                                onClick={() => openQuickSchedule(
+                                                                                                    cid,
+                                                                                                    st.studentId,
+                                                                                                    d.lessonId,
+                                                                                                    d.Topic?.Name
+                                                                                                )}
+                                                                                                className="px-2 py-0.5 rounded text-xs font-medium text-[var(--main_d)] hover:bg-[var(--main_d)]/10 border border-[var(--main_d)]/30 transition-colors cursor-pointer inline-flex items-center gap-1"
+                                                                                            >
+                                                                                                <Svg_Add w="10" h="10" c="currentColor" />
+                                                                                                <span>Xếp bài này</span>
+                                                                                            </button>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </React.Fragment>
+                                                )
+                                            })}
+                                        </React.Fragment>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                /* Tab 2 & 3: Cần bù & Lịch sử bù - Standard Flat Table */
+                <div className="overflow-x-auto bg-[var(--bg-primary)] rounded border border-[var(--border-color)] flex-1">
+                    <table className="w-full text-sm min-w-[950px]">
+                        <thead className="sticky top-0 z-10">
+                            <tr className="bg-[var(--main_d)] text-white">
+                                <th className="p-2.5 font-medium w-[20%] text-left">Học sinh</th>
+                                <th className="p-2.5 font-medium w-[18%] text-left">Khóa học</th>
+                                <th className="p-2.5 font-medium w-[22%] text-left">Nội dung cần bù</th>
+                                <th className="p-2.5 font-medium w-[16%] text-center">Lịch học bù</th>
+                                <th className="p-2.5 font-medium w-[12%] text-center">Trạng thái</th>
+                                <th className="p-2.5 font-medium w-[12%] text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border-color)]">
+                            {filteredSessions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-sm text-[var(--text-secondary)] italic">
+                                        Không có ca học bù nào phù hợp với bộ lọc.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredSessions.map(s => {
+                                    const st = statusMap[s.makeupStatus] || { label: s.makeupStatus, color: 'bg-gray-100 text-gray-700' }
+
+                                    return (
+                                        <tr key={s._id} className="hover:bg-[var(--hover)] transition-colors border-t border-[var(--border-color)]">
+                                            {/* Học sinh */}
+                                            <td className="p-2.5 text-left">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-xs text-[var(--text-secondary)]">[{s.studentId}]</span>
+                                                    <Link href={`/${s.studentId}`} className="font-semibold text-sm text-[var(--main_d)] hover:underline">
+                                                        {s.studentName}
                                                     </Link>
                                                 </div>
-                                            </div>
+                                            </td>
 
-                                            {/* Expandable Students List */}
-                                            {isExpanded && (
-                                                <div className="border-t border-[var(--border-color)] divide-y divide-[var(--border-color)] bg-[var(--bg-primary)]">
-                                                    {c.students.map(st => {
-                                                        const key = `${c.course?._id || c.courseId}-${st.studentId}`
-                                                        const isStudentExpanded = expandedStudents[key]
+                                            {/* Khóa học */}
+                                            <td className="p-2.5 text-left">
+                                                {s.course ? (
+                                                    <Link
+                                                        href={`/course/${s.course.ID || s.course._id}`}
+                                                        className="font-semibold text-sm text-[var(--main_d)] hover:underline"
+                                                    >
+                                                        {s.course.ID || s.course.Name || '—'}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="font-medium text-[var(--text-secondary)] text-sm">—</span>
+                                                )}
+                                                {s.isTeacherCreated && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium inline-block mt-0.5">
+                                                        Giáo viên tạo
+                                                    </span>
+                                                )}
+                                            </td>
 
-                                                        return (
-                                                            <div key={st.studentId} className="flex flex-col">
-                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-3 gap-2 hover:bg-[var(--bg-hover)]/40 transition-colors">
-                                                                    <button
-                                                                        onClick={() => toggleStudent(key)}
-                                                                        className="flex items-center gap-2.5 text-left flex-1"
-                                                                    >
-                                                                        <span className={`text-[var(--text-secondary)] transition-transform ${isStudentExpanded ? 'rotate-90' : ''}`}>
-                                                                            <ChevronRightIcon className="w-3 h-3" />
-                                                                        </span>
-                                                                        <span className="w-6 h-6 rounded-full bg-blue-50 text-[#1565c0] flex items-center justify-center text-xs font-bold">
-                                                                            {st.studentName ? st.studentName.charAt(0) : 'S'}
-                                                                        </span>
-                                                                        <span className="text-sm font-semibold text-[var(--text-primary)]">
-                                                                            {st.studentName}
-                                                                        </span>
-                                                                        <span className="text-xs text-[var(--text-secondary)] font-mono">
-                                                                            ({st.studentId})
-                                                                        </span>
-                                                                    </button>
+                                            {/* Nội dung */}
+                                            <td className="p-2.5 text-left">
+                                                <span className="text-[var(--text-primary)] text-sm font-medium">{s.contentToMakeup || '—'}</span>
+                                                {s.note && (
+                                                    <div className="text-xs text-[var(--text-secondary)] italic mt-0.5">
+                                                        Ghi chú: {s.note}
+                                                    </div>
+                                                )}
+                                            </td>
 
-                                                                    <div className="flex items-center gap-2.5 pl-6 sm:pl-0">
-                                                                        <span className="text-xs text-rose-600 font-medium bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
-                                                                            Thiếu {st.missingLessons}/{st.pastLessons || st.totalLessons} buổi đã học
-                                                                        </span>
-                                                                        <button
-                                                                            onClick={() => openQuickSchedule(
-                                                                                c.course?._id || c.courseId,
-                                                                                st.studentId,
-                                                                                st.missingDetail?.[0]?.lessonId,
-                                                                                st.missingDetail?.[0]?.Topic?.Name
-                                                                            )}
-                                                                            className="text-xs px-2.5 py-1 rounded-md bg-[#1565c0] hover:bg-[#0d47a1] text-white font-medium transition-colors flex items-center gap-1.5 shadow-2xs"
-                                                                        >
-                                                                            <Svg_Add w="11" h="11" c="white" />
-                                                                            <span>Xếp bù ngay</span>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Missing Lessons Table */}
-                                                                {isStudentExpanded && (
-                                                                    <div className="px-5 pb-3 pt-1 pl-12">
-                                                                        <div className="rounded-lg border border-[var(--border-color)] overflow-hidden bg-[var(--bg-secondary)]/30">
-                                                                            <table className="w-full text-xs">
-                                                                                <thead>
-                                                                                    <tr className="border-b border-[var(--border-color)] text-left text-[var(--text-secondary)] bg-[var(--bg-secondary)]/50">
-                                                                                        <th className="py-2 px-3 font-semibold">Ngày học</th>
-                                                                                        <th className="py-2 px-3 font-semibold">Khung giờ</th>
-                                                                                        <th className="py-2 px-3 font-semibold">Chủ đề bài học</th>
-                                                                                        <th className="py-2 px-3 font-semibold text-right">Thao tác</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody className="divide-y divide-[var(--border-color)]">
-                                                                                    {st.missingDetail.map(d => (
-                                                                                        <tr key={d.lessonId} className="hover:bg-[var(--bg-hover)] transition-colors">
-                                                                                            <td className="py-2 px-3 font-medium text-[var(--text-primary)]">
-                                                                                                <div className="flex items-center gap-1.5">
-                                                                                                    <Svg_Canlendar w="12" h="12" c="var(--text-secondary)" />
-                                                                                                    <span>{d.Day ? new Date(d.Day).toLocaleDateString('vi-VN') : '—'}</span>
-                                                                                                </div>
-                                                                                            </td>
-                                                                                            <td className="py-2 px-3 text-[var(--text-secondary)] font-mono">
-                                                                                                <div className="flex items-center gap-1.5">
-                                                                                                    <ClockIcon />
-                                                                                                    <span>{d.Time || '—'}</span>
-                                                                                                </div>
-                                                                                            </td>
-                                                                                            <td className="py-2 px-3 font-medium text-[var(--text-primary)]">
-                                                                                                {d.Topic?.Name || d.Topic || 'Chủ đề bài học'}
-                                                                                            </td>
-                                                                                            <td className="py-2 px-3 text-right">
-                                                                                                <button
-                                                                                                    onClick={() => openQuickSchedule(
-                                                                                                        c.course?._id || c.courseId,
-                                                                                                        st.studentId,
-                                                                                                        d.lessonId,
-                                                                                                        d.Topic?.Name
-                                                                                                    )}
-                                                                                                    className="text-[11px] px-2.5 py-0.5 rounded text-[#1565c0] hover:bg-[#e3f2fd] border border-[#1565c0]/30 transition-colors inline-flex items-center gap-1"
-                                                                                                >
-                                                                                                    <span>Xếp bài này</span>
-                                                                                                </button>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    ))}
-                                                                                </tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )
-                    ) : (
-                        /* Tab: Cần bù & Lịch sử bù */
-                        filteredSessions.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-14 gap-2 text-[var(--text-secondary)]">
-                                <EmptyBoxIcon />
-                                <p className="text-sm font-medium">Không có ca học bù nào phù hợp với bộ lọc.</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto rounded-lg border border-[var(--border-color)]">
-                                <table className="w-full text-xs md:text-sm text-left">
-                                    <thead>
-                                        <tr className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/40 text-[var(--text-secondary)] font-semibold">
-                                            <th className="p-3">Học sinh</th>
-                                            <th className="p-3">Khóa học</th>
-                                            <th className="p-3">Nội dung cần bù</th>
-                                            <th className="p-3">Lịch học bù</th>
-                                            <th className="p-3">Trạng thái</th>
-                                            <th className="p-3 text-right">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--border-color)]">
-                                        {filteredSessions.map(s => {
-                                            const st = statusMap[s.makeupStatus] || { label: s.makeupStatus, color: 'bg-gray-100 text-gray-700' }
-
-                                            return (
-                                                <tr key={s._id} className="hover:bg-[var(--bg-hover)] transition-colors">
-                                                    {/* Học sinh */}
-                                                    <td className="p-3">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className="w-7 h-7 rounded-full bg-blue-50 text-[#1565c0] flex items-center justify-center font-bold text-xs">
-                                                                {s.studentName ? s.studentName.charAt(0) : 'S'}
-                                                            </span>
-                                                            <div>
-                                                                <div className="font-semibold text-[var(--text-primary)]">{s.studentName}</div>
-                                                                <div className="text-[11px] text-[var(--text-secondary)] font-mono">{s.studentId}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-
-                                                    {/* Khóa học */}
-                                                    <td className="p-3">
-                                                        <div className="font-medium text-[var(--text-primary)]">
-                                                            {s.course?.Name || s.course?.ID || 'N/A'}
-                                                        </div>
-                                                        {s.isTeacherCreated && (
-                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 inline-block mt-0.5 font-medium">
-                                                                Giáo viên tạo
-                                                            </span>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Nội dung */}
-                                                    <td className="p-3">
-                                                        <span className="text-[var(--text-primary)]">{s.contentToMakeup || '—'}</span>
-                                                        {s.note && (
-                                                            <div className="text-[11px] text-[var(--text-secondary)] italic mt-0.5">
-                                                                Ghi chú: {s.note}
-                                                            </div>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Lịch bù */}
-                                                    <td className="p-3">
-                                                        {s.makeupDate ? (
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <div className="font-medium text-[var(--text-primary)] flex items-center gap-1.5">
-                                                                    <Svg_Canlendar w="13" h="13" c="var(--text-secondary)" />
-                                                                    <span>{new Date(s.makeupDate).toLocaleDateString('vi-VN')}</span>
-                                                                </div>
-                                                                <div className="text-[11px] text-[var(--text-secondary)] font-mono flex items-center gap-1.5">
-                                                                    <ClockIcon />
-                                                                    <span>{s.makeupTime || '—'}</span>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[var(--text-secondary)] italic">Chưa xếp lịch</span>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Trạng thái */}
-                                                    <td className="p-3">
-                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold inline-block ${st.color}`}>
-                                                            {st.label}
+                                            {/* Lịch bù */}
+                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                {s.makeupDate ? (
+                                                    <div className="flex flex-col items-center gap-0.5 text-xs">
+                                                        <span className="font-semibold text-[var(--text-primary)]">
+                                                            {new Date(s.makeupDate).toLocaleDateString('vi-VN')}
                                                         </span>
-                                                    </td>
+                                                        <span className="text-[var(--text-secondary)] font-mono">
+                                                            {s.makeupTime || '—'}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-[var(--text-secondary)] italic">Chưa xếp lịch</span>
+                                                )}
+                                            </td>
 
-                                                    {/* Thao tác */}
-                                                    <td className="p-3 text-right">
-                                                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                                            {s.makeupStatus === 'MAKEUP_PENDING' && (
-                                                                <button
-                                                                    onClick={() => handleStatusChange(s._id, 'MAKEUP_SCHEDULED')}
-                                                                    className="text-xs px-2.5 py-1 rounded bg-[#e3f2fd] text-[#1565c0] hover:bg-[#bbdefb] font-medium transition-colors"
-                                                                >
-                                                                    Xếp lịch
-                                                                </button>
-                                                            )}
-                                                            {s.makeupStatus === 'MAKEUP_SCHEDULED' && (
-                                                                <button
-                                                                    onClick={() => handleStatusChange(s._id, 'MAKEUP_COMPLETED')}
-                                                                    className="text-xs px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-medium transition-colors"
-                                                                >
-                                                                    Đã học bù
-                                                                </button>
-                                                            )}
-                                                            {['MAKEUP_PENDING', 'MAKEUP_SCHEDULED'].includes(s.makeupStatus) && (
-                                                                <button
-                                                                    onClick={() => handleStatusChange(s._id, 'MAKEUP_CANCELLED')}
-                                                                    className="text-xs px-2.5 py-1 rounded bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-medium transition-colors"
-                                                                >
-                                                                    Hủy
-                                                                </button>
-                                                            )}
-                                                            {s.course && (
-                                                                <Link
-                                                                    href={`/course/${s.course.ID || s.course._id}`}
-                                                                    className="text-xs px-2.5 py-1 rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <span>Khóa</span>
-                                                                    <ExternalLinkIcon />
-                                                                </Link>
-                                                            )}
-                                                            <button
-                                                                onClick={() => handleDelete(s._id)}
-                                                                className="p-1.5 rounded hover:bg-rose-50 text-[var(--text-secondary)] hover:text-rose-600 transition-colors"
-                                                                title="Xóa yêu cầu"
-                                                            >
-                                                                <Svg_Delete w="13" h="13" c="currentColor" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )
-                    )}
-                </div>
-            </div>
+                                            {/* Trạng thái */}
+                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${st.color}`}>
+                                                    {st.label}
+                                                </span>
+                                            </td>
 
-            {/* Modal Tạo Yêu Cầu Học Bù Riêng */}
-            {showForm && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto"
-                    onClick={() => setShowForm(false)}
-                >
-                    <div
-                        className="bg-[var(--bg-primary)] rounded-2xl shadow-2xl border border-[var(--border-color)] w-full max-w-xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/40">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1565c0] flex items-center justify-center">
-                                    <Svg_Canlendar w="18" h="18" c="#1565c0" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-bold text-[var(--text-primary)]">Tạo ca học bù riêng</h3>
-                                    <p className="text-xs text-[var(--text-secondary)]">Điền thông tin buổi học bù để thêm vào lịch và điểm danh</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowForm(false)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
-                            >
-                                <Svg_Close w="14" h="14" c="currentColor" />
-                            </button>
-                        </div>
-
-                        {/* Modal Form */}
-                        <form onSubmit={handleCreate} className="p-6 flex flex-col gap-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                                {/* Khóa học */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Khóa học <span className="text-rose-500">*</span></label>
-                                    <select
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        value={formData.courseId}
-                                        onChange={e => setFormData(f => ({ ...f, courseId: e.target.value }))}
-                                        required
-                                    >
-                                        <option value="">-- Chọn khóa học --</option>
-                                        {options.courses.map(c => (
-                                            <option key={c._id} value={c._id}>
-                                                {c.ID} {c.Status ? '(Đang học)' : '(Đã kết thúc)'}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Mã học sinh */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Mã học sinh <span className="text-rose-500">*</span></label>
-                                    <input
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        placeholder="Ví dụ: HS00124"
-                                        value={formData.studentId}
-                                        onChange={e => setFormData(f => ({ ...f, studentId: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-
-                                {/* Giáo viên phụ trách */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Giáo viên phụ trách</label>
-                                    <select
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        value={formData.makeupTeacher}
-                                        onChange={e => setFormData(f => ({ ...f, makeupTeacher: e.target.value }))}
-                                    >
-                                        <option value="">-- Chọn giáo viên --</option>
-                                        {options.teachers.map(t => (
-                                            <option key={t._id} value={t._id}>{t.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Phòng học */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Phòng học</label>
-                                    <select
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        value={formData.room}
-                                        onChange={e => setFormData(f => ({ ...f, room: e.target.value }))}
-                                    >
-                                        <option value="">-- Chọn phòng học --</option>
-                                        {options.rooms.map(r => (
-                                            <option key={r._id} value={r._id}>{r.fullName || r.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Ngày học bù */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Ngày học bù</label>
-                                    <DateInput
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)]"
-                                        placeholder="Chọn ngày học bù"
-                                        value={formData.makeupDate}
-                                        onChange={v => setFormData(f => ({ ...f, makeupDate: v }))}
-                                    />
-                                </div>
-
-                                {/* Khung giờ học */}
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Khung giờ</label>
-                                    <input
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        placeholder="Ví dụ: 18:00 - 19:30"
-                                        value={formData.makeupTime}
-                                        onChange={e => setFormData(f => ({ ...f, makeupTime: e.target.value }))}
-                                    />
-                                </div>
-
-                                {/* Nội dung cần bù */}
-                                <div className="flex flex-col gap-1 md:col-span-2">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Nội dung / Chủ đề cần bù</label>
-                                    <input
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0]"
-                                        placeholder="Ví dụ: Bù bài Chủ đề 4: Lắp ráp xe dò đường"
-                                        value={formData.contentToMakeup}
-                                        onChange={e => setFormData(f => ({ ...f, contentToMakeup: e.target.value }))}
-                                    />
-                                </div>
-
-                                {/* Ghi chú */}
-                                <div className="flex flex-col gap-1 md:col-span-2">
-                                    <label className="text-xs font-semibold text-[var(--text-primary)]">Ghi chú thêm</label>
-                                    <textarea
-                                        rows={2}
-                                        className="text-xs md:text-sm p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:outline-none focus:border-[#1565c0] resize-none"
-                                        placeholder="Ghi chú thêm cho giáo viên hoặc phụ huynh..."
-                                        value={formData.note}
-                                        onChange={e => setFormData(f => ({ ...f, note: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-color)] mt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className="text-xs md:text-sm px-4 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
-                                >
-                                    Hủy bỏ
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="text-xs md:text-sm font-medium px-5 py-2 rounded-lg bg-[#1565c0] hover:bg-[#0d47a1] text-white shadow-xs transition-all disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {saving ? <SpinnerIcon className="w-3.5 h-3.5" /> : <Svg_Check w="12" h="12" c="white" />}
-                                    <span>{saving ? 'Đang lưu...' : 'Xác nhận tạo ca bù'}</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                                            {/* Thao tác */}
+                                            <td className="p-2.5 text-center whitespace-nowrap">
+                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                    {s.makeupStatus === 'MAKEUP_PENDING' && (
+                                                        <button
+                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_SCHEDULED')}
+                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors border-none cursor-pointer"
+                                                        >
+                                                            Xếp lịch
+                                                        </button>
+                                                    )}
+                                                    {s.makeupStatus === 'MAKEUP_SCHEDULED' && (
+                                                        <button
+                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_COMPLETED')}
+                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors border-none cursor-pointer"
+                                                        >
+                                                            Đã học bù
+                                                        </button>
+                                                    )}
+                                                    {['MAKEUP_PENDING', 'MAKEUP_SCHEDULED'].includes(s.makeupStatus) && (
+                                                        <button
+                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_CANCELLED')}
+                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors border-none cursor-pointer"
+                                                        >
+                                                            Hủy
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleDelete(s._id)}
+                                                        className="p-1 rounded hover:bg-red-50 text-[var(--text-secondary)] hover:text-red-600 transition-colors border-none bg-transparent cursor-pointer"
+                                                        title="Xóa yêu cầu"
+                                                    >
+                                                        <Svg_Delete w="13" h="13" c="currentColor" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
+
+            {/* Modal Tạo Yêu Cầu Học Bù Riêng */}
+            <CenterPopup open={showForm} onClose={() => setShowForm(false)} size="md">
+                <Title content="Tạo ca học bù riêng" click={() => setShowForm(false)} />
+                <form onSubmit={handleCreate} className="p-4 flex flex-col gap-3 max-h-[calc(90vh-100px)] overflow-y-auto text-xs sm:text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Khóa học */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Khóa học <span className="text-red-500">*</span></label>
+                            <select
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                value={formData.courseId}
+                                onChange={e => setFormData(f => ({ ...f, courseId: e.target.value }))}
+                                required
+                            >
+                                <option value="">-- Chọn khóa học --</option>
+                                {options.courses.map(c => (
+                                    <option key={c._id} value={c._id}>
+                                        {c.ID} {c.Status ? '(Đang học)' : '(Đã kết thúc)'}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Mã học sinh */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Mã học sinh <span className="text-red-500">*</span></label>
+                            <input
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                placeholder="Ví dụ: HS00124"
+                                value={formData.studentId}
+                                onChange={e => setFormData(f => ({ ...f, studentId: e.target.value }))}
+                                required
+                            />
+                        </div>
+
+                        {/* Giáo viên phụ trách */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Giáo viên phụ trách</label>
+                            <select
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                value={formData.makeupTeacher}
+                                onChange={e => setFormData(f => ({ ...f, makeupTeacher: e.target.value }))}
+                            >
+                                <option value="">-- Chọn giáo viên --</option>
+                                {options.teachers.map(t => (
+                                    <option key={t._id} value={t._id}>{t.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Phòng học */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Phòng học</label>
+                            <select
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                value={formData.room}
+                                onChange={e => setFormData(f => ({ ...f, room: e.target.value }))}
+                            >
+                                <option value="">-- Chọn phòng học --</option>
+                                {options.rooms.map(r => (
+                                    <option key={r._id} value={r._id}>{r.fullName || r.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Ngày học bù */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Ngày học bù</label>
+                            <DateInput
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                placeholder="Chọn ngày học bù"
+                                value={formData.makeupDate}
+                                onChange={v => setFormData(f => ({ ...f, makeupDate: v }))}
+                            />
+                        </div>
+
+                        {/* Khung giờ học */}
+                        <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-[var(--text-primary)]">Khung giờ</label>
+                            <input
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                placeholder="Ví dụ: 18:00 - 19:30"
+                                value={formData.makeupTime}
+                                onChange={e => setFormData(f => ({ ...f, makeupTime: e.target.value }))}
+                            />
+                        </div>
+
+                        {/* Nội dung cần bù */}
+                        <div className="flex flex-col gap-1 sm:col-span-2">
+                            <label className="font-semibold text-[var(--text-primary)]">Nội dung / Chủ đề cần bù</label>
+                            <input
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700"
+                                placeholder="Ví dụ: Bù bài Chủ đề 4: Lắp ráp xe dò đường"
+                                value={formData.contentToMakeup}
+                                onChange={e => setFormData(f => ({ ...f, contentToMakeup: e.target.value }))}
+                            />
+                        </div>
+
+                        {/* Ghi chú */}
+                        <div className="flex flex-col gap-1 sm:col-span-2">
+                            <label className="font-semibold text-[var(--text-primary)]">Ghi chú thêm</label>
+                            <textarea
+                                rows={2}
+                                className="p-2 border border-gray-200 rounded text-xs sm:text-sm outline-none bg-white text-gray-700 resize-none"
+                                placeholder="Ghi chú thêm cho giáo viên hoặc phụ huynh..."
+                                value={formData.note}
+                                onChange={e => setFormData(f => ({ ...f, note: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Modal Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-color)] mt-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowForm(false)}
+                            className="px-4 py-2 border border-[var(--border-color)] rounded text-xs sm:text-sm font-medium cursor-pointer hover:bg-gray-50 bg-white"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="px-4 py-2 bg-[var(--main_d)] hover:bg-[var(--main_b)] rounded text-xs sm:text-sm font-medium text-white cursor-pointer border-none disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            {saving ? 'Đang lưu...' : 'Xác nhận tạo ca bù'}
+                        </button>
+                    </div>
+                </form>
+            </CenterPopup>
         </div>
     )
 }

@@ -53,18 +53,24 @@ export default async function DebtPage() {
         const sDays = sessionByCourse.get(cid) || (c.Detail || []).map(d => d.Day).filter(Boolean);
         const sortedDays = sDays.sort((a, b) => new Date(a) - new Date(b));
 
-        courseMap[cid] = {
+        const info = {
+            id: c.ID || cid,
             name: c.ID,
             price: c.Book && typeof c.Book === 'object' && c.Book.Price ? c.Book.Price : 0,
             startDate: sortedDays.length > 0 ? sortedDays[0] : null,
             endDate: sortedDays.length > 0 ? sortedDays[sortedDays.length - 1] : null,
             totalLessons: sDays.length,
         }
+        courseMap[cid] = info
+        if (c.ID) courseMap[c.ID] = info
+
         attendanceMap[cid] = {}
-        ;(c.Student || []).forEach(st => {
-            const attended = attendedCountByCourseStudent.get(`${cid}_${st.ID}`) ?? (st.Learn || []).filter(l => l.Checkin > 0).length;
-            attendanceMap[cid][st.ID] = attended;
-        })
+        if (c.ID) attendanceMap[c.ID] = attendanceMap[cid]
+
+            ; (c.Student || []).forEach(st => {
+                const attended = attendedCountByCourseStudent.get(`${cid}_${st.ID}`) ?? (st.Learn || []).filter(l => l.Checkin > 0).length;
+                attendanceMap[cid][st.ID] = attended;
+            })
     })
 
     return <DebtClient students={allStudents || []} courseMap={courseMap} attendanceMap={attendanceMap} debts={JSON.parse(JSON.stringify(debts))} />

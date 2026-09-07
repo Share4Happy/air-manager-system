@@ -757,9 +757,9 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
             <CancelLessonPopup
                 open={showCancelLessonPopup}
                 onClose={() => setShowCancelLessonPopup(false)}
-                courseId={data?._id}
-                lessonId={lessonFilterId}
-                lessonData={data?.Detail?.find(l => l._id === lessonFilterId)}
+                courseId={data?._id || data?.ID}
+                lessonId={lessonFilterId || lesson?._id || data?.Detail?.[0]?._id}
+                lessonData={data?.Detail?.find(l => String(l._id) === String(lessonFilterId || lesson?._id)) || lesson || data?.Detail?.[0]}
                 courseData={data}
                 onSuccess={reload}
                 showNoti={(status, mes) => setNotification({ open: true, status, mes })}

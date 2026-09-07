@@ -20,8 +20,11 @@ async function requireAdminSale() {
     return { ok: true, auth }
 }
 
-function buildLessonData(course, detailId, attendances = []) {
-    const dId = String(detailId)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+function buildLessonData(course, detailId, attendances = [], session = null) {
+    const dId = String(detailId?._id || detailId)
     const byId = {}
     let enrolled = 0
     let rollCallChecked = 0
@@ -31,19 +34,29 @@ function buildLessonData(course, detailId, attendances = []) {
     const attMap = new Map()
     ;(attendances || []).forEach(att => {
         if (att.studentId) attMap.set(String(att.studentId), att)
+        if (att._id) attMap.set(String(att._id), att)
     })
+
+    const sessionImages = (session?.detailImage || []).map(img => ({ id: img.id || img, type: img.type || '' }))
 
     ;(course?.Student || []).forEach(s => {
         const studentId = String(s.ID)
+        const studentMongoId = s._id ? String(s._id) : null
         const learn = (s.Learn || []).find(x => x.Lesson && String(x.Lesson) === dId)
-        const att = attMap.get(studentId)
+        const att = attMap.get(studentId) || (studentMongoId ? attMap.get(studentMongoId) : null)
 
         enrolled++
         const checkin = att ? (att.checkin || 0) : (learn?.Checkin || 0)
         const cmtfn = att?.cmtFn || learn?.CmtFn || ''
-        const images = (att?.images && att.images.length)
-            ? att.images.map(img => ({ id: img.id || img, type: img.type || '' }))
-            : ((learn?.Image || []).map(img => ({ id: img.id, type: img.type || '' })))
+        
+        let images = []
+        if (att?.images && att.images.length) {
+            images = att.images.map(img => ({ id: img.id || img, type: img.type || '' }))
+        } else if (learn?.Image && learn.Image.length) {
+            images = learn.Image.map(img => ({ id: img.id, type: img.type || '' }))
+        } else if (sessionImages.length > 0) {
+            images = sessionImages
+        }
 
         if (checkin >= 1) rollCallChecked++
         if (images.length > 0) withImage++
@@ -54,7 +67,28 @@ function buildLessonData(course, detailId, attendances = []) {
             cmtfn,
             images,
         }
+        if (studentMongoId) {
+            byId[studentMongoId] = byId[studentId]
+        }
     })
+
+    // Include any additional students present in attendance records
+    ;(attendances || []).forEach(att => {
+        const sId = String(att.studentId)
+        if (sId && !byId[sId]) {
+            const checkin = att.checkin || 0
+            const cmtfn = att.cmtFn || ''
+            const images = (att.images && att.images.length)
+                ? att.images.map(img => ({ id: img.id || img, type: img.type || '' }))
+                : (sessionImages.length > 0 ? sessionImages : [])
+            enrolled++
+            if (checkin >= 1) rollCallChecked++
+            if (images.length > 0) withImage++
+            if (cmtfn && String(cmtfn).trim()) withComment++
+            byId[sId] = { checkin, cmtfn, images }
+        }
+    })
+
     return { enrolled, rollCallChecked, withImage, withComment, byId }
 }
 
@@ -139,10 +173,12 @@ export async function GET(request) {
 
         const Session = (await import('@/models/session')).default;
         const Attendance = (await import('@/models/attendance')).default;
+        const searchDayStart = dayStart || todayStart;
+        const searchDayEnd = dayEnd || todayEnd;
         const sessions = await Session.find({
             $or: [
                 { type: 'Báo nghỉ' },
-                { day: { $gte: todayStart, $lt: todayEnd } },
+                { day: { $gte: searchDayStart, $lt: searchDayEnd } },
             ],
         }).lean();
 
@@ -205,14 +241,14 @@ export async function GET(request) {
                     statusType: s.type || '',
                     teacher: s.teacher ? String(s.teacher) : null,
                     students: (course?.Student || []).map(st => st.ID).filter(Boolean),
-                    lesson: isCancel ? null : buildLessonData(course, s._id, sessionAtts),
+                    lesson: isCancel ? null : buildLessonData(course, s._id, sessionAtts, s),
                 });
             });
         } else {
             const courses = await Course.find({
                 $or: [
                     { 'Detail.Type': 'Báo nghỉ' },
-                    { 'Detail.Day': { $gte: todayStart, $lt: todayEnd } },
+                    { 'Detail.Day': { $gte: searchDayStart, $lt: searchDayEnd } },
                 ],
             })
                 .populate('Area', 'name')
@@ -252,7 +288,7 @@ export async function GET(request) {
                         reason: d.Note || '',
                         teacher: d.Teacher ? String(d.Teacher) : null,
                         students: (course.Student || []).map(s => s.ID).filter(Boolean),
-                        lesson: isCancel ? null : buildLessonData(course, d),
+                        lesson: isCancel ? null : buildLessonData(course, d._id),
                     })
                 })
             })

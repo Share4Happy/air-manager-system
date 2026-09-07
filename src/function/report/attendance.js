@@ -10,7 +10,10 @@ export async function getLessonsInRange(start, end) {
     const Attendance = (await import('@/models/attendance')).default;
     const Course = (await import('@/models/course')).default;
 
-    const sessions = await Session.find({ day: { $gte: start, $lt: end } })
+    const sessions = await Session.find({
+        day: { $gte: start, $lt: end },
+        status: { $ne: false }
+    })
         .populate('topic', 'Name')
         .lean();
 
@@ -23,7 +26,7 @@ export async function getLessonsInRange(start, end) {
                 .select('session studentId checkin absenceReason note images')
                 .lean(),
             Course.find({ _id: { $in: courseIds } })
-                .select('Name Area')
+                .select('Name Area Status')
                 .populate('Area', 'name')
                 .lean(),
         ]);
@@ -47,7 +50,16 @@ export async function getLessonsInRange(start, end) {
             });
         });
 
-        return sessions.map(s => {
+        const activeSessions = sessions.filter(s => {
+            const isTrial = s.type === 'Học thử' || !s.course;
+            if (isTrial) return true;
+            const c = courseMap.get(String(s.course));
+            // Loại bỏ hoàn toàn các lớp chính khóa đã xác nhận hoàn thành
+            if (c && c.Status === true) return false;
+            return true;
+        });
+
+        return activeSessions.map(s => {
             const c = courseMap.get(String(s.course));
             const isTrial = s.type === 'Học thử' || !s.course;
             return {
@@ -72,6 +84,7 @@ export async function getLessonsInRange(start, end) {
     }
 
     const officialAgg = PostCourse.aggregate([
+        { $match: { Status: { $ne: true } } },
         { $unwind: { path: '$Detail', includeArrayIndex: 'lessonIdx' } },
         { $match: { 'Detail.Day': { $gte: start, $lt: end } } },
         { $addFields: { students: { $map: { input: { $filter: { input: { $ifNull: ['$Student', []] }, as: 'st', cond: { $anyElementTrue: [{ $map: { input: { $ifNull: ['$$st.Learn', []] }, as: 'lr', in: { $eq: ['$$lr.Lesson', '$Detail._id'] } } }] } } }, as: 'st', in: { $mergeObjects: ['$$st', { Learn: { $filter: { input: { $ifNull: ['$$st.Learn', []] }, as: 'lr', cond: { $eq: ['$$lr.Lesson', '$Detail._id'] } } } }] } } } } },

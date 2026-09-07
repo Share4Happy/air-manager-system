@@ -99,7 +99,10 @@ export async function computeMonthlyStats({ year, month, areas }) {
         }
         const hasSession = Array.isArray(c.Detail) && c.Detail.some(d => {
             const day = new Date(d.Day);
-            return !isNaN(day) && day >= start && day < end;
+            if (isNaN(day)) return false;
+            // Nếu lớp đã hoàn thành, không xét các buổi học trong tương lai sau khi hoàn thành
+            if (c.Status && day > new Date()) return false;
+            return day >= start && day < end;
         });
         if (!hasSession) return;
         const areaId = c.Area?._id ? String(c.Area._id) : 'other';

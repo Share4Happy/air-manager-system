@@ -26,19 +26,66 @@ export default function CancelLessonPopup({
     const [reason, setReason] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const lessonName = lessonData?.LessonDetails?.Name || lessonData?.Topic || 'Buổi học';
-    const lessonDate = lessonData?.Day ? formatDate(lessonData.Day) : '—';
+    const lessonName = lessonData?.LessonDetails?.Name || (typeof lessonData?.Topic === 'object' ? lessonData?.Topic?.Name : lessonData?.Topic) || (typeof lessonData?.topic === 'object' ? lessonData?.topic?.Name : lessonData?.topic) || 'Buổi học';
+    const rawLessonDay = lessonData?.Day || lessonData?.day || null;
+    const lessonDate = rawLessonDay ? formatDate(rawLessonDay) : '—';
     const teacherName = lessonData?.Teacher?.name || courseData?.TeacherHR?.name || 'Chưa phân công';
-    const isAlreadyCancelled = lessonData?.Type === 'Báo nghỉ';
+    const isAlreadyCancelled = (lessonData?.Type === 'Báo nghỉ' || lessonData?.type === 'Báo nghỉ');
 
     const isPastLesson = React.useMemo(() => {
-        if (!lessonData?.Day) return false;
+        if (!rawLessonDay) return false;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const lDate = new Date(lessonData.Day);
+        const lDate = new Date(rawLessonDay);
         lDate.setHours(0, 0, 0, 0);
         return lDate < today;
-    }, [lessonData?.Day]);
+    }, [rawLessonDay]);
+
+    const getDayVal = d => d?.day || d?.Day || null;
+    const getTimeVal = d => d?.time || d?.Time || '08:00';
+
+    const estimatedMakeup = React.useMemo(() => {
+        if (!courseData?.Detail || courseData.Detail.length === 0) return null;
+        const details = courseData.Detail.filter(d => getDayVal(d) && !isNaN(new Date(getDayVal(d)).getTime()));
+        if (details.length === 0) return null;
+
+        const sorted = [...details].sort((a, b) => new Date(getDayVal(a)) - new Date(getDayVal(b)));
+        const lastDetail = sorted[sorted.length - 1];
+        const lastDate = new Date(getDayVal(lastDetail));
+
+        const dayOfWeekConfigs = new Map();
+        for (const d of sorted) {
+            const dObj = new Date(getDayVal(d));
+            const dow = dObj.getDay();
+            dayOfWeekConfigs.set(dow, {
+                time: getTimeVal(d) || getTimeVal(lastDetail) || '08:00',
+            });
+        }
+
+        const candidate = new Date(lastDate);
+        candidate.setDate(candidate.getDate() + 1);
+
+        const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+        for (let i = 0; i < 7; i++) {
+            const dow = candidate.getDay();
+            if (dayOfWeekConfigs.has(dow)) {
+                const config = dayOfWeekConfigs.get(dow);
+                return {
+                    dateStr: `${dayNames[dow]}, ${formatDate(candidate)}`,
+                    timeStr: config.time || '08:00',
+                };
+            }
+            candidate.setDate(candidate.getDate() + 1);
+        }
+
+        const fallback = new Date(lastDate);
+        fallback.setDate(fallback.getDate() + 7);
+        return {
+            dateStr: `${dayNames[fallback.getDay()]}, ${formatDate(fallback)}`,
+            timeStr: getTimeVal(lastDetail) || '08:00',
+        };
+    }, [courseData?.Detail]);
 
     const handleConfirm = async () => {
         if (isPastLesson) {
@@ -54,6 +101,14 @@ export default function CancelLessonPopup({
             return;
         }
 
+        const targetLessonId = lessonId || lessonData?._id;
+        const targetCourseId = courseId || courseData?._id || courseData?.ID;
+
+        if (!targetLessonId) {
+            if (showNoti) showNoti(false, 'Không xác định được buổi học cần báo nghỉ. Vui lòng thử lại.');
+            return;
+        }
+
         setSubmitting(true);
         try {
             const formattedNote = `[${cancelType === 'teacher' ? 'Báo nghỉ Giáo viên' : 'Báo nghỉ Lớp'}] ${reason.trim()}`;
@@ -61,8 +116,8 @@ export default function CancelLessonPopup({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    courseId: courseId || courseData?._id,
-                    detailId: lessonId || lessonData?._id,
+                    courseId: targetCourseId,
+                    detailId: targetLessonId,
                     type: 'Báo nghỉ',
                     data: {
                         Note: formattedNote,
@@ -129,6 +184,26 @@ export default function CancelLessonPopup({
                             Buổi học này hiện đang ở trạng thái BÁO NGHỈ
                         </div>
                     )}
+                </div>
+
+                {/* Hộp thông tin cơ chế tự động dời bài học và tạo buổi bù */}
+                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg flex items-start gap-2.5 text-blue-900 text-xs leading-relaxed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="#1d4ed8" className="shrink-0 mt-0.5">
+                        <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM216 336h24V272H216c-13.3 0-24-10.7-24-24s10.7-24 24-24h48c13.3 0 24 10.7 24 24v88h24c13.3 0 24 10.7 24 24s-10.7 24-24 24H216c-13.3 0-24-10.7-24-24s10.7-24 24-24zm40-144c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/>
+                    </svg>
+                    <div className="flex flex-col gap-1 w-full">
+                        <p className="font-semibold text-blue-950 text-xs">Cơ chế tự động dời bài học & tạo buổi bù:</p>
+                        <ul className="list-disc pl-4 text-blue-800 text-[11px] space-y-0.5">
+                            <li>Nội dung của buổi này sẽ được chuyển sang buổi học tiếp theo (các buổi sau tự động dời tịnh tiến).</li>
+                            <li>Hệ thống sẽ <strong>tự động tạo 1 buổi bù ở cuối khóa</strong> để hoàn thành trọn vẹn giáo trình.</li>
+                        </ul>
+                        {estimatedMakeup && (
+                            <div className="mt-1 text-blue-900 text-[11px] font-medium bg-blue-100/80 px-2 py-1.5 rounded border border-blue-200 flex items-center justify-between">
+                                <span>🗓️ Buổi bù dự kiến:</span>
+                                <strong>{estimatedMakeup.dateStr} ({estimatedMakeup.timeStr})</strong>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Chọn loại báo nghỉ */}

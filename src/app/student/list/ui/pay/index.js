@@ -65,53 +65,58 @@ const PopupContent = React.memo(({ data, onStartInvoice, onDetailClick }) => {
     const tuitiondone = data?.Course?.filter(course => course.tuition !== null) || [];
     const debts = data?.debts || [];
     return (
-        <>
-            <div style={{ padding: 16, paddingBottom: 0 }}>
-                <TextNoti title={'Học phí'} mes='Phần xác nhận học phí và xem lịch sử học phí của 1 học sinh liên quan tới các khóa học mà học sinh đã tham gia.' color={'blue'} />
-            </div>
-            <div style={{ margin: 16, border: 'thin solid var(--main_d)', borderRadius: 5, overflow: 'hidden' }}>
-                <p className='text-base font-semibold text-[var(--text-primary)]' style={{ padding: '10px 8px', background: 'var(--main_d)', color: 'white' }}>Thông tin nợ học phí</p>
+        <div className="flex flex-col gap-3 p-3 sm:p-4">
+            <TextNoti title={'Học phí'} mes='Phần xác nhận học phí và xem lịch sử học phí của 1 học sinh liên quan tới các khóa học mà học sinh đã tham gia.' color={'blue'} />
+            
+            <div className="border border-[var(--main_d)] rounded-md overflow-hidden bg-white">
+                <p className='text-sm sm:text-base font-semibold text-white px-3 py-2 bg-[var(--main_d)]'>Thông tin nợ học phí</p>
                 {tuition.length > 0 || debts.length > 0 ? (
-                    <>
+                    <div className="divide-y divide-[var(--border-color)]">
                         {tuition.map((course, index) => (
-                            <div key={index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
-                                <p>Khóa học: {course.ID}</p>
-                                <p>{formatCurrencyVN(course.Book?.Price || 0)}</p>
-                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice(course)} />
+                            <div key={index} className='text-xs sm:text-sm text-[var(--text-primary)] px-3 py-2.5 flex items-center justify-between gap-2'>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium truncate">Khóa học: {course.ID}</p>
+                                    <p className="text-[var(--text-secondary)] text-xs">{formatCurrencyVN(course.Book?.Price || 0)}</p>
+                                </div>
+                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer', flexShrink: 0 }} click={() => onStartInvoice(course)} />
                             </div>
                         ))}
                         {debts.map((d, index) => (
-                            <div key={'debt-' + index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
-                                <p>{d.courseName || 'Khoản nợ'} {d.note ? `(${d.note})` : ''}</p>
-                                <p>{formatCurrencyVN(d.amount || 0)}</p>
-                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onStartInvoice({ _id: d._id, ID: d.courseName || 'Khoản nợ', Book: { Price: d.amount || 0 }, tuition: null })} />
+                            <div key={'debt-' + index} className='text-xs sm:text-sm text-[var(--text-primary)] px-3 py-2.5 flex items-center justify-between gap-2'>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium truncate">{d.courseName || 'Khoản nợ'} {d.note ? `(${d.note})` : ''}</p>
+                                    <p className="text-[var(--text-secondary)] text-xs">{formatCurrencyVN(d.amount || 0)}</p>
+                                </div>
+                                <WrapIcon icon={<Svg_Check w={16} h={16} c={'white'} />} content={'Tạo hóa đơn'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer', flexShrink: 0 }} click={() => onStartInvoice({ _id: d._id, ID: d.courseName || 'Khoản nợ', Book: { Price: d.amount || 0 }, tuition: null })} />
                             </div>
                         ))}
-                    </>
+                    </div>
                 ) : (
-                    <p className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: 12, textAlign: 'center', fontStyle: 'italic' }}>Không có thông tin nợ học phí</p>
+                    <p className='text-xs sm:text-sm text-[var(--text-secondary)] p-3 text-center italic'>Không có thông tin nợ học phí</p>
                 )}
             </div>
-            <div style={{ padding: '0 16px' }}>
-                <TextNoti title={'Lịch sử'} mes='Lịch sử giao dịch sẽ được phép xem lại các hóa đơn đã thanh toán trước đó.' color={'blue'} />
-            </div>
-            <div style={{ margin: 16, border: 'thin solid var(--main_d)', borderRadius: 5, overflow: 'hidden' }}>
-                <p className='text-base font-semibold text-[var(--text-primary)]' style={{ padding: '10px 8px', background: 'var(--main_d)', color: 'white', borderRadius: '5px 5px 0 0' }}>Lịch sử đóng học phí</p>
+
+            <TextNoti title={'Lịch sử'} mes='Lịch sử giao dịch sẽ được phép xem lại các hóa đơn đã thanh toán trước đó.' color={'blue'} />
+            
+            <div className="border border-[var(--main_d)] rounded-md overflow-hidden bg-white">
+                <p className='text-sm sm:text-base font-semibold text-white px-3 py-2 bg-[var(--main_d)]'>Lịch sử đóng học phí</p>
                 {tuitiondone.length > 0 ? (
-                    tuitiondone.map((course, index) => (
-                        <div key={index} className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: '5px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 'thin solid var(--border-color)' }}>
-                            <p>Khóa học: {course.ID}</p>
-                            <p>{formatCurrencyVN(course.Book?.Price || 0)}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <WrapIcon icon={<Svg_Bill w={16} h={16} c={'white'} />} content={'Chi tiết giao dịch'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer' }} click={() => onDetailClick(course)} />
+                    <div className="divide-y divide-[var(--border-color)]">
+                        {tuitiondone.map((course, index) => (
+                            <div key={index} className='text-xs sm:text-sm text-[var(--text-primary)] px-3 py-2.5 flex items-center justify-between gap-2'>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium truncate">Khóa học: {course.ID}</p>
+                                    <p className="text-[var(--text-secondary)] text-xs">{formatCurrencyVN(course.Book?.Price || 0)}</p>
+                                </div>
+                                <WrapIcon icon={<Svg_Bill w={16} h={16} c={'white'} />} content={'Chi tiết giao dịch'} placement={'left'} style={{ background: 'var(--main_d)', color: 'white', cursor: 'pointer', flexShrink: 0 }} click={() => onDetailClick(course)} />
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 ) : (
-                    <p className='text-sm font-normal text-[var(--text-primary)]' style={{ padding: 12, textAlign: 'center', fontStyle: 'italic' }}>Không có lịch sử đóng học phí</p>
+                    <p className='text-xs sm:text-sm text-[var(--text-secondary)] p-3 text-center italic'>Không có lịch sử đóng học phí</p>
                 )}
             </div>
-        </>
+        </div>
     );
 });
 PopupContent.displayName = 'PopupContent';
@@ -147,7 +152,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
             if (json.data) {
                 finalData.debts = json.data.filter(d => String(d.studentId) === String(_id));
             }
-        } catch (e) {
+        } catch {
             finalData.debts = [];
         }
         setStudentData(finalData);
@@ -208,7 +213,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
         } catch {
             setNoti({ open: true, status: false, mes: 'Không thể kết nối đến máy chủ.' });
         }
-    }, [studentData, selectedCourse, amount, finalAmount, promotion, router]);
+    }, [studentData, selectedCourse, amount, finalAmount, promotion, router, handleCloseConfirm, handleClosePopup]);
 
     const handlePayQr = useCallback(async () => {
         if (!studentData || !selectedCourse) return;
@@ -216,13 +221,17 @@ export default function Pay({ _id, courseId = null, status = false }) {
             const bankRes = await fetch('/api/bank');
             const bankJson = await bankRes.json();
             const bankList = bankJson.status ? (bankJson.data || []) : [];
-            if (bankList.length === 0) {
-                setNoti({ open: true, status: false, mes: 'Chưa có tài khoản ngân hàng nào. Vui lòng thêm tài khoản ngân hàng trước.' });
+            const defaultBank = bankList.find(b => b.isDefault === true);
+            if (!defaultBank) {
+                setNoti({ 
+                    open: true, 
+                    status: false, 
+                    mes: 'Chưa có tài khoản ngân hàng nào được thiết lập mặc định. Vui lòng cài đặt tài khoản ngân hàng mặc định trong phần Quản lý ngân hàng trước khi thanh toán chuyển khoản.' 
+                });
                 return;
             }
             setBanks(bankList);
-            const defaultBank = bankList.find(b => b.isDefault) || bankList[0];
-            setSelectedBankId(defaultBank?._id || null);
+            setSelectedBankId(defaultBank._id);
             const response = await fetch('/api/pay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -260,7 +269,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
         } catch {
             setNoti({ open: true, status: false, mes: 'Không thể kết nối đến máy chủ.' });
         }
-    }, [studentData, selectedCourse, amount, finalAmount, promotion, router]);
+    }, [studentData, selectedCourse, amount, finalAmount, promotion, router, handleCloseConfirm, handleClosePopup]);
 
     const handleOpenDetail = useCallback(async (courseData) => {
         const invoiceId = courseData?.tuition;
@@ -297,7 +306,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
             setPopupFlag(f => f + 1);
         }, 350);
         router.refresh();
-    }, [router]);
+    }, [router, handleClosePopup]);
 
     const handleCloseQr = useCallback(() => { setQrOpen(false); setQrInfo(null); }, []);
     const handleCloseNoti = useCallback(() => setNoti(prev => ({ ...prev, open: false })), []);
@@ -314,8 +323,8 @@ export default function Pay({ _id, courseId = null, status = false }) {
     );
 
     const customPromotionBtn = (
-        <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ background: 'var(--hover)', margin: 0, transform: 'none', width: 'calc(100% - 16px)' }}>
-            <p className='text-sm font-normal text-[var(--text-primary)]'>{promotion.description} ({promotion.value}%)</p>
+        <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-full rounded text-white text-xs sm:text-sm font-medium cursor-pointer border-none transition-all duration-100 justify-center whitespace-nowrap hover:bg-[var(--main_d)]' style={{ background: 'var(--hover)', margin: 0 }}>
+            <p className='text-xs sm:text-sm font-normal text-[var(--text-primary)] truncate'>{promotion.description} ({promotion.value}%)</p>
         </div>
     );
 
@@ -331,79 +340,85 @@ export default function Pay({ _id, courseId = null, status = false }) {
                 {selectedCourse && studentData && (
                     <>
                         <Title content='Tạo hóa đơn' click={handleCloseConfirm} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: 16 }}>
-                            <p className='text-sm font-semibold text-[var(--text-primary)]' style={{ padding: 8, background: 'var(--main_b)', color: 'white', borderRadius: 5 }}>Thông tin học sinh</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 8, fontSize: 13 }}>
-                                <p><span className='font-semibold'>ID:</span> {studentData.ID}</p>
-                                <p><span className='font-semibold'>Họ tên:</span> {studentData.Name}</p>
-                                <p><span className='font-semibold'>Liên hệ:</span> {studentData.Phone}</p>
+                        <div className="flex flex-col gap-3 p-3 sm:p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+                            <div>
+                                <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin học sinh</p>
+                                <div className="flex flex-col gap-1 p-2 text-xs sm:text-sm break-words">
+                                    <p><span className='font-semibold'>ID:</span> {studentData.ID}</p>
+                                    <p><span className='font-semibold'>Họ tên:</span> {studentData.Name}</p>
+                                    <p><span className='font-semibold'>Liên hệ:</span> {studentData.Phone || '—'}</p>
+                                </div>
                             </div>
 
-                            <p className='text-sm font-semibold text-[var(--text-primary)]' style={{ padding: 8, background: 'var(--main_b)', color: 'white', borderRadius: 5 }}>Thông tin khóa học</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: 8, fontSize: 13 }}>
-                                <p><span className='font-semibold'>Khóa học:</span> {selectedCourse.ID}</p>
-                                <p><span className='font-semibold'>Chương trình:</span> {selectedCourse.Book?.Name || '—'}</p>
+                            <div>
+                                <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin khóa học</p>
+                                <div className="flex flex-col gap-1 p-2 text-xs sm:text-sm break-words">
+                                    <p><span className='font-semibold'>Khóa học:</span> {selectedCourse.ID}</p>
+                                    <p><span className='font-semibold'>Chương trình:</span> {selectedCourse.Book?.Name || '—'}</p>
+                                </div>
                             </div>
 
-                            <p className='text-sm font-semibold text-[var(--text-primary)]' style={{ padding: 8, background: 'var(--main_b)', color: 'white', borderRadius: 5 }}>Thông tin thanh toán</p>
-                            <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <p className='font-semibold' style={{ minWidth: 100 }}>Số tiền:</p>
-                                    <input
-                                        type="number"
-                                        value={amount}
-                                        onChange={e => setAmount(Number(e.target.value) || 0)}
-                                        className="flex-1 px-3 py-1.5 border border-gray-200 rounded text-sm outline-none text-gray-700"
-                                    />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <p className='font-semibold' style={{ minWidth: 100 }}>Giảm giá:</p>
-                                    <Menu menuItems={promotionItems} customButton={customPromotionBtn} menuPosition="top" style={{ flex: 1 }} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }}>
-                                    <p className='font-semibold' style={{ minWidth: 100 }}>Thành tiền:</p>
-                                    <p style={{ color: 'var(--red)', fontWeight: 700, fontSize: 16 }}>{formatCurrencyVN(finalAmount)}</p>
+                            <div>
+                                <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin thanh toán</p>
+                                <div className="flex flex-col gap-2.5 p-2 text-xs sm:text-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                        <span className='font-semibold sm:w-24 shrink-0'>Số tiền:</span>
+                                        <input
+                                            type="number"
+                                            value={amount}
+                                            onChange={e => setAmount(Number(e.target.value) || 0)}
+                                            className="w-full sm:flex-1 px-3 py-1.5 border border-gray-200 rounded text-xs sm:text-sm outline-none text-gray-700 bg-white"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                        <span className='font-semibold sm:w-24 shrink-0'>Giảm giá:</span>
+                                        <div className="w-full sm:flex-1 min-w-0">
+                                            <Menu menuItems={promotionItems} customButton={customPromotionBtn} menuPosition="top" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between sm:justify-start gap-2 pt-1 border-t border-gray-100">
+                                        <span className='font-semibold sm:w-24 shrink-0'>Thành tiền:</span>
+                                        <span className="text-base sm:text-lg font-bold text-[var(--red)]">{formatCurrencyVN(finalAmount)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 12, padding: '10px 16px', borderTop: 'thin solid var(--border-color)' }}>
-                            <div className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 rounded text-white text-sm font-medium cursor-pointer justify-center hover:bg-[var(--main_d)]' onClick={handlePayCash}>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-3 sm:p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)]">
+                            <button className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-white text-xs sm:text-sm font-medium cursor-pointer hover:bg-[var(--main_d)] border-none' onClick={handlePayCash}>
                                 💵 Tiền mặt
-                            </div>
-                            <div className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 rounded text-white text-sm font-medium cursor-pointer justify-center hover:bg-[var(--main_d)]' onClick={handlePayQr}>
+                            </button>
+                            <button className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-white text-xs sm:text-sm font-medium cursor-pointer hover:bg-[var(--main_d)] border-none' onClick={handlePayQr}>
                                 📱 QR Chuyển khoản
-                            </div>
+                            </button>
                         </div>
                     </>
                 )}
             </CenterPopup>
 
             <CenterPopup open={isPaymentConfirmOpen} onClose={() => setPaymentConfirmOpen(false)} size="sm">
-                <div style={{ padding: 32, textAlign: 'center' }}>
-                    <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 24 }}>Xác nhận thanh toán</p>
-                    <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 28 }}>
+                <div className="p-5 sm:p-8 text-center break-words">
+                    <p className="text-base font-semibold mb-4 text-[var(--text-primary)]">Xác nhận thanh toán</p>
+                    <p className="text-xs sm:text-sm text-[var(--text-secondary)] mb-6">
                         {pendingAction === 'cash'
                             ? `Thu ${formatCurrencyVN(finalAmount)} của học sinh ${studentData?.Name || ''}?`
                             : 'Xác nhận đã nhận được tiền chuyển khoản?'}
                     </p>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                        <div
-                            className='px-4 py-2 border border-[var(--border-color)] rounded text-sm font-medium cursor-pointer hover:bg-gray-50'
+                    <div className="flex gap-3 justify-center">
+                        <button
+                            className='px-4 py-2 border border-[var(--border-color)] rounded text-xs sm:text-sm font-medium cursor-pointer hover:bg-gray-50 bg-white'
                             onClick={() => setPaymentConfirmOpen(false)}
-                            role="button"
                         >
                             Hủy
-                        </div>
-                        <div
-                            className='px-4 py-2 bg-[var(--main_b)] rounded text-sm font-medium text-white cursor-pointer hover:bg-[var(--main_d)]'
+                        </button>
+                        <button
+                            className='px-4 py-2 bg-[var(--main_b)] rounded text-xs sm:text-sm font-medium text-white cursor-pointer hover:bg-[var(--main_d)] border-none'
                             onClick={() => {
                                 if (pendingAction === 'cash') executePayCash()
                                 else if (pendingAction === 'confirm') executeConfirmPayment()
                             }}
-                            role="button"
                         >
                             Xác nhận
-                        </div>
+                        </button>
                     </div>
                 </div>
             </CenterPopup>
@@ -417,85 +432,67 @@ export default function Pay({ _id, courseId = null, status = false }) {
                     return (
                         <>
                             <Title content='Quét mã QR để thanh toán' click={handleCloseQr} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 24px 24px', alignItems: 'center' }}>
+                            <div className="flex flex-col gap-3 sm:gap-4 p-3 sm:p-5 items-center max-h-[calc(90vh-80px)] overflow-y-auto w-full">
                                 {banks.length > 0 && (
-                                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <span className='text-sm text-[var(--text-secondary)]'>Tài khoản:</span>
+                                    <div className="w-full flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                                        <span className='text-xs sm:text-sm text-[var(--text-secondary)] shrink-0'>Tài khoản:</span>
                                         <select
-                                            style={{ flex: 1, padding: '8px 10px', border: 'thin solid var(--border-color)', borderRadius: 6, fontSize: 13, outline: 'none', background: 'white' }}
+                                            className="w-full sm:flex-1 p-2 border border-[var(--border-color)] rounded-md text-xs sm:text-sm outline-none bg-white text-[var(--text-primary)]"
                                             value={selectedBankId || ''}
                                             onChange={e => setSelectedBankId(e.target.value)}
                                         >
                                             {banks.map(b => {
                                                 const info = getBankInfo(b.bankName)
                                                 return (
-                                                <option key={b._id} value={b._id}>{info.name} - {b.accountNumber}</option>
+                                                    <option key={b._id} value={b._id}>{info.name} - {b.accountNumber} {b.isDefault ? '(Mặc định)' : ''}</option>
                                                 )
                                             })}
                                         </select>
                                     </div>
                                 )}
                                 {qrUrl && (
-                                    <div style={{ width: 260, height: 260, background: 'white', borderRadius: 8, border: 'thin solid var(--border-color)', padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+                                    <div className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] bg-white rounded-lg border border-[var(--border-color)] p-2 shadow-sm shrink-0">
                                         <img
                                             src={qrUrl}
                                             alt="Mã QR chuyển khoản"
-                                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                                            className="w-full h-full object-contain block"
                                         />
                                     </div>
                                 )}
                                 {selectedBank && (
-                                    <div style={{
-                                        width: '100%',
-                                        background: '#eff6ff',
-                                        border: 'thin solid #bfdbfe',
-                                        borderRadius: 10,
-                                        padding: '14px 18px',
-                                        fontSize: 13,
-                                        lineHeight: 2,
-                                        color: '#1e40af'
-                                    }}>
-                                        <p>Ngân hàng: <span style={{ fontWeight: 600 }}>{getBankInfo(selectedBank.bankName).name}</span></p>
-                                        <p>Số TK: <span style={{ fontWeight: 600 }}>{selectedBank.accountNumber}</span></p>
-                                        <div style={{ borderTop: 'thin solid #bfdbfe', marginTop: 8, paddingTop: 8, textAlign: 'center' }}>
-                                            <p style={{ fontSize: 12, marginBottom: 2 }}>Nội dung chuyển khoản</p>
-                                            <p style={{ fontWeight: 700, fontSize: 14, letterSpacing: 0.5 }}>{qrInfo.content}</p>
+                                    <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm leading-relaxed text-blue-900 break-words">
+                                        <p>Ngân hàng: <span className="font-semibold">{getBankInfo(selectedBank.bankName).name}</span></p>
+                                        <p>Số TK: <span className="font-semibold">{selectedBank.accountNumber}</span></p>
+                                        <p>Chủ TK: <span className="font-semibold">{selectedBank.accountName}</span></p>
+                                        <div className="border-t border-blue-200 mt-2 pt-2 text-center">
+                                            <p className="text-[11px] sm:text-xs text-blue-700 mb-1">Nội dung chuyển khoản</p>
+                                            <p className="font-bold text-xs sm:text-sm tracking-wide break-all text-blue-950 bg-blue-100/70 p-1.5 rounded select-all">{qrInfo.content}</p>
                                         </div>
                                     </div>
                                 )}
-                                <div style={{
-                                    width: '100%',
-                                    background: '#f8f8f8',
-                                    borderRadius: 8,
-                                    padding: '12px 16px',
-                                    fontSize: 13,
-                                    lineHeight: 2,
-                                    color: '#374151'
-                                }}>
-                                    <p className='font-medium' style={{ fontSize: 14 }}>{qrInfo.studentName}</p>
+                                <div className="w-full bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs sm:text-sm leading-relaxed text-gray-700 break-words">
+                                    <p className='font-semibold text-sm sm:text-base text-gray-900'>{qrInfo.studentName}</p>
                                     <p className='text-[var(--text-secondary)]'>Mã HS: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.studentId}</span></p>
                                     <p className='text-[var(--text-secondary)]'>Khóa học: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.courseName}</span></p>
                                     <p className='text-[var(--text-secondary)]'>Mã HĐ: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.invoiceId.slice(-8).toUpperCase()}</span></p>
                                 </div>
-                                <div style={{ textAlign: 'center', width: '100%' }}>
-                                    <p className='text-sm text-[var(--text-secondary)]' style={{ marginBottom: 2 }}>Thành tiền</p>
-                                    <p style={{ color: 'var(--red)', fontSize: 22, fontWeight: 800 }}>{formatCurrencyVN(qrInfo.amount)}</p>
+                                <div className="text-center w-full">
+                                    <p className='text-xs text-[var(--text-secondary)] mb-0.5'>Thành tiền</p>
+                                    <p className="text-lg sm:text-2xl font-extrabold text-[var(--red)]">{formatCurrencyVN(qrInfo.amount)}</p>
                                 </div>
-                                <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-                                    <div
-                                        className='flex-1 px-3 py-2.5 bg-[var(--green)] flex items-center gap-2 rounded-lg text-white text-sm font-medium cursor-pointer justify-center hover:opacity-90'
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+                                    <button
+                                        className='flex-1 px-3 py-2.5 bg-[var(--green)] flex items-center justify-center gap-2 rounded-lg text-white text-xs sm:text-sm font-medium cursor-pointer hover:opacity-90 border-none'
                                         onClick={handleConfirmPayment}
-                                        role="button"
                                     >
                                         Xác nhận đã thanh toán
-                                    </div>
-                                    <div
-                                        className='px-4 py-2.5 bg-[var(--hover)] flex items-center gap-2 rounded-lg text-[var(--text-primary)] text-sm font-medium cursor-pointer justify-center hover:opacity-90'
+                                    </button>
+                                    <button
+                                        className='px-4 py-2.5 bg-[var(--hover)] flex items-center justify-center gap-2 rounded-lg text-[var(--text-primary)] text-xs sm:text-sm font-medium cursor-pointer hover:opacity-90 border-none'
                                         onClick={handleCloseQr}
-                                        role="button"
                                     >
                                         Đóng
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         </>
@@ -505,14 +502,14 @@ export default function Pay({ _id, courseId = null, status = false }) {
 
             <CenterPopup open={isDetailOpen} onClose={handleCloseDetail} size="lg">
                 {invoiceState.isLoading ? (
-                    <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <p className='text-sm text-[var(--text-secondary)]'>Đang tải...</p>
+                    <div className="h-64 sm:h-96 flex items-center justify-center">
+                        <p className='text-xs sm:text-sm text-[var(--text-secondary)]'>Đang tải...</p>
                     </div>
                 ) : invoiceState.error ? (
                     <>
                         <Title content='Lỗi' click={handleCloseDetail} />
-                        <div style={{ padding: 32, textAlign: 'center' }}>
-                            <p className='text-xs font-medium' style={{ color: 'var(--red)' }}>{invoiceState.error}</p>
+                        <div className="p-6 sm:p-8 text-center">
+                            <p className='text-xs sm:text-sm font-medium text-[var(--red)]'>{invoiceState.error}</p>
                         </div>
                     </>
                 ) : invoiceState.data ? (
@@ -524,80 +521,86 @@ export default function Pay({ _id, courseId = null, status = false }) {
                         return (
                             <>
                                 <Title content='Hóa đơn thanh toán' click={handleCloseDetail} />
-                                 <div style={{ padding: '24px 32px 32px', fontSize: 14, lineHeight: 1.7, maxHeight: 'calc(90vh - 80px)', overflowY: 'auto' }}>
+                                <div className="p-3 sm:p-6 md:p-8 text-xs sm:text-sm leading-relaxed max-h-[calc(90vh-80px)] overflow-y-auto">
                                     {/* Header */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 16, borderBottom: '2px solid var(--main_d)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: 1 }}>
-                                                <span style={{ color: '#000' }}>AI</span>
-                                                <span style={{ color: '#2563EB' }}> ROBOTIC</span>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pb-3 sm:pb-4 border-b-2 border-[var(--main_d)]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-2xl sm:text-3xl font-extrabold tracking-wider shrink-0">
+                                                <span className="text-black">AI</span>
+                                                <span className="text-blue-600"> ROBOTIC</span>
                                             </div>
-                                            <div style={{ borderLeft: '2px solid var(--border-color)', paddingLeft: 14 }}>
-                                                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
-                                                <p style={{ fontSize: 12, color: '#2563EB', fontStyle: 'italic', fontWeight: 500, marginTop: 1 }}>"Learn AI - Grasp your future"</p>
+                                            <div className="border-l-2 border-[var(--border-color)] pl-3 min-w-0">
+                                                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] font-medium leading-tight">CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
+                                                <p className="text-[11px] sm:text-xs text-blue-600 italic font-medium mt-0.5">"Learn AI - Grasp your future"</p>
                                             </div>
                                         </div>
-                                        <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-secondary)' }}>
-                                            <p>MST: <span className='font-medium text-[var(--text-primary)]'>{COMPANY.taxCode}</span></p>
+                                        <div className="text-left sm:text-right text-xs text-[var(--text-secondary)] shrink-0">
+                                            <p>MST: <span className='font-semibold text-[var(--text-primary)]'>{COMPANY.taxCode}</span></p>
                                         </div>
                                     </div>
 
                                     {/* Address */}
-                                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', paddingTop: 6, paddingBottom: 16 }}>Địa chỉ: {COMPANY.address}</p>
+                                    <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] pt-2 pb-3 sm:pb-4 break-words">Địa chỉ: {COMPANY.address}</p>
 
                                     {/* Title */}
-                                    <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 800, margin: '16px 0 4px', color: 'var(--text-primary)', letterSpacing: 2 }}>HÓA ĐƠN THANH TOÁN</h2>
-                                    <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20 }}>Mã HĐ: {inv._id.slice(-12).toUpperCase()}  |  Ngày: {date}</p>
+                                    <h2 className="text-center text-xl sm:text-2xl md:text-3xl font-extrabold my-3 sm:my-4 text-[var(--text-primary)] tracking-wide">HÓA ĐƠN THANH TOÁN</h2>
+                                    <p className="text-center text-xs text-[var(--text-secondary)] mb-4 sm:mb-6 break-words">Mã HĐ: {inv._id.slice(-12).toUpperCase()}  |  Ngày: {date}</p>
 
-                                    <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-                                        <div style={{ flex: 1, border: 'thin solid var(--border-color)', borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                            <div style={{ padding: '10px 14px', background: 'var(--main_d)', color: 'white', fontWeight: 600, fontSize: 13 }}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                        {/* Student & Course Info */}
+                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white">
+                                            <div className="px-3.5 py-2 bg-[var(--main_d)] text-white font-semibold text-xs sm:text-sm">
                                                 📋 THÔNG TIN HỌC SINH & KHÓA HỌC
                                             </div>
-                                            <div style={{ padding: '14px 16px', fontSize: 13, lineHeight: 2.2, flex: 1 }}>
-                                                <p>Họ tên: <span className='font-medium'>{inv.studentId?.Name || '—'}</span></p>
-                                                <p>Mã HS: <span className='font-medium'>{inv.studentId?.ID || '—'}</span></p>
-                                                <p>Khóa học: <span className='font-medium'>{inv.courseId?.ID || '—'}</span></p>
-                                                <p>Chương trình: <span className='font-medium'>{inv.courseId?.Book?.Name || '—'}</span></p>
-                                                <p>Số buổi học: <span className='font-medium'>{sessions} buổi</span></p>
+                                            <div className="p-3.5 sm:p-4 text-xs sm:text-sm space-y-2 flex-1 break-words">
+                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Họ tên:</span> <span className="font-semibold text-right">{inv.studentId?.Name || '—'}</span></p>
+                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Mã HS:</span> <span className="font-semibold text-right">{inv.studentId?.ID || '—'}</span></p>
+                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Khóa học:</span> <span className="font-semibold text-right">{inv.courseId?.ID || '—'}</span></p>
+                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Chương trình:</span> <span className="font-semibold text-right">{inv.courseId?.Book?.Name || '—'}</span></p>
+                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Số buổi học:</span> <span className="font-semibold text-right">{sessions} buổi</span></p>
                                             </div>
                                         </div>
-                                        <div style={{ flex: 1, border: 'thin solid var(--border-color)', borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
-                                            <div style={{ padding: '10px 14px', background: 'var(--main_d)', color: 'white', fontWeight: 600, fontSize: 13 }}>
+
+                                        {/* Payment Content */}
+                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white">
+                                            <div className="px-3.5 py-2 bg-[var(--main_d)] text-white font-semibold text-xs sm:text-sm">
                                                 💳 NỘI DUNG THANH TOÁN
                                             </div>
-                                            <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                                                <tbody>
-                                                    <tr style={{ borderTop: 'thin solid var(--border-color)' }}>
-                                                        <td style={{ padding: '10px 14px' }}>Học phí khóa học {inv.courseId?.ID || ''}</td>
-                                                        <td style={{ padding: '10px 14px', textAlign: 'right', width: 160 }}>{formatCurrencyVN(inv.amountInitial || 0)}</td>
-                                                    </tr>
+                                            <div className="flex flex-col flex-1">
+                                                <div className="p-3.5 sm:p-4 space-y-2 text-xs sm:text-sm">
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <span className="text-gray-700 break-words flex-1">Học phí khóa học {inv.courseId?.ID || ''}</span>
+                                                        <span className="font-medium text-right shrink-0 whitespace-nowrap">{formatCurrencyVN(inv.amountInitial || 0)}</span>
+                                                    </div>
                                                     {inv.discount > 0 && (
-                                                        <tr style={{ borderTop: 'thin solid var(--border-color)' }}>
-                                                            <td style={{ padding: '10px 14px', color: 'var(--green)' }}>Giảm giá ({inv.discount}%)</td>
-                                                            <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--green)' }}>-{formatCurrencyVN(discountAmount)}</td>
-                                                        </tr>
+                                                        <div className="flex justify-between items-center gap-2 text-green-600">
+                                                            <span>Giảm giá ({inv.discount}%)</span>
+                                                            <span className="font-medium text-right shrink-0 whitespace-nowrap">-{formatCurrencyVN(discountAmount)}</span>
+                                                        </div>
                                                     )}
-                                                </tbody>
-                                            </table>
-                                            <div style={{ padding: '12px 14px', borderTop: '2px solid var(--main_d)', background: '#f8f8f8', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15 }}>
-                                                <span>TỔNG CỘNG</span>
-                                                <span style={{ color: 'var(--red)' }}>{formatCurrencyVN(inv.amountPaid || 0)}</span>
-                                            </div>
-                                            <div style={{ padding: '10px 14px', borderTop: 'thin solid var(--border-color)', fontSize: 13, fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                                                Bằng chữ: <span className='font-medium text-[var(--text-primary)]'>{numberToWords(inv.amountPaid || 0)}</span>
-                                            </div>
-                                            <div style={{ padding: '10px 14px', borderTop: 'thin solid var(--border-color)', fontSize: 13, background: '#f0f9ff' }}>
-                                                💳 Hình thức: <span className='font-medium'>{PAYMENT_METHODS[inv.paymentMethod] || '—'}</span>
+                                                </div>
+                                                <div className="mt-auto">
+                                                    <div className="px-3.5 py-2.5 border-t-2 border-[var(--main_d)] bg-gray-50 flex justify-between items-center font-bold text-sm sm:text-base">
+                                                        <span>TỔNG CỘNG</span>
+                                                        <span className="text-[var(--red)] text-base sm:text-lg">{formatCurrencyVN(inv.amountPaid || 0)}</span>
+                                                    </div>
+                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs text-[var(--text-secondary)] italic break-words">
+                                                        Bằng chữ: <span className="font-medium text-[var(--text-primary)] not-italic">{numberToWords(inv.amountPaid || 0)}</span>
+                                                    </div>
+                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs sm:text-sm bg-blue-50/60 flex justify-between items-center">
+                                                        <span>💳 Hình thức:</span>
+                                                        <span className="font-semibold text-blue-900">{PAYMENT_METHODS[inv.paymentMethod] || '—'}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Footer */}
-                                    <div style={{ borderTop: 'thin solid var(--border-color)', paddingTop: 16, textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
-                                        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
-                                        <p>Hotline: <span className='font-medium' style={{ color: 'var(--main_d)' }}>{COMPANY.hotline}</span></p>
-                                        <p style={{ fontWeight: 500, fontStyle: 'italic', marginTop: 8, color: '#2563EB' }}>Trân trọng cảm ơn Quý phụ huynh đã tin tưởng đồng hành cùng AI ROBOTIC!</p>
+                                    <div className="border-t border-[var(--border-color)] pt-3 sm:pt-4 text-center text-xs text-[var(--text-secondary)] space-y-1">
+                                        <p className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
+                                        <p>Hotline: <span className="font-semibold text-[var(--main_d)]">{COMPANY.hotline}</span></p>
+                                        <p className="font-medium italic text-blue-600 pt-1">Trân trọng cảm ơn Quý phụ huynh đã tin tưởng đồng hành cùng AI ROBOTIC!</p>
                                     </div>
                                 </div>
                             </>
@@ -606,16 +609,16 @@ export default function Pay({ _id, courseId = null, status = false }) {
                 ) : (
                     <>
                         <Title content='Thông báo' click={handleCloseDetail} />
-                        <div style={{ padding: 32, textAlign: 'center' }}>
-                            <p className='text-sm text-[var(--text-secondary)]'>Không có dữ liệu.</p>
+                        <div className="p-6 sm:p-8 text-center">
+                            <p className='text-xs sm:text-sm text-[var(--text-secondary)]'>Không có dữ liệu.</p>
                         </div>
                     </>
                 )}
             </CenterPopup>
 
             <Noti open={noti.open} onClose={handleCloseNoti} status={noti.status} mes={noti.mes} button={
-                <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer justify-center hover:bg-[var(--main_d)]' onClick={handleCloseNoti} style={{ width: 'calc(100% - 24px)', justifyContent: 'center' }}>
-                    <p className='text-sm font-normal' style={{ color: 'white' }}>Tắt thông báo</p>
+                <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-xs sm:text-sm font-medium cursor-pointer justify-center hover:bg-[var(--main_d)]' onClick={handleCloseNoti} style={{ width: 'calc(100% - 24px)', justifyContent: 'center' }}>
+                    <p className='text-xs sm:text-sm font-normal text-white'>Tắt thông báo</p>
                 </div>
             } />
         </>

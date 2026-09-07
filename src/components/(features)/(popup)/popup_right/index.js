@@ -208,7 +208,7 @@ export default function FlexiblePopup({
                         <h4 className={`${titleCentered ? 'text-lg font-semibold text-center' : 'font-normal'}`}>{title}</h4>
                         <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={onClose}>&times;</button>
                     </div>
-                    <div className='scroll' style={{ flex: 1 }}>
+                    <div className='scroll overflow-x-hidden overflow-y-auto w-full min-w-0' style={{ flex: 1 }}>
                         {loading && <Loading content="Đang tải" />}
                         {error && <p className='text-red'>{error}</p>}
                         {!loading && !error && showContent && renderItemList(data)}
@@ -241,7 +241,7 @@ export default function FlexiblePopup({
                             <h4 className='font-normal'>{secondaryTitle}</h4>
                             <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={onCloseSecondary}>&times;</button>
                         </div>
-                        <div className='flex-1 overflow-auto'>
+                        <div className='flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0'>
                             {loading2 && <Loading content="Đang tải" />}
                             {error2 && <p className='text-red'>{error2}</p>}
                             {!loading2 && !error2 && showContent2 && renderSecondaryList(data2)}

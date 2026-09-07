@@ -1,6 +1,7 @@
 import connectDB from '@/config/connectDB';
 import PostStudent from '@/models/student';
 import Invoice from '@/models/invoices';
+import Bank from '@/models/bank';
 import '@/models/course';
 import '@/models/book';
 import '@/models/users';
@@ -92,6 +93,16 @@ export async function POST(request) {
                 { status: 1, mes: 'Vui lòng cung cấp đủ thông tin bắt buộc.', data: [] },
                 { status: 400 }
             );
+        }
+
+        if (paymentMethod === 1) {
+            const defaultBank = await Bank.findOne({ isDefault: true }).lean();
+            if (!defaultBank) {
+                return NextResponse.json(
+                    { status: 1, mes: 'Chưa có tài khoản ngân hàng nào được thiết lập mặc định trong hệ thống.', data: [] },
+                    { status: 400 }
+                );
+            }
         }
 
         const newInvoice = new Invoice({
