@@ -19,6 +19,8 @@ import {
     IconPackage,
 } from '@/app/events/ui/icons';
 
+import ShareEventModal from './ShareEventModal';
+
 const statusOptions = [
     { value: 'planning', label: 'Đang chuẩn bị', dotColor: 'bg-slate-400' },
     { value: 'upcoming', label: 'Sắp diễn ra', dotColor: 'bg-blue-500' },
@@ -36,6 +38,8 @@ export default function EventHeader({
     onSaveAsTemplate,
     onDeleteEvent,
     onUpdateEvent,
+    readOnly = false,
+    allowedTabs = null,
 }) {
     const {
         title,
@@ -44,9 +48,11 @@ export default function EventHeader({
         endDate,
         location,
         description = '',
-    } = event;
+        participantsCount,
+    } = event || {};
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [editForm, setEditForm] = useState({
         title: title || '',
         description: description || '',
@@ -55,15 +61,19 @@ export default function EventHeader({
         location: location || '',
     });
 
-    const navTabs = [
+    const allNavTabs = [
         { id: 'roadmap', label: 'Lộ trình & Tiến độ', icon: IconTree },
         { id: 'stations', label: 'Kịch bản Trạm', icon: IconStation },
         { id: 'equipment', label: 'Thiết bị mang theo', icon: IconPackage },
         { id: 'staff', label: 'Thành viên & Nhân sự', icon: IconUsers },
-        ...(canViewBudget ? [{ id: 'budget', label: 'Ngân sách & Thu chi', icon: IconDollar }] : []),
+        ...((canViewBudget || (allowedTabs && allowedTabs.budget)) ? [{ id: 'budget', label: 'Ngân sách & Thu chi', icon: IconDollar }] : []),
         { id: 'media', label: 'Album Ảnh Drive', icon: IconCamera },
         { id: 'retro', label: 'Tổng kết & Đánh giá', icon: IconFileText },
     ];
+
+    const navTabs = allowedTabs
+        ? allNavTabs.filter(t => allowedTabs[t.id] !== false)
+        : allNavTabs;
 
     const formattedDateRange = () => {
         if (!startDate && !endDate) return 'Chưa đặt ngày';
@@ -77,6 +87,7 @@ export default function EventHeader({
     const dateDisplay = formattedDateRange();
 
     const handleOpenEdit = () => {
+        if (readOnly) return;
         setEditForm({
             title: title || '',
             description: description || '',
@@ -99,19 +110,27 @@ export default function EventHeader({
         setIsEditModalOpen(false);
     };
 
+    const currentStatusOption = statusOptions.find(opt => opt.value === status) || statusOptions[0];
+
     return (
         <div className="bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-xs flex flex-col">
             {/* Top Bar: Back button, Event Title, Description, Date, Location & Action Controls */}
             <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 {/* Left: Back Button + Event Name & Description & Date & Location */}
                 <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                    <Link
-                        href="/events"
-                        className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)] flex items-center justify-center transition-colors shrink-0 no-underline mt-0.5"
-                        title="Quay lại danh sách sự kiện"
-                    >
-                        <IconChevronLeft className="w-5 h-5" />
-                    </Link>
+                    {readOnly ? (
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0 mt-0.5 tracking-wider">
+                            AIR
+                        </div>
+                    ) : (
+                        <Link
+                            href="/events"
+                            className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)] flex items-center justify-center transition-colors shrink-0 no-underline mt-0.5"
+                            title="Quay lại danh sách sự kiện"
+                        >
+                            <IconChevronLeft className="w-5 h-5" />
+                        </Link>
+                    )}
                     <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                         <div className="flex items-center gap-3 min-w-0 flex-wrap">
                             <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] tracking-tight truncate">
@@ -119,36 +138,60 @@ export default function EventHeader({
                             </h1>
 
                             {/* Date Badge */}
-                            <button
-                                type="button"
-                                onClick={handleOpenEdit}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 border border-blue-200/80 dark:border-blue-900/80 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer transition-colors"
-                                title="Bấm để chỉnh sửa ngày diễn ra"
-                            >
-                                <IconCalendar className="w-4 h-4 text-blue-500" />
-                                <span>{dateDisplay}</span>
-                            </button>
+                            {readOnly ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/80 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold shrink-0">
+                                    <IconCalendar className="w-4 h-4 text-blue-500" />
+                                    <span>{dateDisplay}</span>
+                                </span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenEdit}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 border border-blue-200/80 dark:border-blue-900/80 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer transition-colors"
+                                    title="Bấm để chỉnh sửa ngày diễn ra"
+                                >
+                                    <IconCalendar className="w-4 h-4 text-blue-500" />
+                                    <span>{dateDisplay}</span>
+                                </button>
+                            )}
 
                             {/* Location Badge */}
-                            <button
-                                type="button"
-                                onClick={handleOpenEdit}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 border border-rose-200/80 dark:border-rose-900/80 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer transition-colors"
-                                title="Bấm để chỉnh sửa địa điểm"
-                            >
-                                <IconLocation className="w-4 h-4 text-rose-500" />
-                                <span>{location || 'Chưa đặt địa điểm'}</span>
-                            </button>
+                            {readOnly ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/80 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold shrink-0">
+                                    <IconLocation className="w-4 h-4 text-rose-500" />
+                                    <span>{location || 'Chưa đặt địa điểm'}</span>
+                                </span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenEdit}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 border border-rose-200/80 dark:border-rose-900/80 text-rose-700 dark:text-rose-300 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer transition-colors"
+                                    title="Bấm để chỉnh sửa địa điểm"
+                                >
+                                    <IconLocation className="w-4 h-4 text-rose-500" />
+                                    <span>{location || 'Chưa đặt địa điểm'}</span>
+                                </button>
+                            )}
+
+                            {/* Participants Badge (especially useful on public share) */}
+                            {participantsCount > 0 && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-900/80 text-purple-700 dark:text-purple-300 text-xs sm:text-sm font-semibold shrink-0">
+                                    <IconUsers className="w-4 h-4 text-purple-500" />
+                                    <span>Dự kiến: {participantsCount} học sinh</span>
+                                </span>
+                            )}
 
                             {/* Quick Edit Icon */}
-                            <button
-                                type="button"
-                                onClick={handleOpenEdit}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 border-none bg-transparent cursor-pointer transition-colors"
-                                title="Chỉnh sửa thông tin sự kiện"
-                            >
-                                <IconEdit className="w-4 h-4" />
-                            </button>
+                            {!readOnly && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenEdit}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 border-none bg-transparent cursor-pointer transition-colors"
+                                    title="Chỉnh sửa thông tin sự kiện"
+                                >
+                                    <IconEdit className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Description right below the title */}
@@ -160,40 +203,81 @@ export default function EventHeader({
                     </div>
                 </div>
 
-                {/* Right: Action Controls (Status, Save Template, Delete) */}
+                {/* Right: Action Controls (Status, Save Template, Delete / Print) */}
                 <div className="flex items-center gap-3 flex-wrap shrink-0">
-                    <select
-                        value={status}
-                        onChange={(e) => onStatusChange?.(e.target.value)}
-                        className="px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                    >
-                        {statusOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
+                    {readOnly ? (
+                        <>
+                            <div className="px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-xs sm:text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                                <span className={`w-2.5 h-2.5 rounded-full ${currentStatusOption.dotColor}`} />
+                                <span>{currentStatusOption.label}</span>
+                            </div>
 
-                    {onSaveAsTemplate && (
-                        <button
-                            onClick={onSaveAsTemplate}
-                            className="px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-2"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                            </svg>
-                            <span>Lưu Mẫu</span>
-                        </button>
-                    )}
+                            <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs print:hidden"
+                                title="In kịch bản / Xuất PDF"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-blue-600">
+                                    <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
+                                </svg>
+                                <span>In kịch bản / PDF</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <select
+                                value={status}
+                                onChange={(e) => onStatusChange?.(e.target.value)}
+                                className="px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                            >
+                                {statusOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
 
-                    {onDeleteEvent && (
-                        <button
-                            onClick={onDeleteEvent}
-                            className="px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-sm font-semibold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-2"
-                        >
-                            <IconTrash className="w-4 h-4" />
-                            <span>Xóa</span>
-                        </button>
+                            {/* Share Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsShareModalOpen(true)}
+                                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                    event.shareConfig?.isPublic
+                                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                                        : 'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
+                                }`}
+                                title="Chia sẻ kế hoạch sự kiện cho người ngoài"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                                <span>{event.shareConfig?.isPublic ? 'Đang chia sẻ' : 'Chia sẻ'}</span>
+                            </button>
+
+                            {onSaveAsTemplate && (
+                                <button
+                                    onClick={onSaveAsTemplate}
+                                    className="px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                    </svg>
+                                    <span>Lưu Mẫu</span>
+                                </button>
+                            )}
+
+                            {onDeleteEvent && (
+                                <button
+                                    onClick={onDeleteEvent}
+                                    className="px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-sm font-semibold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-2"
+                                >
+                                    <IconTrash className="w-4 h-4" />
+                                    <span>Xóa</span>
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -325,6 +409,14 @@ export default function EventHeader({
                     </div>
                 </div>
             )}
+
+            {/* Share Event Modal */}
+            <ShareEventModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                event={event}
+                onUpdateEvent={onUpdateEvent}
+            />
         </div>
     );
 }

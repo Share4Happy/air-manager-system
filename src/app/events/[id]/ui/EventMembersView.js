@@ -16,6 +16,42 @@ import EventTable from '@/app/events/ui/common/EventTable';
 import ActionMenu from '@/app/events/ui/common/ActionMenu';
 import EventModal from '@/app/events/ui/common/EventModal';
 
+export const ROLE_GROUPS = [
+    {
+        group: 'Ban Điều hành & Chuyên môn',
+        roles: [
+            'Ban tổ chức',
+            'Trưởng ban tổ chức',
+            'Trọng tài / Giám khảo',
+            'Cố vấn / Mentor',
+            'Hướng dẫn viên / Giảng viên STEM',
+            'Trưởng trạm / Phụ trách trạm',
+        ],
+    },
+    {
+        group: 'Hỗ trợ & Vận hành',
+        roles: [
+            'Tình nguyện viên (TNV)',
+            'Kỹ thuật & Robot',
+            'Hậu cần & CSVC',
+            'Truyền thông & Quay chụp',
+            'MC / Dẫn chương trình',
+            'Check-in & Đón tiếp',
+            'Y tế & An ninh',
+        ],
+    },
+    {
+        group: 'Người tham gia & Khách mời',
+        roles: [
+            'Thí sinh / Học sinh',
+            'Khách mời / Đại biểu (VIP)',
+            'Phụ huynh học sinh',
+        ],
+    },
+];
+
+export const ALL_PRESET_ROLES = ROLE_GROUPS.flatMap((g) => g.roles);
+
 export default function EventMembersView({
     event,
     members = [],
@@ -23,6 +59,7 @@ export default function EventMembersView({
     users = [],
     onUpdateMembers,
     onUpdateRoadmap,
+    readOnly = false,
 }) {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +69,8 @@ export default function EventMembersView({
     // Add/Edit manual member modal state
     const [isMemberFormOpen, setIsMemberFormOpen] = useState(false);
     const [editingMember, setEditingMember] = useState(null);
+    const [isCustomRole, setIsCustomRole] = useState(false);
+    const [customRoleInput, setCustomRoleInput] = useState('');
     const [memberFormData, setMemberFormData] = useState({
         name: '',
         role: 'Trọng tài / Giám khảo',
@@ -42,7 +81,10 @@ export default function EventMembersView({
     });
 
     const handleOpenAdd = () => {
+        if (readOnly) return;
         setEditingMember(null);
+        setIsCustomRole(false);
+        setCustomRoleInput('');
         setMemberFormData({
             name: '',
             role: 'Trọng tài / Giám khảo',
@@ -55,10 +97,15 @@ export default function EventMembersView({
     };
 
     const handleOpenEdit = (member) => {
+        if (readOnly) return;
         setEditingMember(member);
+        const role = member.role || 'Trọng tài / Giám khảo';
+        const isStandard = ALL_PRESET_ROLES.includes(role);
+        setIsCustomRole(!isStandard && Boolean(role));
+        setCustomRoleInput(!isStandard ? role : '');
         setMemberFormData({
             name: member.name || '',
-            role: member.role || 'Thành viên',
+            role: role,
             organization: member.organization || '',
             phone: member.phone || '',
             email: member.email || '',
@@ -69,43 +116,44 @@ export default function EventMembersView({
 
     const handleSaveMember = (e) => {
         e.preventDefault();
+        if (readOnly || !onUpdateMembers) return;
         if (!memberFormData.name.trim()) return;
 
-        let updatedList;
+        const finalRole = (isCustomRole ? customRoleInput.trim() : memberFormData.role) || 'Thành viên';
+        const dataToSave = {
+            ...memberFormData,
+            role: finalRole,
+        };
+
+        let updatedMembers;
         if (editingMember) {
-            updatedList = members.map((m) =>
-                m.id === editingMember.id
-                    ? { ...m, ...memberFormData, name: memberFormData.name.trim() }
-                    : m
+            updatedMembers = members.map((m) =>
+                m.id === editingMember.id ? { ...m, ...dataToSave } : m
             );
         } else {
-            const newMem = {
+            const newMember = {
                 id: `mem-${Date.now()}`,
-                name: memberFormData.name.trim(),
-                role: memberFormData.role.trim() || 'Thành viên',
-                organization: memberFormData.organization.trim(),
-                phone: memberFormData.phone.trim(),
-                email: memberFormData.email.trim(),
-                notes: memberFormData.notes.trim(),
+                ...dataToSave,
+                isExternal: memberFormData.userId ? false : true,
                 checkInStatus: false,
-                isExternal: true,
-                order: members.length + 1,
             };
-            updatedList = [...members, newMem];
+            updatedMembers = [...members, newMember];
         }
 
-        onUpdateMembers(updatedList);
+        onUpdateMembers(updatedMembers);
         setIsMemberFormOpen(false);
     };
 
     const handleDeleteMember = (memberId) => {
+        if (readOnly || !onUpdateMembers) return;
         if (!confirm('Bạn có chắc chắn muốn xóa thành viên này khỏi sự kiện?')) return;
-        const updatedList = members.filter((m) => m.id !== memberId);
-        onUpdateMembers(updatedList);
+        const updatedMembers = members.filter((m) => m.id !== memberId);
+        onUpdateMembers(updatedMembers);
     };
 
     const handleToggleCheckIn = (memberId) => {
-        const updatedList = members.map((m) => {
+        if (readOnly || !onUpdateMembers) return;
+        const updatedMembers = members.map((m) => {
             if (m.id === memberId) {
                 const nextStatus = !m.checkInStatus;
                 return {
@@ -116,7 +164,7 @@ export default function EventMembersView({
             }
             return m;
         });
-        onUpdateMembers(updatedList);
+        onUpdateMembers(updatedMembers);
     };
 
     const handleExportExcel = () => {
@@ -160,8 +208,15 @@ export default function EventMembersView({
         if (r.includes('tình nguyện') || r.includes('tnv')) return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
         if (r.includes('thí sinh') || r.includes('học sinh') || r.includes('đội thi')) return 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900';
         if (r.includes('khách mời') || r.includes('đại biểu') || r.includes('vip')) return 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900';
-        if (r.includes('ban tổ chức') || r.includes('btc') || r.includes('điều phối')) return 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900';
+        if (r.includes('ban tổ chức') || r.includes('btc') || r.includes('điều phối') || r.includes('trưởng ban')) return 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900';
+        if (r.includes('hướng dẫn') || r.includes('giảng viên') || r.includes('trưởng trạm')) return 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-900';
+        if (r.includes('kỹ thuật') || r.includes('robot')) return 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900';
+        if (r.includes('hậu cần') || r.includes('csvc')) return 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900';
+        if (r.includes('truyền thông') || r.includes('quay chụp') || r.includes('mc')) return 'bg-pink-50 text-pink-800 border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-900';
         if (r.includes('cố vấn') || r.includes('mentor') || r.includes('chuyên gia')) return 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900';
+        if (r.includes('check-in') || r.includes('đón tiếp')) return 'bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900';
+        if (r.includes('y tế') || r.includes('an ninh')) return 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900';
+        if (r.includes('phụ huynh')) return 'bg-lime-50 text-lime-800 border-lime-200 dark:bg-lime-950/40 dark:text-lime-300 dark:border-lime-900';
         return 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
     };
 
@@ -182,20 +237,15 @@ export default function EventMembersView({
             key: 'name',
             header: 'Thành viên / Họ tên',
             render: (val, mem) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm sm:text-base shadow-xs shrink-0">
-                        {mem.name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                        <span className="font-bold text-base sm:text-lg text-[var(--text-primary)] block">
-                            {mem.name}
+                <div className="flex flex-col">
+                    <span className="font-bold text-base sm:text-lg text-[var(--text-primary)] block">
+                        {mem.name}
+                    </span>
+                    {mem.notes && (
+                        <span className="text-xs sm:text-sm text-[var(--text-secondary)] block italic mt-0.5">
+                            {mem.notes}
                         </span>
-                        {mem.notes && (
-                            <span className="text-xs sm:text-sm text-[var(--text-secondary)] block italic mt-0.5">
-                                {mem.notes}
-                            </span>
-                        )}
-                    </div>
+                    )}
                 </div>
             ),
         },
@@ -232,27 +282,49 @@ export default function EventMembersView({
             align: 'center',
             render: (val, mem) => (
                 <div>
-                    <button
-                        type="button"
-                        onClick={() => handleToggleCheckIn(mem.id)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all border cursor-pointer flex items-center justify-center gap-1.5 mx-auto ${
-                            mem.checkInStatus
-                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                                : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)]'
-                        }`}
-                    >
-                        {mem.checkInStatus ? (
-                            <>
-                                <IconCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                <span>Đã Check-in</span>
-                            </>
-                        ) : (
-                            <>
-                                <span className="w-2 h-2 rounded-full bg-gray-400" />
-                                <span>Chưa điểm danh</span>
-                            </>
-                        )}
-                    </button>
+                    {readOnly ? (
+                        <div
+                            className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border flex items-center justify-center gap-1.5 mx-auto ${
+                                mem.checkInStatus
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)]'
+                            }`}
+                        >
+                            {mem.checkInStatus ? (
+                                <>
+                                    <IconCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Đã Check-in</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                    <span>Chưa điểm danh</span>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => handleToggleCheckIn(mem.id)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all border cursor-pointer flex items-center justify-center gap-1.5 mx-auto ${
+                                mem.checkInStatus
+                                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)]'
+                            }`}
+                        >
+                            {mem.checkInStatus ? (
+                                <>
+                                    <IconCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Đã Check-in</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                    <span>Chưa điểm danh</span>
+                                </>
+                            )}
+                        </button>
+                    )}
                     {mem.checkInTime && (
                         <span className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 block mt-1 font-medium text-center">
                             {new Date(mem.checkInTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
@@ -261,7 +333,7 @@ export default function EventMembersView({
                 </div>
             ),
         },
-        {
+        ...(!readOnly ? [{
             key: 'actions',
             header: 'Thao tác',
             align: 'right',
@@ -283,7 +355,7 @@ export default function EventMembersView({
                     ]}
                 />
             ),
-        },
+        }] : []),
     ];
 
     return (
@@ -291,15 +363,7 @@ export default function EventMembersView({
             {/* Unified Header & Filter Toolbar */}
             <EventToolbar
                 primaryActions={
-                    <>
-                        <button
-                            type="button"
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
-                        >
-                            <IconUpload className="w-3.5 h-3.5" />
-                            <span>Import Excel</span>
-                        </button>
+                    readOnly ? (
                         <button
                             type="button"
                             onClick={handleExportExcel}
@@ -308,15 +372,34 @@ export default function EventMembersView({
                             <IconDownload className="w-3.5 h-3.5" />
                             <span>Xuất Excel</span>
                         </button>
-                        <button
-                            type="button"
-                            onClick={handleOpenAdd}
-                            className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-                        >
-                            <IconPlus className="w-3.5 h-3.5" />
-                            <span>Thêm người</span>
-                        </button>
-                    </>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                            >
+                                <IconUpload className="w-3.5 h-3.5" />
+                                <span>Import Excel</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleExportExcel}
+                                className="px-3.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <IconDownload className="w-3.5 h-3.5" />
+                                <span>Xuất Excel</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleOpenAdd}
+                                className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <IconPlus className="w-3.5 h-3.5" />
+                                <span>Thêm người</span>
+                            </button>
+                        </>
+                    )
                 }
                 search={{
                     value: searchQuery,
@@ -425,12 +508,16 @@ export default function EventMembersView({
                                 if (!selectedUserId) return;
                                 const u = users.find((user) => String(user._id) === selectedUserId);
                                 if (u) {
+                                    setIsCustomRole(false);
+                                    setCustomRoleInput('');
+                                    const uRole = Array.isArray(u.role) ? u.role[0] : u.role || 'Ban tổ chức';
+                                    const matchedRole = ALL_PRESET_ROLES.find(r => r.toLowerCase().includes(uRole.toLowerCase())) || 'Ban tổ chức';
                                     setMemberFormData((prev) => ({
                                         ...prev,
                                         name: u.name || '',
                                         phone: u.phone || prev.phone || '',
                                         email: u.email || prev.email || '',
-                                        role: Array.isArray(u.role) ? u.role[0] : u.role || 'Ban tổ chức',
+                                        role: matchedRole,
                                         organization: 'AI Robotic',
                                         userId: u._id,
                                         isExternal: false,
@@ -466,26 +553,48 @@ export default function EventMembersView({
                 <div className="grid grid-cols-2 gap-3.5">
                     <div>
                         <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                            Vai trò trong sự kiện
+                            Vai trò trong sự kiện <span className="text-rose-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            list="roles-list"
-                            value={memberFormData.role}
-                            onChange={(e) => setMemberFormData({ ...memberFormData, role: e.target.value })}
-                            placeholder="Trọng tài, Tình nguyện viên..."
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <datalist id="roles-list">
-                            <option value="Trọng tài / Giám khảo" />
-                            <option value="Tình nguyện viên" />
-                            <option value="Thí sinh / Học sinh" />
-                            <option value="Khách mời / Đại biểu" />
-                            <option value="Ban tổ chức" />
-                            <option value="Cố vấn / Mentor" />
-                            <option value="Hậu cần" />
-                            <option value="Phụ huynh" />
-                        </datalist>
+                        <select
+                            value={isCustomRole ? '__custom__' : (memberFormData.role || 'Trọng tài / Giám khảo')}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__custom__') {
+                                    setIsCustomRole(true);
+                                    setCustomRoleInput('');
+                                } else {
+                                    setIsCustomRole(false);
+                                    setMemberFormData({ ...memberFormData, role: val });
+                                }
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-medium"
+                        >
+                            {ROLE_GROUPS.map((grp) => (
+                                <optgroup key={grp.group} label={grp.group}>
+                                    {grp.roles.map((r) => (
+                                        <option key={r} value={r}>
+                                            {r}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                            <option value="__custom__">-- Vai trò khác (Tự nhập) --</option>
+                        </select>
+
+                        {isCustomRole && (
+                            <input
+                                type="text"
+                                autoFocus
+                                required
+                                value={customRoleInput}
+                                onChange={(e) => {
+                                    setCustomRoleInput(e.target.value);
+                                    setMemberFormData({ ...memberFormData, role: e.target.value });
+                                }}
+                                placeholder="Nhập tên vai trò tùy chỉnh..."
+                                className="w-full mt-2 px-3.5 py-2 rounded-xl border border-blue-400 bg-[var(--bg-primary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        )}
                     </div>
 
                     <div>

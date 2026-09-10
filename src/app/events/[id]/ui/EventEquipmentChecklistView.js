@@ -41,6 +41,7 @@ export default function EventEquipmentChecklistView({
     onUpdateChecklist,
     users = [],
     members = [],
+    readOnly = false,
 }) {
     const items = useMemo(() => checklist || [], [checklist]);
     const stations = useMemo(() => event?.stations || [], [event]);
@@ -290,18 +291,30 @@ export default function EventEquipmentChecklistView({
             align: 'center',
             width: 'w-16',
             render: (val, item) => (
-                <button
-                    type="button"
-                    onClick={() => handleTogglePacked(item.id)}
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer mx-auto ${
-                        item.isPacked
-                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-emerald-500'
-                    }`}
-                    title={item.isPacked ? 'Đã đóng gói mang đi (Bấm để hủy)' : 'Bấm để đánh dấu đã đóng gói mang đi'}
-                >
-                    {item.isPacked && <IconCheck className="w-4 h-4 stroke-[3]" />}
-                </button>
+                readOnly ? (
+                    <div
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center mx-auto ${
+                            item.isPacked
+                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                        }`}
+                    >
+                        {item.isPacked && <IconCheck className="w-4 h-4 stroke-[3]" />}
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => handleTogglePacked(item.id)}
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer mx-auto ${
+                            item.isPacked
+                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-emerald-500'
+                        }`}
+                        title={item.isPacked ? 'Đã đóng gói mang đi (Bấm để hủy)' : 'Bấm để đánh dấu đã đóng gói mang đi'}
+                    >
+                        {item.isPacked && <IconCheck className="w-4 h-4 stroke-[3]" />}
+                    </button>
+                )
             ),
         },
         {
@@ -310,18 +323,30 @@ export default function EventEquipmentChecklistView({
             align: 'center',
             width: 'w-16',
             render: (val, item) => (
-                <button
-                    type="button"
-                    onClick={() => handleToggleReturned(item.id)}
-                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer mx-auto ${
-                        item.isReturned
-                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-indigo-500'
-                    }`}
-                    title={item.isReturned ? 'Đã thu hồi mang về (Bấm để hủy)' : 'Bấm để đánh dấu đã thu hồi mang về'}
-                >
-                    {item.isReturned && <IconCheck className="w-4 h-4 stroke-[3]" />}
-                </button>
+                readOnly ? (
+                    <div
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center mx-auto ${
+                            item.isReturned
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                        }`}
+                    >
+                        {item.isReturned && <IconCheck className="w-4 h-4 stroke-[3]" />}
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => handleToggleReturned(item.id)}
+                        className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer mx-auto ${
+                            item.isReturned
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-indigo-500'
+                        }`}
+                        title={item.isReturned ? 'Đã thu hồi mang về (Bấm để hủy)' : 'Bấm để đánh dấu đã thu hồi mang về'}
+                    >
+                        {item.isReturned && <IconCheck className="w-4 h-4 stroke-[3]" />}
+                    </button>
+                )
             ),
         },
         {
@@ -329,11 +354,11 @@ export default function EventEquipmentChecklistView({
             header: 'Tên Thiết Bị / Linh Kiện',
             render: (val, item) => (
                 <div className="flex flex-col">
-                    <span className={`font-bold text-sm sm:text-base text-[var(--text-primary)] ${item.isPacked ? 'text-gray-900 dark:text-white' : ''}`}>
+                    <span className="font-bold text-base text-[var(--text-primary)]">
                         {item.name}
                     </span>
                     {item.notes && (
-                        <span className="text-xs sm:text-sm text-[var(--text-secondary)] line-clamp-1 mt-0.5">
+                        <span className="text-xs text-[var(--text-secondary)] italic mt-0.5 line-clamp-1">
                             {item.notes}
                         </span>
                     )}
@@ -343,11 +368,10 @@ export default function EventEquipmentChecklistView({
         {
             key: 'category',
             header: 'Phân loại',
-            cellClassName: 'whitespace-nowrap',
             render: (val, item) => {
                 const cat = EQUIPMENT_CATEGORIES[item.category] || EQUIPMENT_CATEGORIES.other;
                 return (
-                    <span className={`text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-full border inline-block ${cat.color}`}>
+                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md border inline-block ${cat.color}`}>
                         {cat.label}
                     </span>
                 );
@@ -357,45 +381,44 @@ export default function EventEquipmentChecklistView({
             key: 'quantity',
             header: 'Số lượng',
             align: 'center',
-            cellClassName: 'whitespace-nowrap',
+            width: 'w-24',
             render: (val, item) => (
-                <>
-                    <span className="font-extrabold text-sm sm:text-base text-[var(--text-primary)]">
-                        {item.quantity || 1}
-                    </span>{' '}
-                    <span className="text-xs sm:text-sm text-[var(--text-secondary)] font-medium">
-                        {item.unit || 'Bộ'}
-                    </span>
-                </>
+                <span className="font-bold text-sm sm:text-base text-[var(--text-primary)]">
+                    {item.quantity || 1} <span className="text-xs text-[var(--text-secondary)] font-normal">{item.unit || 'Bộ'}</span>
+                </span>
             ),
         },
         {
             key: 'assignedStation',
-            header: 'Trạm / Khu vực',
-            cellClassName: 'whitespace-nowrap',
-            render: (val, item) => (
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-[var(--text-primary)] font-medium">
-                    <IconLocation className="w-4 h-4 text-gray-400 shrink-0" />
-                    <span>{item.assignedStation || 'Chưa phân trạm'}</span>
-                </div>
-            ),
+            header: 'Trạm sử dụng',
+            render: (val, item) => {
+                const st = stations.find((s) => s.id === item.assignedStation || s.name === item.assignedStation);
+                const stationName = st ? st.name : item.assignedStation;
+                return (
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[var(--text-primary)]">
+                        <IconLocation className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate max-w-[160px]">{stationName || 'Chung / Toàn sự kiện'}</span>
+                    </div>
+                );
+            },
         },
         {
             key: 'assigneeName',
-            header: 'Phụ trách',
-            cellClassName: 'whitespace-nowrap',
-            render: (val, item) => (
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm text-[var(--text-primary)] font-medium">
-                    <IconUser className="w-4 h-4 text-gray-400 shrink-0" />
-                    <span>{item.assigneeName || '—'}</span>
-                </div>
-            ),
+            header: 'Người phụ trách',
+            render: (val, item) => {
+                return (
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[var(--text-primary)]">
+                        <IconUser className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate max-w-[140px]">{item.assigneeName || 'Chưa phân công'}</span>
+                    </div>
+                );
+            },
         },
         {
             key: 'condition',
             header: 'Tình trạng',
             align: 'center',
-            cellClassName: 'whitespace-nowrap',
+            width: 'w-32',
             render: (val, item) => {
                 const cond = CONDITIONS.find((c) => c.value === item.condition) || CONDITIONS[0];
                 return (
@@ -405,7 +428,7 @@ export default function EventEquipmentChecklistView({
                 );
             },
         },
-        {
+        ...(!readOnly ? [{
             key: 'actions',
             header: 'Thao tác',
             align: 'center',
@@ -428,7 +451,7 @@ export default function EventEquipmentChecklistView({
                     ]}
                 />
             ),
-        },
+        }] : []),
     ];
 
     return (
@@ -436,29 +459,7 @@ export default function EventEquipmentChecklistView({
             {/* Unified Toolbar Card */}
             <EventToolbar
                 primaryActions={
-                    <>
-                        {items.length === 0 && (
-                            <button
-                                type="button"
-                                onClick={() => setIsPresetModalOpen(true)}
-                                className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-                                title="Nạp nhanh danh sách thiết bị mẫu"
-                            >
-                                <IconZap className="w-3.5 h-3.5 text-amber-500" />
-                                <span>Nạp Mẫu Có Sẵn</span>
-                            </button>
-                        )}
-
-                        <button
-                            type="button"
-                            onClick={() => setIsImportOpen(true)}
-                            title="Nhập danh sách thiết bị từ file Excel/CSV"
-                            className="px-3 py-1.5 rounded-xl border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer flex items-center gap-1.5"
-                        >
-                            <IconUpload className="w-3.5 h-3.5" />
-                            <span>Import Excel</span>
-                        </button>
-
+                    readOnly ? (
                         <button
                             type="button"
                             onClick={handleExportCSV}
@@ -469,16 +470,37 @@ export default function EventEquipmentChecklistView({
                             <IconDownload className="w-3.5 h-3.5" />
                             <span>Xuất CSV</span>
                         </button>
-
-                        <button
-                            type="button"
-                            onClick={handleOpenAdd}
-                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
-                        >
-                            <IconPlus className="w-3.5 h-3.5" />
-                            <span>Thêm thiết bị</span>
-                        </button>
-                    </>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                onClick={handleOpenAdd}
+                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                            >
+                                <IconPlus className="w-3.5 h-3.5" />
+                                <span>Thêm thiết bị</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(true)}
+                                title="Nhập nhanh từ Excel hoặc mẫu"
+                                className="px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <IconUpload className="w-3.5 h-3.5" />
+                                <span>Nhập Excel</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleExportCSV}
+                                disabled={items.length === 0}
+                                title="Xuất danh sách kiểm kê CSV"
+                                className="px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+                            >
+                                <IconDownload className="w-3.5 h-3.5" />
+                                <span>Xuất CSV</span>
+                            </button>
+                        </>
+                    )
                 }
                 search={{
                     value: search,

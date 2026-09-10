@@ -24,7 +24,7 @@ const categoryLabels = {
     other: { label: 'Chi phí khác', color: 'bg-gray-50 text-gray-700 dark:bg-gray-800' },
 };
 
-export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users = [], members = [], event = {} }) {
+export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users = [], members = [], event = {}, readOnly = false }) {
     const items = budget.items || [];
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -39,6 +39,11 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
         paidBy: '',
         payerName: '',
     });
+
+    const totalEstimated = items.reduce((sum, item) => sum + (Number(item.estimatedCost) || 0), 0);
+    const totalActual = items.reduce((sum, item) => sum + (Number(item.actualCost) || 0), 0);
+    const variance = totalEstimated - totalActual;
+    const paidCount = items.filter((i) => i.isPaid).length;
 
     // Compute unified list of available payers
     const payerOptions = useMemo(() => {
@@ -115,12 +120,8 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
         return null;
     };
 
-    const totalEstimated = items.reduce((sum, item) => sum + (Number(item.estimatedCost) || 0), 0);
-    const totalActual = items.reduce((sum, item) => sum + (Number(item.actualCost) || 0), 0);
-    const variance = totalEstimated - totalActual;
-    const paidCount = items.filter((i) => i.isPaid).length;
-
     const handleOpenAdd = () => {
+        if (readOnly) return;
         setFormItem({
             name: '',
             category: 'other',
@@ -135,6 +136,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
     };
 
     const handleOpenEdit = (item) => {
+        if (readOnly) return;
         setEditingItem(item);
         const pDisplay = getPayerDisplay(item);
         setFormItem({
@@ -151,7 +153,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
 
     const handleSaveAdd = (e) => {
         e.preventDefault();
-        if (!formItem.name.trim()) return;
+        if (readOnly || !formItem.name.trim()) return;
 
         let resolvedPayerName = formItem.payerName.trim();
         if (formItem.paidBy && !resolvedPayerName) {
@@ -171,7 +173,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             payerName: resolvedPayerName,
         };
 
-        onUpdateBudget({
+        onUpdateBudget?.({
             ...budget,
             items: [...items, newItem],
         });
@@ -180,7 +182,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
 
     const handleSaveEdit = (e) => {
         e.preventDefault();
-        if (!editingItem || !formItem.name.trim()) return;
+        if (readOnly || !editingItem || !formItem.name.trim()) return;
 
         let resolvedPayerName = formItem.payerName.trim();
         if (formItem.paidBy && !resolvedPayerName) {
@@ -205,7 +207,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             return item;
         });
 
-        onUpdateBudget({
+        onUpdateBudget?.({
             ...budget,
             items: updatedItems,
         });
@@ -213,19 +215,21 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
     };
 
     const handleTogglePaid = (itemId) => {
+        if (readOnly) return;
         const updatedItems = items.map((item) => {
             if (item.id === itemId) {
                 return { ...item, isPaid: !item.isPaid };
             }
             return item;
         });
-        onUpdateBudget({ ...budget, items: updatedItems });
+        onUpdateBudget?.({ ...budget, items: updatedItems });
     };
 
     const handleDeleteItem = (itemId) => {
+        if (readOnly) return;
         if (!confirm('Bạn có chắc chắn muốn xóa khoản chi này?')) return;
         const updatedItems = items.filter((i) => i.id !== itemId);
-        onUpdateBudget({ ...budget, items: updatedItems });
+        onUpdateBudget?.({ ...budget, items: updatedItems });
     };
 
     // Columns configuration for EventTable
@@ -293,24 +297,43 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             header: 'Đã thanh toán',
             align: 'center',
             render: (val, item) => (
-                <button
-                    type="button"
-                    onClick={() => handleTogglePaid(item.id)}
-                    className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold border cursor-pointer transition-all inline-flex items-center gap-1.5 ${
-                        item.isPaid
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                            : 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
-                    }`}
-                >
-                    {item.isPaid ? (
-                        <>
-                            <IconCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Đã chi</span>
-                        </>
-                    ) : (
-                        <span>Chưa chi</span>
-                    )}
-                </button>
+                readOnly ? (
+                    <span
+                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold border inline-flex items-center gap-1.5 ${
+                            item.isPaid
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
+                        }`}
+                    >
+                        {item.isPaid ? (
+                            <>
+                                <IconCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Đã chi</span>
+                            </>
+                        ) : (
+                            <span>Chưa chi</span>
+                        )}
+                    </span>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => handleTogglePaid(item.id)}
+                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold border cursor-pointer transition-all inline-flex items-center gap-1.5 ${
+                            item.isPaid
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                : 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
+                        }`}
+                    >
+                        {item.isPaid ? (
+                            <>
+                                <IconCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Đã chi</span>
+                            </>
+                        ) : (
+                            <span>Chưa chi</span>
+                        )}
+                    </button>
+                )
             ),
         },
         {
@@ -319,7 +342,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             cellClassName: 'text-[var(--text-secondary)] max-w-xs truncate text-sm',
             render: (val) => val || '-',
         },
-        {
+        ...(!readOnly ? [{
             key: 'actions',
             header: 'Thao tác',
             align: 'right',
@@ -341,7 +364,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
                     ]}
                 />
             ),
-        },
+        }] : []),
     ];
 
     return (
@@ -349,70 +372,72 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             {/* Unified Toolbar Card */}
             <EventToolbar
                 primaryActions={
-                    <button
-                        type="button"
-                        onClick={handleOpenAdd}
-                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
-                    >
-                        <IconPlus className="w-3.5 h-3.5" />
-                        <span>Thêm mục chi</span>
-                    </button>
+                    !readOnly ? (
+                        <button
+                            type="button"
+                            onClick={handleOpenAdd}
+                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                        >
+                            <IconPlus className="w-3.5 h-3.5" />
+                            <span>Thêm mục chi</span>
+                        </button>
+                    ) : null
                 }
             >
-                {/* Summary Metrics Bar */}
+                {/* Summary Metrics Bar (3 Cards: Tổng Dự chi, Tổng Thực chi, Chênh lệch) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
-                    {/* 1. Dự toán ban đầu */}
-                    <div className="flex items-center justify-between sm:flex-col sm:items-start p-3 rounded-lg bg-[var(--bg-primary)] border border-blue-200/60 dark:border-blue-900/60">
+                    {/* 1. Tổng Dự chi */}
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start p-3.5 rounded-xl bg-[var(--bg-primary)] border border-blue-200/80 dark:border-blue-900/80">
                         <div>
-                            <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] block">
-                                Tổng Dự toán Ban đầu
+                            <span className="text-xs font-semibold text-[var(--text-secondary)] block mb-0.5">
+                                Tổng Dự chi (Dự toán)
                             </span>
-                            <span className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
+                            <span className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400 block">
                                 {formatCurrencyVN(totalEstimated)}
                             </span>
                         </div>
-                        <span className="text-xs sm:text-sm text-[var(--text-secondary)] font-medium mt-0.5">
-                            {items.length} hạng mục chi
+                        <span className="text-[11px] text-[var(--text-secondary)] font-medium mt-1">
+                            {items.length} hạng mục dự chi
                         </span>
                     </div>
 
-                    {/* 2. Thực chi phát sinh */}
-                    <div className="flex items-center justify-between sm:flex-col sm:items-start p-3 rounded-lg bg-[var(--bg-primary)] border border-purple-200/60 dark:border-purple-900/60">
+                    {/* 2. Tổng Thực chi */}
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start p-3.5 rounded-xl bg-[var(--bg-primary)] border border-purple-200/80 dark:border-purple-900/80">
                         <div>
-                            <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] block">
+                            <span className="text-xs font-semibold text-[var(--text-secondary)] block mb-0.5">
                                 Tổng Thực chi Phát sinh
                             </span>
-                            <span className="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400">
+                            <span className="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400 block">
                                 {formatCurrencyVN(totalActual)}
                             </span>
                         </div>
-                        <span className="text-xs sm:text-sm text-[var(--text-secondary)] font-medium mt-0.5">
-                            Đã thanh toán: {paidCount}/{items.length}
+                        <span className="text-[11px] text-[var(--text-secondary)] font-medium mt-1">
+                            Đã thanh toán: {paidCount}/{items.length} mục
                         </span>
                     </div>
 
-                    {/* 3. Chênh lệch ngân sách */}
+                    {/* 3. Chênh lệch */}
                     <div
-                        className={`flex items-center justify-between sm:flex-col sm:items-start p-3 rounded-lg bg-[var(--bg-primary)] border ${
+                        className={`flex items-center justify-between sm:flex-col sm:items-start p-3.5 rounded-xl bg-[var(--bg-primary)] border ${
                             variance >= 0
                                 ? 'border-emerald-200/80 dark:border-emerald-900/80'
                                 : 'border-rose-200/80 dark:border-rose-900/80'
                         }`}
                     >
                         <div>
-                            <span className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] block">
-                                Chênh lệch Ngân sách
+                            <span className="text-xs font-semibold text-[var(--text-secondary)] block mb-0.5">
+                                Chênh lệch (Dự chi - Thực chi)
                             </span>
                             <span
-                                className={`text-lg sm:text-xl font-bold ${
+                                className={`text-lg sm:text-xl font-bold block ${
                                     variance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                                 }`}
                             >
                                 {variance >= 0 ? `+${formatCurrencyVN(variance)}` : `-${formatCurrencyVN(Math.abs(variance))}`}
                             </span>
                         </div>
-                        <span className="text-xs sm:text-sm text-[var(--text-secondary)] font-medium mt-0.5">
-                            {variance >= 0 ? 'Tiết kiệm so với dự toán' : 'Vượt định mức ngân sách'}
+                        <span className="text-[11px] text-[var(--text-secondary)] font-medium mt-1">
+                            {variance >= 0 ? 'Tiết kiệm so với dự chi' : 'Vượt định mức dự chi'}
                         </span>
                     </div>
                 </div>
@@ -426,8 +451,8 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
                 emptyState={{
                     icon: IconDollar,
                     title: 'Chưa có khoản chi nào được thêm',
-                    description: 'Nhấn "Thêm mục chi" để bắt đầu kê khai ngân sách.',
-                    action: (
+                    description: readOnly ? 'Chưa có thông tin hạng mục chi phí.' : 'Nhấn "Thêm mục chi" để bắt đầu kê khai ngân sách.',
+                    action: !readOnly ? (
                         <button
                             type="button"
                             onClick={handleOpenAdd}
@@ -436,7 +461,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
                             <IconPlus className="w-4 h-4" />
                             <span>Thêm mục chi</span>
                         </button>
-                    ),
+                    ) : null,
                 }}
                 footer={
                     items.length > 0 ? (

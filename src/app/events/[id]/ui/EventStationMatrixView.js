@@ -26,8 +26,9 @@ export default function EventStationMatrixView({
     users = [],
     members = [],
     onUpdateStations,
+    readOnly = false,
 }) {
-    const [subView, setSubView] = useState('cards'); // 'cards' | 'table'
+    const [subView, setSubView] = useState('table'); // 'table' | 'cards'
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStation, setEditingStation] = useState(null);
     const [previewPhoto, setPreviewPhoto] = useState(null);
@@ -236,26 +237,28 @@ export default function EventStationMatrixView({
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={handleApplySTEMTemplate}
-                        className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-                        title="Tạo nhanh kịch bản 3 trạm chuẩn"
-                    >
-                        <IconZap className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Nạp Mẫu 3 Trạm</span>
-                    </button>
+                {!readOnly && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={handleApplySTEMTemplate}
+                            className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                            title="Tạo nhanh kịch bản 3 trạm chuẩn"
+                        >
+                            <IconZap className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Nạp Mẫu 3 Trạm</span>
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={handleOpenAdd}
-                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
-                    >
-                        <IconPlus className="w-3.5 h-3.5" />
-                        <span>Thêm Trạm</span>
-                    </button>
-                </div>
+                        <button
+                            type="button"
+                            onClick={handleOpenAdd}
+                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                        >
+                            <IconPlus className="w-3.5 h-3.5" />
+                            <span>Thêm Trạm</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Empty State */}
@@ -269,27 +272,29 @@ export default function EventStationMatrixView({
                             Chưa có phân khu / trạm trải nghiệm nào
                         </h4>
                         <p className="text-sm sm:text-base text-[var(--text-secondary)]">
-                            Hãy nạp mẫu chuẩn ngày hội STEM (3 trạm) hoặc thêm trạm mới để thiết lập kịch bản.
+                            {readOnly ? 'Chưa có thông tin phân khu trạm trải nghiệm trong sự kiện này.' : 'Hãy nạp mẫu chuẩn ngày hội STEM (3 trạm) hoặc thêm trạm mới để thiết lập kịch bản.'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 pt-2">
-                        <button
-                            type="button"
-                            onClick={handleApplySTEMTemplate}
-                            className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm sm:text-base font-semibold border-none cursor-pointer shadow-xs flex items-center gap-2"
-                        >
-                            <IconZap className="w-4 h-4" />
-                            Nạp Mẫu Ngày hội STEM (3 Trạm)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleOpenAdd}
-                            className="px-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base font-semibold cursor-pointer flex items-center gap-2"
-                        >
-                            <IconPlus className="w-4 h-4" />
-                            Thêm Trạm Thủ Công
-                        </button>
-                    </div>
+                    {!readOnly && (
+                        <div className="flex items-center gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={handleApplySTEMTemplate}
+                                className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm sm:text-base font-semibold border-none cursor-pointer shadow-xs flex items-center gap-2"
+                            >
+                                <IconZap className="w-4 h-4" />
+                                Nạp Mẫu Ngày hội STEM (3 Trạm)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleOpenAdd}
+                                className="px-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base font-semibold cursor-pointer flex items-center gap-2"
+                            >
+                                <IconPlus className="w-4 h-4" />
+                                Thêm Trạm Thủ Công
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -324,24 +329,26 @@ export default function EventStationMatrixView({
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleOpenEdit(st)}
-                                                className="w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:text-blue-600 hover:bg-[var(--bg-primary)] flex items-center justify-center border-none bg-transparent cursor-pointer transition-colors"
-                                                title="Sửa trạm"
-                                            >
-                                                <IconEdit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeleteStation(st.id)}
-                                                className="w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:text-rose-600 hover:bg-[var(--bg-primary)] flex items-center justify-center border-none bg-transparent cursor-pointer transition-colors"
-                                                title="Xóa trạm"
-                                            >
-                                                <IconClose className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        {!readOnly && (
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEdit(st)}
+                                                    className="w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:text-blue-600 hover:bg-[var(--bg-primary)] flex items-center justify-center border-none bg-transparent cursor-pointer transition-colors"
+                                                    title="Sửa trạm"
+                                                >
+                                                    <IconEdit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteStation(st.id)}
+                                                    className="w-8 h-8 rounded-lg text-[var(--text-secondary)] hover:text-rose-600 hover:bg-[var(--bg-primary)] flex items-center justify-center border-none bg-transparent cursor-pointer transition-colors"
+                                                    title="Xóa trạm"
+                                                >
+                                                    <IconClose className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Station Content Body */}
@@ -464,8 +471,8 @@ export default function EventStationMatrixView({
                     users={users}
                     members={members}
                     partnerName={partnerName}
-                    onOpenEditStation={handleOpenEdit}
-                    onDeleteStation={handleDeleteStation}
+                    onOpenEditStation={(!readOnly && onUpdateStations) ? handleOpenEdit : null}
+                    onDeleteStation={(!readOnly && onUpdateStations) ? handleDeleteStation : null}
                     onPreviewPhoto={setPreviewPhoto}
                 />
             )}

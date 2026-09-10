@@ -1,13 +1,13 @@
 import { Roboto } from 'next/font/google';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import Layout_Login from '@/app/(auth)/login';
 import Nav from '@/components/(layout)/nav';
 import MobileHeader from '@/components/(layout)/mobileHeader';
-import '@/styles/all.css'
+import '@/styles/all.css';
 import '@/styles/font.css';
 import { getAppUrl, getCookieName } from '@/utils/env';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 const roboto = Roboto({
   subsets: ['vietnamese', 'latin'],
@@ -28,6 +28,16 @@ export const viewport = {
 
 export default async function RootLayout({ children }) {
   let data = null;
+  let pathname = '';
+
+  try {
+    const headerList = await headers();
+    pathname = headerList.get('x-pathname') || '';
+  } catch (err) {
+    // Ignore header read error
+  }
+
+  const isPublicRoute = pathname.startsWith('/share/');
 
   try {
     const cookieStore = await cookies();
@@ -43,10 +53,23 @@ export default async function RootLayout({ children }) {
         cache: 'no-store'
       });
       const result = await response.json();
-      if (result?.status === 2) { data = result.data }
+      if (result?.status === 2) { data = result.data; }
     }
   } catch (error) {
     console.error('RootLayout check failed:', error);
+  }
+
+  // If public route, render clean standalone layout without admin sidebar
+  if (isPublicRoute) {
+    return (
+      <html lang="vi">
+        <body className={`${roboto.variable} bg-[var(--bg-secondary)] text-[var(--text-primary)] min-h-screen antialiased`}>
+          <div className="w-full min-h-screen bg-[var(--bg-secondary)] overflow-x-hidden">
+            {children}
+          </div>
+        </body>
+      </html>
+    );
   }
   
   return (

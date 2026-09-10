@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
 import { formatDate } from '@/function';
-import { IconTree, IconGantt } from '@/app/events/ui/icons';
+import { IconTree, IconGantt, IconCalendar } from '@/app/events/ui/icons';
 
 const phaseColorPalette = [
     {
@@ -187,7 +187,7 @@ export default function RoadmapGanttView({
                 <div className="flex items-center gap-3 text-xs flex-wrap">
                     {event.startDate && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800 shadow-2xs">
-                            <span>🎯</span>
+                            <IconCalendar className="w-3.5 h-3.5" />
                             <span>Ngày sự kiện: {formatDate(event.startDate)}</span>
                         </div>
                     )}
@@ -241,7 +241,7 @@ export default function RoadmapGanttView({
                                         style={{ left: eventMarker.left }}
                                     >
                                         <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold shadow-sm whitespace-nowrap flex items-center gap-1 uppercase tracking-wider ring-1 ring-indigo-300 dark:ring-indigo-800">
-                                            <span>🎯</span>
+                                            <IconCalendar className="w-3 h-3 text-white" />
                                             <span>Sự kiện: {formatDate(eventMarker.startDate)}</span>
                                         </span>
                                     </div>
@@ -333,10 +333,7 @@ export default function RoadmapGanttView({
                                                     </div>
 
                                                     {/* Col 2: Tên người thực hiện */}
-                                                    <div className="w-44 shrink-0 px-3 text-sm text-[var(--text-secondary)] truncate flex items-center gap-2">
-                                                        <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-300 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
-                                                            {assigneeObj?.name ? assigneeObj.name.charAt(0).toUpperCase() : '?'}
-                                                        </span>
+                                                    <div className="w-44 shrink-0 px-3 text-sm text-[var(--text-secondary)] truncate">
                                                         <span className="truncate">
                                                             {assigneeObj?.name || <span className="text-gray-400 italic">Chưa gán</span>}
                                                         </span>

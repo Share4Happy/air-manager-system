@@ -175,6 +175,7 @@ export default function RoadmapTreeView({
     event = {},
     roadmapMode = 'tree',
     setRoadmapMode,
+    readOnly = false,
 }) {
     const [collapsedPhases, setCollapsedPhases] = useState({});
     const [showStationBranches, setShowStationBranches] = useState(true);
@@ -690,7 +691,7 @@ export default function RoadmapTreeView({
                         </div>
                     </div>
                     <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
-                        {!isStandalone && (
+                        {!isStandalone && !readOnly && (
                             <button
                                 type="button"
                                 onClick={() => handleSelectStationPhase('none')}
@@ -710,8 +711,8 @@ export default function RoadmapTreeView({
                     users={users}
                     members={members}
                     partnerName={partnerName}
-                    onOpenEditStation={onUpdateStations ? handleOpenEditStation : null}
-                    onDeleteStation={onUpdateStations ? handleDeleteStation : null}
+                    onOpenEditStation={(!readOnly && onUpdateStations) ? handleOpenEditStation : null}
+                    onDeleteStation={(!readOnly && onUpdateStations) ? handleDeleteStation : null}
                     onPreviewPhoto={setPreviewPhoto}
                     hideTitleBar={true}
                 />
@@ -752,15 +753,17 @@ export default function RoadmapTreeView({
                 </div>
 
                 {/* Right: Add Phase Button */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        onClick={handleOpenAddPhase}
-                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all shadow-xs border-none cursor-pointer"
-                    >
-                        <IconPlus className="w-3.5 h-3.5" />
-                        <span>Thêm Giai đoạn</span>
-                    </button>
-                </div>
+                {!readOnly && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            onClick={handleOpenAddPhase}
+                            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-all shadow-xs border-none cursor-pointer"
+                        >
+                            <IconPlus className="w-3.5 h-3.5" />
+                            <span>Thêm Giai đoạn</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Tree Roadmap Structure */}
@@ -774,13 +777,15 @@ export default function RoadmapTreeView({
                         <p className="text-xs text-[var(--text-secondary)] max-w-sm">
                             Hãy thêm các giai đoạn chuẩn bị hoặc chọn mẫu quy trình chuẩn để sinh tự động.
                         </p>
-                        <button
-                            onClick={handleOpenAddPhase}
-                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold border-none cursor-pointer shadow-xs flex items-center gap-1.5"
-                        >
-                            <IconPlus className="w-3.5 h-3.5" />
-                            <span>Thêm Giai đoạn đầu tiên</span>
-                        </button>
+                        {!readOnly && (
+                            <button
+                                onClick={handleOpenAddPhase}
+                                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                            >
+                                <IconPlus className="w-3.5 h-3.5" />
+                                <span>Thêm Giai đoạn đầu tiên</span>
+                            </button>
+                        )}
                     </div>
                 ) : (
                     rootPhases.map((phase, pIndex) => {
@@ -844,64 +849,66 @@ export default function RoadmapTreeView({
                                         </div>
 
                                         {/* 3-Dots Dropdown for Phase */}
-                                        <div className="relative" data-dropdown-menu="true">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => toggleMenu(e, `phase-${phase.id}`)}
-                                                className="w-8 h-8 rounded-xl bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-colors shadow-2xs"
-                                                title="Thao tác giai đoạn"
-                                            >
-                                                <IconDotsVertical className="w-4 h-4" />
-                                            </button>
+                                        {!readOnly && (
+                                            <div className="relative" data-dropdown-menu="true">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => toggleMenu(e, `phase-${phase.id}`)}
+                                                    className="w-8 h-8 rounded-xl bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-colors shadow-2xs"
+                                                    title="Thao tác giai đoạn"
+                                                >
+                                                    <IconDotsVertical className="w-4 h-4" />
+                                                </button>
 
-                                            {activeMenuId === `phase-${phase.id}` && (
-                                                <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-xl py-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setActiveMenuId(null); handleOpenAddSubTask(phase.id); }}
-                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
-                                                    >
-                                                        <IconPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                                        <span>Thêm nhiệm vụ con</span>
-                                                    </button>
+                                                {activeMenuId === `phase-${phase.id}` && (
+                                                    <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[210px] bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-xl py-1.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setActiveMenuId(null); handleOpenAddSubTask(phase.id); }}
+                                                            className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
+                                                        >
+                                                            <IconPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                            <span>Thêm nhiệm vụ con</span>
+                                                        </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setActiveMenuId(null); handleOpenEdit(phase); }}
-                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
-                                                    >
-                                                        <IconEdit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                                        <span>Chỉnh sửa giai đoạn</span>
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setActiveMenuId(null); handleOpenEdit(phase); }}
+                                                            className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
+                                                        >
+                                                            <IconEdit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                                            <span>Chỉnh sửa giai đoạn</span>
+                                                        </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setActiveMenuId(null);
-                                                            handleSelectStationPhase(isPhaseHoldingStations ? 'none' : phase.id);
-                                                        }}
-                                                        className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer ${isPhaseHoldingStations
-                                                                ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-semibold'
-                                                                : 'text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                                                            }`}
-                                                    >
-                                                        <IconTable className={`w-3.5 h-3.5 ${isPhaseHoldingStations ? 'text-amber-600' : 'text-blue-600 dark:text-blue-400'}`} />
-                                                        <span>{isPhaseHoldingStations ? 'Bỏ gắn Ma trận Kịch bản khỏi đây' : 'Gắn Ma trận Kịch bản vào giai đoạn này'}</span>
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setActiveMenuId(null);
+                                                                handleSelectStationPhase(isPhaseHoldingStations ? 'none' : phase.id);
+                                                            }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer ${isPhaseHoldingStations
+                                                                    ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-semibold'
+                                                                    : 'text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                                                                }`}
+                                                        >
+                                                            <IconTable className={`w-3.5 h-3.5 ${isPhaseHoldingStations ? 'text-amber-600' : 'text-blue-600 dark:text-blue-400'}`} />
+                                                            <span>{isPhaseHoldingStations ? 'Bỏ gắn Ma trận Kịch bản khỏi đây' : 'Gắn Ma trận Kịch bản vào giai đoạn này'}</span>
+                                                        </button>
 
-                                                    <div className="my-1 border-t border-[var(--border-color)]" />
+                                                        <div className="my-1 border-t border-[var(--border-color)]" />
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => { setActiveMenuId(null); handleDeleteNode(phase.id); }}
-                                                        className="w-full text-left px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
-                                                    >
-                                                        <IconTrash className="w-3.5 h-3.5 text-rose-600" />
-                                                        <span>Xóa giai đoạn</span>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setActiveMenuId(null); handleDeleteNode(phase.id); }}
+                                                            className="w-full text-left px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer"
+                                                        >
+                                                            <IconTrash className="w-3.5 h-3.5 text-rose-600" />
+                                                            <span>Xóa giai đoạn</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -913,7 +920,7 @@ export default function RoadmapTreeView({
 
                                         {children.length === 0 ? (
                                             <div className="py-4 text-center text-xs text-[var(--text-secondary)] italic">
-                                                Chưa có nhiệm vụ con nào. Bấm 3 chấm ⋮ để "+ Thêm việc".
+                                                {readOnly ? 'Chưa có nhiệm vụ cụ thể cho giai đoạn này.' : 'Chưa có nhiệm vụ con nào. Bấm 3 chấm ⋮ để "+ Thêm việc".'}
                                             </div>
                                         ) : (
                                             children.map((child) => {
@@ -931,15 +938,24 @@ export default function RoadmapTreeView({
 
                                                         {/* Left: Status Pill + Task Details */}
                                                         <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                            {/* Quick status toggle button */}
-                                                            <button
-                                                                onClick={() => handleAdvanceStatus(child.id, child.status)}
-                                                                className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-102 shrink-0 ${sCfg.bg}`}
-                                                                title="Nhấn để chuyển nhanh trạng thái"
-                                                            >
-                                                                <span className={`w-2.5 h-2.5 rounded-full ${sCfg.dot}`} />
-                                                                <span>{sCfg.label}</span>
-                                                            </button>
+                                                            {/* Quick status toggle button / indicator */}
+                                                            {readOnly ? (
+                                                                <div
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border shadow-2xs flex items-center gap-1.5 shrink-0 ${sCfg.bg}`}
+                                                                >
+                                                                    <span className={`w-2.5 h-2.5 rounded-full ${sCfg.dot}`} />
+                                                                    <span>{sCfg.label}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleAdvanceStatus(child.id, child.status)}
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-102 shrink-0 ${sCfg.bg}`}
+                                                                    title="Nhấn để chuyển nhanh trạng thái"
+                                                                >
+                                                                    <span className={`w-2.5 h-2.5 rounded-full ${sCfg.dot}`} />
+                                                                    <span>{sCfg.label}</span>
+                                                                </button>
+                                                            )}
 
                                                             <div className="flex flex-col gap-1 flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -961,10 +977,17 @@ export default function RoadmapTreeView({
                                                         {/* Right: Assignee + Due Date + 3-Dots Menu */}
                                                         <div className="flex items-center gap-3 text-sm shrink-0 self-end md:self-center flex-wrap justify-end">
                                                             {/* Quick Assign Select / Badge */}
-                                                            <div className="relative flex items-center">
-                                                                {(() => {
-                                                                    const assInfo = getAssigneeInfo(child.assignee);
-                                                                    return (
+                                                            {(() => {
+                                                                const assInfo = getAssigneeInfo(child.assignee);
+                                                                if (readOnly) {
+                                                                    return assInfo ? (
+                                                                        <span className={`text-xs sm:text-sm font-semibold py-1.5 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] max-w-[190px] truncate ${assInfo.type === 'user' ? 'text-blue-700 dark:text-blue-300' : 'text-emerald-700 dark:text-emerald-300'}`}>
+                                                                            {assInfo.name}
+                                                                        </span>
+                                                                    ) : null;
+                                                                }
+                                                                return (
+                                                                    <div className="relative flex items-center">
                                                                         <select
                                                                             value={child.assignee?._id || child.assignee?.id || child.assignee || ''}
                                                                             onChange={(e) => handleQuickAssign(child.id, e.target.value)}
@@ -983,9 +1006,9 @@ export default function RoadmapTreeView({
                                                                                 ))
                                                                             )}
                                                                         </select>
-                                                                    );
-                                                                })()}
-                                                            </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
 
                                                             {/* Due Date */}
                                                             {child.dueDate && (
@@ -997,38 +1020,40 @@ export default function RoadmapTreeView({
                                                             )}
 
                                                             {/* 3-Dots Dropdown Menu for Task Item */}
-                                                            <div className="relative" data-dropdown-menu="true">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => toggleMenu(e, `task-${child.id}`)}
-                                                                    className="w-7 h-7 rounded-lg text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] border-none bg-transparent cursor-pointer flex items-center justify-center transition-colors"
-                                                                    title="Thao tác nhiệm vụ"
-                                                                >
-                                                                    <IconDotsVertical className="w-3.5 h-3.5" />
-                                                                </button>
+                                                            {!readOnly && (
+                                                                <div className="relative" data-dropdown-menu="true">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => toggleMenu(e, `task-${child.id}`)}
+                                                                        className="w-7 h-7 rounded-lg text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] border-none bg-transparent cursor-pointer flex items-center justify-center transition-colors"
+                                                                        title="Thao tác nhiệm vụ"
+                                                                    >
+                                                                        <IconDotsVertical className="w-3.5 h-3.5" />
+                                                                    </button>
 
-                                                                {activeMenuId === `task-${child.id}` && (
-                                                                    <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-xl py-1.5">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => { setActiveMenuId(null); handleOpenEdit(child); }}
-                                                                            className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2 transition-colors border-none bg-transparent cursor-pointer"
-                                                                        >
-                                                                            <IconEdit className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                                                            <span>Chỉnh sửa chi tiết</span>
-                                                                        </button>
-                                                                        <div className="my-1 border-t border-[var(--border-color)]" />
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => { setActiveMenuId(null); handleDeleteNode(child.id); }}
-                                                                            className="w-full text-left px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-none bg-transparent cursor-pointer"
-                                                                        >
-                                                                            <IconTrash className="w-3.5 h-3.5 text-rose-600" />
-                                                                            <span>Xóa nhiệm vụ</span>
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                                    {activeMenuId === `task-${child.id}` && (
+                                                                        <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-xl py-1.5">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => { setActiveMenuId(null); handleOpenEdit(child); }}
+                                                                                className="w-full text-left px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] flex items-center gap-2 transition-colors border-none bg-transparent cursor-pointer"
+                                                                            >
+                                                                                <IconEdit className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                                                <span>Chỉnh sửa chi tiết</span>
+                                                                            </button>
+                                                                            <div className="my-1 border-t border-[var(--border-color)]" />
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => { setActiveMenuId(null); handleDeleteNode(child.id); }}
+                                                                                className="w-full text-left px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-none bg-transparent cursor-pointer"
+                                                                            >
+                                                                                <IconTrash className="w-3.5 h-3.5 text-rose-600" />
+                                                                                <span>Xóa nhiệm vụ</span>
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );

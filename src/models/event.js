@@ -169,6 +169,22 @@ const EquipmentItemSchema = new Schema({
     notes: { type: String, default: '' },
 }, { _id: false });
 
+const ShareConfigSchema = new Schema({
+    isPublic: { type: Boolean, default: false },
+    shareToken: { type: String, default: null },
+    pinCode: { type: String, default: '' },
+    allowedTabs: {
+        roadmap: { type: Boolean, default: true },
+        stations: { type: Boolean, default: true },
+        equipment: { type: Boolean, default: true },
+        staff: { type: Boolean, default: true },
+        media: { type: Boolean, default: true },
+        budget: { type: Boolean, default: false },
+        retro: { type: Boolean, default: false },
+    },
+    expiresAt: { type: Date, default: null },
+}, { _id: false });
+
 const EventSchema = new Schema({
     title: { type: String, required: true },
     code: { type: String, default: '' }, // e.g. EVT-2026-ROBOTIC
@@ -209,6 +225,7 @@ const EventSchema = new Schema({
     equipmentChecklist: [EquipmentItemSchema],
 
     budget: {
+        totalAllocated: { type: Number, default: 0 },
         items: [BudgetItemSchema],
         notes: { type: String, default: '' },
     },
@@ -233,6 +250,11 @@ const EventSchema = new Schema({
         completedAt: { type: Date, default: null },
     },
 
+    shareConfig: {
+        type: ShareConfigSchema,
+        default: () => ({}),
+    },
+
     createdBy: { type: Schema.Types.ObjectId, ref: 'user', default: null },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'user', default: null },
 }, { timestamps: true });
@@ -240,6 +262,7 @@ const EventSchema = new Schema({
 EventSchema.index({ status: 1 });
 EventSchema.index({ startDate: 1 });
 EventSchema.index({ lead: 1 });
+EventSchema.index({ 'shareConfig.shareToken': 1 });
 
 if (models.Event) {
     delete models.Event;
