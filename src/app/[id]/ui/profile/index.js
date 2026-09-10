@@ -84,7 +84,7 @@ export default function Profile({ data, onSave }) {
     };
 
     if (!editableProfile) return <div>Đang xử lý dữ liệu...</div>;
-    
+
     const { Intro, Avatar, ImgPJ, Skill, ImgSkill, Present } = editableProfile;
     const popups = {
         avatar: { title: "Chọn ảnh đại diện", mode: "single", selected: Avatar },
@@ -127,7 +127,7 @@ export default function Profile({ data, onSave }) {
                     <div className="flex justify-between items-center pb-3 border-b border-[#e0e0e0]"><p className="font-semibold text-lg">Thuyết trình tổng kết</p></div>
                     <div className="flex flex-col gap-2.5 pt-4">
                         {Present.length === 0 ? <p>Học sinh chưa hoàn thành khóa học nào</p> : Present.map(p => {
-                            
+
                             const isExpanded = expandedPresentation === p.bookId;
                             return (
                                 <div key={p.bookId} className="border border-[#e0e0e0] rounded-lg overflow-hidden">

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect, memo } from 'react';import ResponsiveGrid from '@/components/(ui)/grid';
+import { useState, useMemo, useEffect, memo } from 'react'; import ResponsiveGrid from '@/components/(ui)/grid';
 import DetailStudent from '../detatilstudent';
 import Student from '../student';
 import Calendar from '../calendarcourse';
@@ -285,7 +285,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                 </div>
                 <div style={{ flex: 1 }}>
                     <p className="text-base font-semibold text-[var(--text-primary)]" style={{ marginBottom: 8 }}>
-                        {lessonId ? `Thông tin buổi học (${lesson?.Type === 'Báo nghỉ' ? 'Báo nghỉ' : lesson?.Type === 'Học bù' ? 'Học bù' : (new Date(lesson?.Day) < new Date().setHours(0,0,0,0) ? 'Đã diễn ra' : 'Chưa diễn ra')})` : 'Thông tin khóa học'}
+                        {lessonId ? `Thông tin buổi học (${lesson?.Type === 'Báo nghỉ' ? 'Báo nghỉ' : lesson?.Type === 'Học bù' ? 'Học bù' : (new Date(lesson?.Day) < new Date().setHours(0, 0, 0, 0) ? 'Đã diễn ra' : 'Chưa diễn ra')})` : 'Thông tin khóa học'}
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexWrap: 'wrap' }}>
                         {!lessonId ?
@@ -355,7 +355,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     <Svg_Map w={14} h={14} c='var(--text-primary)' />
                                     <span className='text-sm font-semibold text-[var(--text-primary)]'>Trạng thái lớp học :</span>
                                 </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                     <p className="Chip text-xs font-normal text-[var(--text-primary)]" style={{ background: checkinStatus === 'dung-gio' ? 'var(--green)' : checkinStatus === 'tre' ? 'var(--yellow)' : 'var(--red)', color: 'white', padding: '4px 12px', borderRadius: 12, width: 'max-content' }}>
                                         {checkinStatus === 'dung-gio' ? 'Checkin đúng giờ' : checkinStatus === 'tre' ? 'Checkin trễ' : 'Chưa checkin'}
                                     </p>
@@ -382,7 +382,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 router.push(`/course/${data.ID}/lesson/${bNum}`);
                             }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={14} height={14} fill='white'>
-                                    <path d="M152 24c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 112 0 0-40c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 48 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l48 0 0-40zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-47-47c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l30.1 30.1L303.1 175.1c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+                                    <path d="M152 24c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 112 0 0-40c0-13.3 10.7-24 24-24s24 10.7 24 24l0 40 48 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 128C0 92.7 28.7 64 64 64l48 0 0-40zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-47-47c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l30.1 30.1L303.1 175.1c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z" />
                                 </svg>
                                 <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Điểm danh bù</p>
                             </div>}
@@ -393,7 +393,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     onClick={() => setShowCancelLessonPopup(true)}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill='white'>
-                                        <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z"/>
+                                        <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM175 175c9.4-9.4 24.6-9.4 33.9 0l47 47 47-47c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6 0-33.9z" />
                                     </svg>
                                     <p className='hidden sm:inline text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Báo nghỉ</p>
                                 </div>}
@@ -433,7 +433,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     <Export />
                                     <div className='px-2.5 py-1.5 bg-[var(--main_b)] flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5 lg:hidden' style={{ marginTop: 8, borderRadius: 5, background: 'var(--main_d)' }} onClick={() => setShowTimelinePopup(true)}>
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="white">
-                                            <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 288c-8.6 0-16.6-4.6-20.9-12.1s-4.2-16.7 .2-24.1l52.5-88.5c4.7-7.8 13-12.9 22.2-13c.4 0 .8 0 1.2 0c9.4 .3 18.1 4.8 23.4 12.4l66.9 94.5c5.5-3.5 11.4-6.9 17.8-10.4c7.9-4.3 15.4-8.1 22.5-11.4l-36.6-70.3c-4.5-8.6-3.4-18.8 2.8-26.3s15.9-10.2 25-9.2l93.6 9.8c3.3 .3 6.6 .9 9.8 1.7l78.6-87.9c5.8-6.5 14.1-10.2 22.8-10.2s17 3.7 22.8 10.2l45 50.4c6.5 7.3 6.5 18 0 25.3L409.5 146.9c2.7 1.5 5.4 3.1 8.1 4.9c11.9 7.9 22.2 17.2 30.9 27.7l0 0 0 0c20.8 25.1 37.3 55.6 48.1 89.3c2.6 8.2 4.9 16.8 6.8 25.6c2.7 12.3-1.2 25-10.3 33.9s-21.4 12.8-33.8 11.6c-9.1-.9-18.1-3.5-27-6.3c-18.9-5.9-37.3-14.8-54.4-25.9c-2.5-1.6-4.9-3.3-7.3-5L243.1 403.2c-5.2 7.4-13.9 12-23.3 12c-2.9 0-5.7-.4-8.4-1.3l-84.3-23.8c-6.6-1.9-12-6.4-15-12.2s-3.3-13.2 .6-19z"/>
+                                            <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 288c-8.6 0-16.6-4.6-20.9-12.1s-4.2-16.7 .2-24.1l52.5-88.5c4.7-7.8 13-12.9 22.2-13c.4 0 .8 0 1.2 0c9.4 .3 18.1 4.8 23.4 12.4l66.9 94.5c5.5-3.5 11.4-6.9 17.8-10.4c7.9-4.3 15.4-8.1 22.5-11.4l-36.6-70.3c-4.5-8.6-3.4-18.8 2.8-26.3s15.9-10.2 25-9.2l93.6 9.8c3.3 .3 6.6 .9 9.8 1.7l78.6-87.9c5.8-6.5 14.1-10.2 22.8-10.2s17 3.7 22.8 10.2l45 50.4c6.5 7.3 6.5 18 0 25.3L409.5 146.9c2.7 1.5 5.4 3.1 8.1 4.9c11.9 7.9 22.2 17.2 30.9 27.7l0 0 0 0c20.8 25.1 37.3 55.6 48.1 89.3c2.6 8.2 4.9 16.8 6.8 25.6c2.7 12.3-1.2 25-10.3 33.9s-21.4 12.8-33.8 11.6c-9.1-.9-18.1-3.5-27-6.3c-18.9-5.9-37.3-14.8-54.4-25.9c-2.5-1.6-4.9-3.3-7.3-5L243.1 403.2c-5.2 7.4-13.9 12-23.3 12c-2.9 0-5.7-.4-8.4-1.3l-84.3-23.8c-6.6-1.9-12-6.4-15-12.2s-3.3-13.2 .6-19z" />
                                         </svg>
                                         <p className='hidden sm:inline text-xs font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Lộ trình</p>
                                     </div>
@@ -452,7 +452,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
             </div>
 
             <div className={'bg-white rounded flex justify-between border border-[var(--border-color)] w-full min-w-0'}>
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', flexWrap: 'nowrap' }}>
                         <button
                             className="px-3 py-2 text-sm font-medium whitespace-nowrap"
@@ -502,60 +502,60 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                     </div>
                     <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
                         <div style={{ minWidth: 650 }}>
-                        <div style={{ display: 'flex', background: 'var(--border-color)' }}>
-                            {title.map((e, i) => {
-                            if (activeLessonTab && e.data === 'b') return null;
-                            const isSortable = !activeLessonTab && ['m', 'k', 'c', 'b'].includes(e.data);
+                            <div style={{ display: 'flex', background: 'var(--border-color)' }}>
+                                {title.map((e, i) => {
+                                    if (activeLessonTab && e.data === 'b') return null;
+                                    const isSortable = !activeLessonTab && ['m', 'k', 'c', 'b'].includes(e.data);
 
-                            return (
-                                <div key={i} className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: e.flex, padding: '12px 8px', fontWeight: '500', display: 'flex', justifyContent: e.align, alignItems: 'center' }}>
-                                    {isSortable ? (
-                                        <button onClick={() => handleSort(e.data)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)' }}>
-                                            {e.content}
-                                        </button>
-                                    ) : (
-                                        e.content
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-                    {activeLessonTab ? (
-                        <> {data.Student.filter((stu, idx, arr) => { const k = stu._id?.toString() || stu.ID || idx; return arr.findIndex(s => (s._id?.toString() || s.ID) === k) === idx; }).map(stu => {
-                            return (
-                                <div key={stu._id || stu.ID} style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }} >
-                                    {title.map(col => {
-                                        let learnDetailsArray = Object.values(stu.Learn || {});
-                                        learnDetailsArray = (learnDetailsArray || []).filter(ld => ld.Lesson?.toString() === activeLessonTab.toString())[0]
-                                        let m = learnDetailsArray?.Checkin == '1' ? 1 : 0;
-                                        let c = learnDetailsArray?.Checkin == '3' ? 1 : 0;
-                                        let k = learnDetailsArray?.Checkin == '2' ? 1 : 0;
-                                        let cmt = learnDetailsArray?.Cmt || [];
-                                        let cmtfn = learnDetailsArray?.CmtFn || '';
-                                        stu.course = data.ID;
-                                        stu.lesson = data.Detail.find(lesson => lesson._id === activeLessonTab);
-                                        stu.m = m;
-                                        stu.c = c;
-                                        stu.k = k;
-                                        stu.cmt = cmt;
-                                        stu.cmtfn = cmtfn;
-                                        if (col.data === 'b') return null;
-                                        return (
-                                            col.data === 'More' ?
-                                                <Cell key="more" flex={col.flex} align={col.align}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} >
-                                                        <CommentPopup data={stu} lesson={activeLessonTab} course={data._id} />
-                                                        <DetailStudent data={stu} course={data.Detail} c={data} users={users} studentsx={studentsx} />
-                                                    </div>
-                                                </Cell>
-                                                : <Cell key={col.data} flex={col.flex} align={col.align}>{stu[col.data]}</Cell>
-                                        )
-                                    })}
-                                </div>
-                            )
-                        })} </>
-                    ) : detailcourse}
-                    </div>
+                                    return (
+                                        <div key={i} className="text-sm font-normal text-[var(--text-primary)]" style={{ flex: e.flex, padding: '12px 8px', fontWeight: '500', display: 'flex', justifyContent: e.align, alignItems: 'center' }}>
+                                            {isSortable ? (
+                                                <button onClick={() => handleSort(e.data)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-primary)' }}>
+                                                    {e.content}
+                                                </button>
+                                            ) : (
+                                                e.content
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            {activeLessonTab ? (
+                                <> {data.Student.filter((stu, idx, arr) => { const k = stu._id?.toString() || stu.ID || idx; return arr.findIndex(s => (s._id?.toString() || s.ID) === k) === idx; }).map(stu => {
+                                    return (
+                                        <div key={stu._id || stu.ID} style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }} >
+                                            {title.map(col => {
+                                                let learnDetailsArray = Object.values(stu.Learn || {});
+                                                learnDetailsArray = (learnDetailsArray || []).filter(ld => ld.Lesson?.toString() === activeLessonTab.toString())[0]
+                                                let m = learnDetailsArray?.Checkin == '1' ? 1 : 0;
+                                                let c = learnDetailsArray?.Checkin == '3' ? 1 : 0;
+                                                let k = learnDetailsArray?.Checkin == '2' ? 1 : 0;
+                                                let cmt = learnDetailsArray?.Cmt || [];
+                                                let cmtfn = learnDetailsArray?.CmtFn || '';
+                                                stu.course = data.ID;
+                                                stu.lesson = data.Detail.find(lesson => lesson._id === activeLessonTab);
+                                                stu.m = m;
+                                                stu.c = c;
+                                                stu.k = k;
+                                                stu.cmt = cmt;
+                                                stu.cmtfn = cmtfn;
+                                                if (col.data === 'b') return null;
+                                                return (
+                                                    col.data === 'More' ?
+                                                        <Cell key="more" flex={col.flex} align={col.align}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} >
+                                                                <CommentPopup data={stu} lesson={activeLessonTab} course={data._id} />
+                                                                <DetailStudent data={stu} course={data.Detail} c={data} users={users} studentsx={studentsx} />
+                                                            </div>
+                                                        </Cell>
+                                                        : <Cell key={col.data} flex={col.flex} align={col.align}>{stu[col.data]}</Cell>
+                                                )
+                                            })}
+                                        </div>
+                                    )
+                                })} </>
+                            ) : detailcourse}
+                        </div>
                     </div>
                     {activeLessonTab && data.Detail.find(l => l._id === activeLessonTab) && (
                         <div style={{ padding: '8px 16px', display: 'flex' }}>
@@ -568,7 +568,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 onClick={() => setShowNotePopup(true)}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="white">
-                                    <path d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z"/>
+                                    <path d="M362.7 19.3L314.3 67.7 444.3 197.7l48.4-48.4c25-25 25-65.5 0-90.5L453.3 19.3c-25-25-65.5-25-90.5 0zm-71 71L58.6 323.5c-10.4 10.4-18 23.3-22.2 37.4L1 481.2C-1.5 489.7 .8 498.8 7 505s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L421.7 220.3 291.7 90.3z" />
                                 </svg>
                                 Ghi chú
                             </button>
@@ -646,7 +646,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                     {completeIssues.map((issue, idx) => (
                         <div key={idx} className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="#dc2626" className="mt-0.5 shrink-0">
-                                <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .1 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.6-20.1s-7.2-27.6 0-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+                                <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .1 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.6-20.1s-7.2-27.6 0-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z" />
                             </svg>
                             <span>{issue}</span>
                         </div>
@@ -677,7 +677,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                         {completeIssues.map((issue, idx) => (
                             <div key={idx} className="flex items-start gap-2 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="#ca8a04" className="mt-0.5 shrink-0">
-                                    <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .1 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.6-20.1s-7.2-27.6 0-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/>
+                                    <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .1 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.6-20.1s-7.2-27.6 0-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z" />
                                 </svg>
                                 <span>{issue}</span>
                             </div>
