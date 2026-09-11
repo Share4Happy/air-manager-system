@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, usePathname } from 'next/navigation';
-import { Svg_Student, Svg_Course, Svg_Canlendar, Svg_Chart, Svg_Bell } from '@/components/(icon)/svg';
+import { Svg_Student, Svg_Course, Svg_Canlendar, Svg_Chart } from '@/components/(icon)/svg';
 
 const tabs = [
   { href: '/dashboard', icon: (c) => <Svg_Chart h={22} w={22} c={c} />, label: 'Thống kê' },

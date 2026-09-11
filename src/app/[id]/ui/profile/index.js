@@ -7,7 +7,6 @@ import Image from 'next/image';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import CourseAndImageSelection from '../pickimage';
 import { useRouter } from 'next/navigation';
-import { reloadStudent } from '@/data/actions/reload';
 import { getEportfolioUrl } from '@/utils/env'
 import { srcImage, defaultAvatarUrl, driveThumbnailUrl } from '@/function'
 

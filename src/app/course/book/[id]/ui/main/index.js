@@ -10,7 +10,6 @@ import EditBookForm from '../EditBookForm';
 import AddTopicForm from '../AddTopicForm';
 import EditTopicForm from '../EditTopicForm';
 import AlertPopup from '@/components/(features)/(noti)/alert';
-import TextNoti from '@/components/(features)/(noti)/textnoti';
 import { srcImage } from '@/function';
 
 const reorder = (list, startIndex, endIndex) => {

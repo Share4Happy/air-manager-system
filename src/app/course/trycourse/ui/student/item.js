@@ -6,7 +6,6 @@ import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import { formatDate, srcImage } from '@/function';
 import Loading from '@/components/(ui)/(loading)/loading';
 import Noti from '@/components/(features)/(noti)/noti';
-import { IconSuccess, IconFailure } from '@/components/(features)/(noti)/noti';
 
 const CARE_STATUS_OPTIONS = [
     { value: 1, label: 'Chưa chăm sóc' },

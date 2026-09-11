@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import { srcImage } from '@/function';

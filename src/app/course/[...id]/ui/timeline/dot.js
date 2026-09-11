@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { formatDate } from '@/function';
-import { Svg_Detail } from '@/components/(icon)/svg';
 
 const getEventStatus = (data) => {
     if (data.Type === 'Báo nghỉ') {

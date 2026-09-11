@@ -1,7 +1,6 @@
 import connectDB from '@/config/connectDB';
 import PostStudent from '@/models/student';
 import PostCourse from '@/models/course';
-import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import '@/models/book'
 import authenticate from '@/utils/authenticate';

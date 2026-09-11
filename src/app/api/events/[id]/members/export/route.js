@@ -3,7 +3,6 @@ import connectDB from '@/config/connectDB';
 import Event from '@/models/event';
 import ExcelJS from 'exceljs';
 import mongoose from 'mongoose';
-import { formatDate } from '@/function';
 
 export async function GET(req, { params }) {
     try {

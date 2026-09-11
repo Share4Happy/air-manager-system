@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import User from '@/models/users';
-import authenticate from '@/utils/authenticate';
 
 export async function GET() {
     try {

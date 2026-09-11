@@ -1,4 +1,3 @@
-import { Read_Student_ById } from "@/data/database/student";
 import CourseListDisplay from "./main";
 import { student_data } from "@/data/actions/get";
 

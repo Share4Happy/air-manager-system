@@ -1,11 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { TRANSACTION_TYPE_MAP } from './constants';
 import {
     IconClose,
     IconPlus,
     IconMinus,
-    IconAlertTriangle,
     IconArrowDownRight,
     IconArrowUpRight
 } from './icons';

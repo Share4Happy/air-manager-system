@@ -7,7 +7,6 @@ import {
     IconPlus,
     IconMinus,
     IconLocation,
-    IconExternalLink,
     IconHistory
 } from './icons';
 

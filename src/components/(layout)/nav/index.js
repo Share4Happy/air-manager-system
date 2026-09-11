@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo, startTransition, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Svg_Logout, Svg_Menu, Svg_Student, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_History, Svg_Chart, Svg_Bell, Svg_Detail, Svg_Guide, Svg_Feedback, Svg_Profile, Svg_Event } from '../../(icon)/svg';
+import { Svg_Logout, Svg_Course, Svg_Canlendar, Svg_Setting, Svg_Chart, Svg_Detail, Svg_Profile, Svg_Event } from '../../(icon)/svg';
 import Menu from '../../(ui)/(button)/menu';
 import Loading from '@/components/(ui)/(loading)/loading';
 import Link from 'next/link';

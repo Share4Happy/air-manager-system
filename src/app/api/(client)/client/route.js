@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import jsonRes, { corsHeaders } from '@/utils/response'
+import jsonRes from '@/utils/response'
 
 const SPREADSHEET_ID = '1ZQsHUyVD3vmafcm6_egWup9ErXfxIg4U-TfVDgDztb8';
 const RANGE_DATA = 'Data!A:L';

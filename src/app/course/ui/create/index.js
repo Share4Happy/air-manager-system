@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo, memo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, memo, useRef } from 'react';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import TextNoti from '@/components/(features)/(noti)/textnoti';
 import Loading from '@/components/(ui)/(loading)/loading';

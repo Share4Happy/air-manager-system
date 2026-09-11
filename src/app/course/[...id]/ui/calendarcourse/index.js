@@ -6,7 +6,6 @@ import Noti from '@/components/(features)/(noti)/noti';
 import Menu from '@/components/(ui)/(button)/menu';
 import Loading from '@/components/(ui)/(loading)/loading';
 import DateInput from '@/components/(ui)/(input)/DateInput';
-import TextNoti from '@/components/(features)/(noti)/textnoti';
 import CancelLessonPopup from '@/components/(features)/(popup)/cancel_lesson_popup';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/function';
@@ -127,6 +126,7 @@ const ScheduleTable = React.memo(({ course, onEdit, onDelete, onMakeup }) => {
 });
 const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCancel, initialStudents = [], allTeachers, allRooms, topicMap }) => {
     const isEditMode = mode === 'edit';
+    const isMakeupLesson = mode === 'makeup' || lesson?.Type === 'Học bù';
 
     const lastLesson = useMemo(() => {
         const list = toArr(course.Detail).filter(d => d.Type !== 'Báo nghỉ');
@@ -267,7 +267,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
             return;
         }
         if (form.Students.length === 0) {
-            onDone(null, false, 'Vui lòng chọn ít nhất 1 học sinh tham gia buổi học bù.');
+            onDone(null, false, isMakeupLesson ? 'Vui lòng chọn ít nhất 1 học sinh tham gia buổi học bù.' : 'Vui lòng chọn ít nhất 1 học sinh tham gia buổi học.');
             return;
         }
         const teacherEntry = allTeachers.find(t => t.name === form.Teacher);
@@ -354,7 +354,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-[var(--text-primary)]">
-                            Ngày học bù <span className="text-rose-500">*</span>
+                            {isMakeupLesson ? 'Ngày học bù' : 'Ngày học'} <span className="text-rose-500">*</span>
                         </label>
                         <DateInput
                             className="w-full p-2.5 text-xs md:text-sm bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-left"
@@ -438,7 +438,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-[var(--text-primary)]">
-                                {isStudentListLocked ? 'Học sinh tham gia (cố định)' : 'Chọn học sinh tham gia buổi bù'}
+                                {isStudentListLocked ? 'Học sinh tham gia (cố định)' : (isMakeupLesson ? 'Chọn học sinh tham gia buổi bù' : 'Chọn học sinh tham gia buổi học')}
                             </span>
                             <span className="text-[11px] px-2 py-0.5 rounded bg-[var(--bg-secondary)] text-[var(--text-primary)] font-medium border border-[var(--border-color)]">
                                 Đã chọn {form.Students.length}/{toArr(course.Student).length}
@@ -538,7 +538,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
                                         </div>
 
                                         {absentCount > 0 && (
-                                            <span className="text-[10px] font-medium px-1.5 py-0.2 rounded border bg-rose-50 text-rose-700 border-rose-200">
+                                             <span className="text-[10px] font-medium px-1.5 py-0.2 rounded border bg-rose-50 text-rose-700 border-rose-200">
                                                 Vắng {absentCount}b
                                             </span>
                                         )}
@@ -564,7 +564,7 @@ const LessonForm = React.memo(({ mode = 'makeup', course, lesson, onDone, onCanc
                     className="px-5 py-2 text-xs md:text-sm font-medium rounded bg-[#1565c0] hover:bg-[#0d47a1] text-white shadow-xs transition-all flex items-center gap-1.5"
                     onClick={save}
                 >
-                    <span>Lưu buổi học bù</span>
+                    <span>{isEditMode ? (isMakeupLesson ? 'Cập nhật buổi học bù' : 'Cập nhật buổi học') : 'Lưu buổi học bù'}</span>
                 </button>
             </div>
         </>
@@ -661,7 +661,7 @@ export default function Calendar({ course }) {
                 <p className="text-xs sm:text-sm lg:text-xs font-semibold text-[var(--text-primary)]">Lịch học</p>
             </div>
             <FlexiblePopup open={open} onClose={() => setOpen(false)} title={`Lịch học - ${curCourse.ID}`} width={1200} renderItemList={() => <><div className="flex justify-end px-4 pt-2"><div className='px-2.5 py-1.5 flex items-center gap-1.5 w-max rounded text-white text-xs font-medium cursor-pointer border-none hover:opacity-90 transition-all' style={{ background: 'var(--green)' }} onClick={() => handleOpenPopup('makeup', { initialStudents: [] })}><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={12} height={12} fill="white"><path d="M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 48L0 160l0-48C0 85.5 21.5 64 48 64l48 0 0-32c0-17.7 14.3-32 32-32zM0 192l448 0 0 272c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 192zm232 96c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 48-48 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l48 0 0 48c0 13.3 10.7 24 24 24s24-10.7 24-24l0-48 48 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-48 0 0-48z"/></svg><span>Tạo buổi bù</span></div></div><ScheduleTable course={curCourse} onEdit={(lesson) => handleOpenPopup('edit', lesson)} onDelete={(lesson) => handleOpenPopup('cancel', lesson)} onMakeup={(lesson) => openMakeupForCancelled(lesson)} /></>} />
-            {popupState.type && popupState.type !== 'cancel' && <FlexiblePopup open={true} onClose={handleClosePopup} title={popupState.type === 'makeup' ? 'Tạo buổi bù' : 'Chỉnh sửa buổi học'} width={600} renderItemList={renderPopupContent} />}
+            {popupState.type && popupState.type !== 'cancel' && <FlexiblePopup open={true} onClose={handleClosePopup} title={popupState.type === 'makeup' ? 'Tạo buổi bù' : (popupState.data?.Type === 'Học bù' ? 'Chỉnh sửa buổi học bù' : 'Chỉnh sửa buổi học')} width={600} renderItemList={renderPopupContent} />}
             <CancelLessonPopup
                 open={popupState.type === 'cancel'}
                 onClose={handleClosePopup}

@@ -13,7 +13,7 @@ import Image from 'next/image';
 import ImageUploader from '../formimage';
 import StudentCourseImageManager from '../formimages';
 import CheckinPopup from '../checkin';
-import { Svg_Detail, Svg_Pen } from '@/components/(icon)/svg';
+import { Svg_Pen } from '@/components/(icon)/svg';
 import Link from 'next/link';
 import { driveThumbnailUrl, driveFolderUrl } from '@/function';
 

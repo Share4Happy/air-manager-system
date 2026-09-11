@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import CenterPopup from '@/components/(features)/(popup)/popup_center';
 import { course_data } from '@/data/actions/get';
 import Title from '@/components/(features)/(popup)/title';
-import { Svg_Out } from '@/components/(icon)/svg';
-
 import Noti from '@/components/(features)/(noti)/noti';
 import { getEportfolioUrl } from '@/utils/env'
 

@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import AddEditStationModal from './AddEditStationModal';
 import ScenarioMatrixTable, { getCategoryMeta } from './ScenarioMatrixTable';
-import EventToolbar from '@/app/events/ui/common/EventToolbar';
 import {
     IconStation,
     IconGrid,

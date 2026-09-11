@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ComponentCard from './ui/ComponentCard';
 import ComponentTable from './ui/ComponentTable';
 import ComponentFormModal from './ui/ComponentFormModal';
