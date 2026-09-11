@@ -26,6 +26,11 @@ export default function EventModal({
     children,
     footer,
     onSubmit,
+    submitLabel = 'Lưu',
+    cancelLabel = 'Hủy',
+    loading = false,
+    submitDisabled = false,
+    hideFooter = false,
     bodyClassName = '',
 }) {
     useEffect(() => {
@@ -41,6 +46,43 @@ export default function EventModal({
 
     const ContentWrapper = onSubmit ? 'form' : 'div';
     const wrapperProps = onSubmit ? { onSubmit } : {};
+
+    const renderFooter = () => {
+        if (hideFooter) return null;
+        if (footer !== undefined) {
+            return footer ? (
+                <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-3 shrink-0">
+                    {footer}
+                </div>
+            ) : null;
+        }
+
+        // Default footer when onSubmit or submitLabel is present
+        return (
+            <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-3 shrink-0">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-xl text-sm sm:text-base font-semibold border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors bg-transparent cursor-pointer disabled:opacity-50"
+                >
+                    {cancelLabel}
+                </button>
+                {onSubmit && (
+                    <button
+                        type="submit"
+                        disabled={loading || submitDisabled}
+                        className="px-5 py-2 rounded-xl text-sm sm:text-base font-semibold bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {loading && (
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                        )}
+                        <span>{submitLabel}</span>
+                    </button>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
@@ -88,11 +130,7 @@ export default function EventModal({
                     </div>
 
                     {/* Footer */}
-                    {footer && (
-                        <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-3 shrink-0">
-                            {footer}
-                        </div>
-                    )}
+                    {renderFooter()}
                 </ContentWrapper>
             </div>
         </div>

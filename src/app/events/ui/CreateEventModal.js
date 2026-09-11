@@ -6,13 +6,21 @@ import {
 } from '@/app/events/ui/icons';
 import { EventModal } from './common';
 
+const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export default function CreateEventModal({ isOpen, onClose, onSuccess, templates = [], users = [] }) {
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [formData, setFormData] = useState({
         title: '',
         code: '',
         type: 'competition',
-        startDate: '',
+        startDate: getTodayString(),
         endDate: '',
         location: 'Trụ sở AI Robotic',
         description: '',
@@ -20,6 +28,16 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            const today = getTodayString();
+            setFormData(prev => ({
+                ...prev,
+                startDate: prev.startDate || today,
+            }));
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (templates.length > 0 && !selectedTemplateId) {
@@ -88,8 +106,8 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
                 <IconTrophy className="w-5 h-5 text-white" />
             </div>
             <div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">Tạo Sự kiện mới</h2>
-                <p className="text-xs text-[var(--text-secondary)]">Khởi tạo kế hoạch tổ chức sự kiện và cấu trúc lộ trình cây</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Tạo Sự kiện mới</h2>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Khởi tạo kế hoạch tổ chức sự kiện và cấu trúc lộ trình cây</p>
             </div>
         </div>
     );
@@ -107,14 +125,14 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
         >
             <div className="flex flex-col gap-5">
                 {error && (
-                    <div className="p-3 text-sm text-red-700 bg-red-50 dark:bg-red-950/40 border border-red-200 rounded-xl">
+                    <div className="p-3 text-sm text-red-700 bg-red-50 dark:bg-red-950/40 border border-red-200 rounded-xl font-medium">
                         {error}
                     </div>
                 )}
 
                 {/* Step 1: Template Selection */}
                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
                         1. Chọn Mẫu Quy trình (Template)
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -124,20 +142,20 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
                                 <div
                                     key={tpl._id}
                                     onClick={() => handleTemplateSelect(tpl._id)}
-                                    className={`p-3 rounded-xl border cursor-pointer transition-all duration-200 flex flex-col justify-between text-left ${
+                                    className={`p-3.5 rounded-xl border cursor-pointer transition-all duration-200 flex flex-col justify-between text-left ${
                                         isSelected
-                                            ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 shadow-sm ring-1 ring-blue-600'
-                                            : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-gray-400'
+                                            ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/50 shadow-sm ring-2 ring-blue-600'
+                                            : 'border-gray-300 dark:border-gray-700 bg-[var(--bg-primary)] hover:border-blue-400'
                                     }`}
                                 >
                                     <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{tpl.name}</span>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <span className="text-sm font-bold text-gray-900 dark:text-blue-300">{tpl.name}</span>
                                             {isSelected && <IconCheck className="w-4 h-4 text-blue-600" />}
                                         </div>
-                                        <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2">{tpl.description}</p>
+                                        <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">{tpl.description}</p>
                                     </div>
-                                    <div className="text-[10px] text-[var(--text-secondary)] mt-2 font-medium opacity-80">
+                                    <div className="text-[11px] text-gray-800 dark:text-gray-300 mt-2.5 font-semibold">
                                         {tpl.roadmapNodes?.length || 0} khâu • {tpl.budgetItems?.length || 0} mục ngân sách
                                     </div>
                                 </div>
@@ -148,30 +166,34 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
 
                 {/* Step 2: Event Details */}
                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] mb-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white mb-2">
                         2. Thông tin Sự kiện
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         {/* Title */}
                         <div className="sm:col-span-2">
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Tên sự kiện *</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Tên sự kiện <span className="text-rose-500">*</span>
+                            </label>
                             <input
                                 type="text"
                                 required
                                 value={formData.title}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 placeholder="Ví dụ: AI Robotic Championship 2026 Mùa 1"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         {/* Event Type */}
                         <div>
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Loại sự kiện</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Loại sự kiện
+                            </label>
                             <select
                                 value={formData.type}
                                 onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                             >
                                 <option value="competition">Cuộc thi Robotics</option>
                                 <option value="workshop">Workshop / Trải nghiệm</option>
@@ -183,11 +205,13 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
 
                         {/* Lead Coordinator */}
                         <div>
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Trưởng ban tổ chức (Lead)</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Trưởng ban tổ chức (Lead)
+                            </label>
                             <select
                                 value={formData.lead}
                                 onChange={e => setFormData({ ...formData, lead: e.target.value })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                             >
                                 <option value="">-- Chọn nhân sự phụ trách chính --</option>
                                 {users.map(u => (
@@ -200,47 +224,55 @@ export default function CreateEventModal({ isOpen, onClose, onSuccess, templates
 
                         {/* Start Date */}
                         <div>
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Ngày bắt đầu</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Ngày bắt đầu
+                            </label>
                             <input
                                 type="date"
-                                value={formData.startDate ? new Date(formData.startDate).toISOString().slice(0, 10) : ''}
+                                value={formData.startDate || ''}
                                 onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         {/* End Date */}
                         <div>
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Ngày kết thúc</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Ngày kết thúc
+                            </label>
                             <input
                                 type="date"
-                                value={formData.endDate ? new Date(formData.endDate).toISOString().slice(0, 10) : ''}
+                                value={formData.endDate || ''}
                                 onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         {/* Location */}
                         <div className="sm:col-span-2">
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Địa điểm tổ chức</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Địa điểm tổ chức
+                            </label>
                             <input
                                 type="text"
                                 value={formData.location}
                                 onChange={e => setFormData({ ...formData, location: e.target.value })}
                                 placeholder="Ví dụ: Hội trường chính AI Robotic, Tầng 3"
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
                         {/* Description */}
                         <div className="sm:col-span-2">
-                            <span className="text-xs text-[var(--text-secondary)] font-medium mb-1 block">Mô tả mục tiêu & đối tượng tham gia</span>
+                            <label className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5 block">
+                                Mô tả mục tiêu & đối tượng tham gia
+                            </label>
                             <textarea
                                 rows={3}
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 placeholder="Nêu tóm tắt mục tiêu, quy mô số lượng học sinh tham gia..."
-                                className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-[var(--bg-secondary)] text-gray-900 dark:text-white text-sm sm:text-base font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             />
                         </div>
                     </div>

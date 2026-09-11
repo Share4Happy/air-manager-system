@@ -120,30 +120,30 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
                         </div>
 
                         <div className={'flex gap-1 mb-1 text-sm'}>
-                            <span className={'text-[var(--text-primary)]'}>Thời gian:</span>
+                            <span className={'font-semibold text-[var(--text-primary)]'}>Thời gian:</span>
                             <span className={'text-[var(--text-secondary)]'}>
                                 {dateRange[0] && dateRange[1] ? `${dateRange[0]} - ${dateRange[1]}` : 'Chưa có thời gian'}
                             </span>
                         </div>
 
                         <div className={'flex gap-1 mb-1 text-sm'}>
-                            <span className={'text-[var(--text-primary)]'}>Số lượng học sinh:</span>
+                            <span className={'font-semibold text-[var(--text-primary)]'}>Số lượng học sinh:</span>
                             <span className={'text-[var(--text-secondary)]'}>{studentCount} Học sinh</span>
                         </div>
                         <div className={'flex gap-1 mb-1 text-sm'}>
-                            <span className={'text-[var(--text-primary)]'}>Giáo viên chủ nhiệm:</span>
+                            <span className={'font-semibold text-[var(--text-primary)]'}>Giáo viên chủ nhiệm:</span>
                             <span className={'text-[var(--text-secondary)]'}>
                                 {data.TeacherHR.name}
                             </span>
                         </div>
                         <div className={'mb-1 text-sm'}>
-                            <span className={'text-[var(--text-primary)]'}>Giáo viên giảng dạy: </span>
+                            <span className={'font-semibold text-[var(--text-primary)]'}>Giáo viên giảng dạy: </span>
                             <span className={'text-[var(--text-secondary)]'}>
                                 {uniqueTeachers.length > 0 ? uniqueTeachers.map(teacher => teacher.name).join(', ') : 'Chưa có giáo viên'}
                             </span>
                         </div>
                         <div className={'mb-1 text-sm leading-relaxed'}>
-                            <span className={'text-[var(--text-primary)]'}>Giáo viên trợ giảng: </span>
+                            <span className={'font-semibold text-[var(--text-primary)]'}>Giáo viên trợ giảng: </span>
                             <span className={'text-[var(--text-secondary)]'}>
                                 {uniqueTeachingAs.length > 0 ? uniqueTeachingAs.map(ta => ta.name).join(', ') : 'Chưa có giáo viên'}
                             </span>
@@ -151,7 +151,7 @@ export default function CourseItem({ data = {}, currentUser = {}, teachers = [],
                     </div>
                     <div>
                         <div className={'flex gap-1 mb-1 text-sm'} style={{ marginBottom: 8, marginTop: 'auto' }}>
-                            <h5 className={'text-[var(--text-primary)]'}>Tiến độ học:</h5>
+                            <h5 className={'font-semibold text-[var(--text-primary)]'}>Tiến độ học:</h5>
                             <h5 className={'text-[var(--text-secondary)]'}>
                                 {pastLessonsCount}/{data.Detail.length} Buổi
                             </h5>

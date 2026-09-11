@@ -18,13 +18,13 @@ export default function CourseTryItem({ data }) {
                     </div>
                 </div>
                 <div className='flex gap-1 mb-1 text-sm'>
-                    <span className='text-[#656565]'>Số buổi chưa diễn ra:</span>
+                    <span className='text-[#656565] font-semibold'>Số buổi chưa diễn ra:</span>
                     <span className='text-[#656565]'>
                         {data.totalSessions}
                     </span>
                 </div>
                 <div className='flex gap-1 mb-1 text-sm'>
-                    <span className='text-[#656565]'>Học sinh chưa học thử:</span>
+                    <span className='text-[#656565] font-semibold'>Học sinh chưa học thử:</span>
                     <span className='text-[#656565]'>
                         {data.totalStudents}
                     </span>
