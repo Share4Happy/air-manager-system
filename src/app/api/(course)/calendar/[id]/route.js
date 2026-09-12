@@ -75,7 +75,7 @@ export async function GET(_req, { params }) {
 
         const sessionDoc = await Session.findById(id).lean();
         if (sessionDoc) {
-            const courseDoc = sessionDoc.course ? await Course.findById(sessionDoc.course, 'ID Version Area').lean() : null;
+            const courseDoc = sessionDoc.course ? await Course.findById(sessionDoc.course, 'ID Version Area Student Detail').lean() : null;
             const [topic, teachers, attDocs, room] = await Promise.all([
                 topicById(sessionDoc.topic),
                 User.find({ _id: { $in: [sessionDoc.teacher, sessionDoc.teachingAs].filter(Boolean) } })
@@ -85,7 +85,10 @@ export async function GET(_req, { params }) {
                 roomName(sessionDoc.room)
             ]);
 
-            const studentIds = attDocs.map(a => a.studentId);
+            const studentIds = attDocs.length > 0
+                ? attDocs.map(a => a.studentId)
+                : (courseDoc?.Student || []).map(s => s.ID);
+
             const studs = await Student.find({
                 $or: [
                     { ID: { $in: studentIds } },
@@ -99,23 +102,42 @@ export async function GET(_req, { params }) {
                 ...studs.map(s => [s._id.toString(), s])
             ]);
 
-            const students = attDocs.map(att => {
-                const info = sMap.get(att.studentId) || {};
-                return {
-                    _id: info._id ?? null,
-                    ID: info.ID ?? att.studentId ?? '–––',
-                    Name: info.Name ?? 'Không tên',
-                    Avt: info.Avt ?? null,
-                    attendance: {
-                        Checkin: att.checkin ?? 0,
-                        Cmt: att.cmt ?? [],
-                        CmtFn: att.cmtFn ?? '',
-                        Note: att.note ?? '',
-                        Lesson: id,
-                        Image: att.images ?? []
-                    }
-                };
-            });
+            let students = [];
+            if (attDocs.length > 0) {
+                students = attDocs.map(att => {
+                    const info = sMap.get(att.studentId) || {};
+                    return {
+                        _id: info._id ?? null,
+                        ID: info.ID ?? att.studentId ?? '–––',
+                        Name: info.Name ?? 'Không tên',
+                        Avt: info.Avt ?? null,
+                        attendance: {
+                            Checkin: att.checkin ?? 0,
+                            Cmt: att.cmt ?? [],
+                            CmtFn: att.cmtFn ?? '',
+                            Note: att.note ?? '',
+                            Lesson: id,
+                            Image: att.images ?? []
+                        }
+                    };
+                });
+            } else if (courseDoc?.Student?.length > 0) {
+                students = buildStudents(
+                    courseDoc.Student.map(s => {
+                        const attendance = (s.Learn || []).find(lr => lr.Lesson?.toString() === id) || {
+                            Checkin: 0,
+                            Cmt: [],
+                            CmtFn: '',
+                            Note: '',
+                            Lesson: id,
+                            Image: []
+                        };
+                        return { ...s, attendance };
+                    }),
+                    sMap,
+                    id
+                );
+            }
 
             return NextResponse.json({
                 success: true,
@@ -187,9 +209,16 @@ export async function GET(_req, { params }) {
             }
 
             const students = buildStudents(
-                (c.Student || []).flatMap(s => {
-                    const attendance = (s.Learn || []).find(lr => lr.Lesson?.toString() === id);
-                    return attendance ? [{ ...s, attendance }] : [];
+                (c.Student || []).map(s => {
+                    const attendance = (s.Learn || []).find(lr => lr.Lesson?.toString() === id) || {
+                        Checkin: 0,
+                        Cmt: [],
+                        CmtFn: '',
+                        Note: '',
+                        Lesson: id,
+                        Image: []
+                    };
+                    return { ...s, attendance };
                 }),
                 sMap,
                 id

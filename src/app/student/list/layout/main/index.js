@@ -40,92 +40,71 @@ export default function Main({ data_student, data_area }) {
     return matchArea && matchSearch && matchStatus && matchRank;
   });
 
+  const hasActiveFilters = Boolean(filterArea !== "Tất cả" || filterStatus !== "Tất cả" || filterRank !== "Tất cả");
+
   return (
-    <div className="flex gap-4 h-[calc(100%-16px)] w-full p-2 pr-0 pt-2">
-        <div className="flex-1 rounded-lg border border-[var(--border-color)] flex flex-col overflow-auto">
-        <div className="border-b-2 border-[var(--border-color)] px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-[var(--text-primary)] whitespace-nowrap">Tổng: {data_student.length} học sinh</span>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="hidden md:flex items-center gap-2 flex-wrap">
-                <input
-                  className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[200px]"
-                  placeholder="Nhập tên hoặc ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <select
-                  className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[140px]"
-                  value={filterArea}
-                  onChange={(e) => setFilterArea(e.target.value)}
-                >
-                  <option value="Tất cả">Tất cả khu vực</option>
-                  {uniqueAreas.map((areaName) => (
-                    <option key={areaName} value={areaName}>{areaName}</option>
-                  ))}
-                </select>
-                <select
-                  className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[120px]"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="Tất cả">Tất cả</option>
-                  <option value="Đang học">Đang học</option>
-                  <option value="Chờ lên khóa">Chờ lên khóa</option>
-                  <option value="Đã nghỉ">Đã nghỉ</option>
-                </select>
-                <select
-                  className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-[140px]"
-                  value={filterRank}
-                  onChange={(e) => setFilterRank(e.target.value === "Tất cả" ? "Tất cả" : Number(e.target.value))}
-                >
-                  {RANK_LEVELS.map(([label, val]) => (
-                    <option key={label} value={val}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <button
-                className="px-3 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded cursor-pointer border-none flex items-center gap-1.5 whitespace-nowrap transition-colors hover:brightness-110"
-                onClick={ReLoadData}
-              >
-                <Svg_Reload w={16} h={16} c='white' />
-                <span className="hidden md:inline">Tải lại</span>
-              </button>
-              <ImportStudent />
-              <Create data_area={data_area} />
-            </div>
+    <div className="flex flex-col gap-2 h-full w-full p-0 min-h-0">
+      {/* 1. Thanh công cụ riêng biệt */}
+      <div className="flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] shrink-0">
+        {/* Main Toolbar Row */}
+        <div className="flex items-center gap-2 md:gap-3 w-full">
+          {/* Search Input */}
+          <input
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0"
+            placeholder="Nhập tên hoặc ID học sinh..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          {/* Mobile Top Row: Create Button (Element 2) */}
+          <div className="md:hidden shrink-0">
+            <Create data_area={data_area} />
           </div>
-          <div className={`${showFilters ? 'flex' : 'hidden'} md:hidden flex-col gap-2 mt-2 border-t border-[var(--border-color)] pt-2`}>
-            <input
-              className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-full"
-              placeholder="Nhập tên hoặc ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <select
-                className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 flex-1"
-                value={filterArea}
-                onChange={(e) => setFilterArea(e.target.value)}
-              >
-                <option value="Tất cả">Khu vực</option>
-                {uniqueAreas.map((areaName) => (
-                  <option key={areaName} value={areaName}>{areaName}</option>
-                ))}
-              </select>
-              <select
-                className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 flex-1"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="Tất cả">Trạng thái</option>
-                <option value="Đang học">Đang học</option>
-                <option value="Chờ lên khóa">Chờ lên khóa</option>
-                <option value="Đã nghỉ">Đã nghỉ</option>
-              </select>
+
+          {/* Mobile Funnel Button (Element 3) */}
+          <button
+            type="button"
+            className={`md:hidden flex items-center justify-center w-8 h-8 rounded-full border cursor-pointer transition-colors shrink-0 ${
+              showFilters || hasActiveFilters
+                ? 'bg-blue-50 border-blue-300 text-blue-600'
+                : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)]'
+            }`}
+            onClick={() => setShowFilters(s => !s)}
+            title="Bộ lọc"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="currentColor">
+              <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
+            </svg>
+          </button>
+
+          {/* Desktop Inline Controls */}
+          <div className="hidden md:flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="p-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap flex items-center gap-1.5 shrink-0">
+              <span>Tổng:</span>
+              <span className="font-semibold text-[var(--text-primary)]">{filteredStudents.length}</span>
             </div>
             <select
-              className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-full"
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
+              value={filterArea}
+              onChange={(e) => setFilterArea(e.target.value)}
+            >
+              <option value="Tất cả">Tất cả khu vực</option>
+              {uniqueAreas.map((areaName) => (
+                <option key={areaName} value={areaName}>{areaName}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="Tất cả">Tất cả trạng thái</option>
+              <option value="Đang học">Đang học</option>
+              <option value="Chờ lên khóa">Chờ lên khóa</option>
+              <option value="Đã nghỉ">Đã nghỉ</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
               value={filterRank}
               onChange={(e) => setFilterRank(e.target.value === "Tất cả" ? "Tất cả" : Number(e.target.value))}
             >
@@ -133,22 +112,96 @@ export default function Main({ data_student, data_area }) {
                 <option key={label} value={val}>{label}</option>
               ))}
             </select>
+            <button
+              className="px-3 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded-lg cursor-pointer border-none flex items-center gap-1.5 whitespace-nowrap transition-colors hover:brightness-110"
+              onClick={ReLoadData}
+            >
+              <Svg_Reload w={16} h={16} c='white' />
+              <span>Tải lại</span>
+            </button>
+            <ImportStudent />
+            <Create data_area={data_area} />
           </div>
-          <button className="md:hidden flex items-center justify-end w-full mt-2 pb-0 border-none cursor-pointer bg-transparent" onClick={() => setShowFilters(!showFilters)}>
-            <div className="w-7 h-7 rounded-full border border-[var(--border-color)] flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="var(--text-secondary)">
-                <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
-              </svg>
-            </div>
-          </button>
         </div>
 
-        <div className="flex-1" style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 700 }}>
-            {filteredStudents.map((t, index) => (
-              <Li_l key={t.ID || index} data={t} dataArea={data_area} />
-            ))}
+        {/* Mobile Collapsible Filters & Actions */}
+        <div className={`${showFilters ? 'flex' : 'hidden'} md:hidden flex-col gap-2 pt-2 border-t border-[var(--border-color)]`}>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
+              value={filterArea}
+              onChange={(e) => setFilterArea(e.target.value)}
+            >
+              <option value="Tất cả">Khu vực</option>
+              {uniqueAreas.map((areaName) => (
+                <option key={areaName} value={areaName}>{areaName}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="Tất cả">Trạng thái</option>
+              <option value="Đang học">Đang học</option>
+              <option value="Chờ lên khóa">Chờ lên khóa</option>
+              <option value="Đã nghỉ">Đã nghỉ</option>
+            </select>
           </div>
+          <select
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
+            value={filterRank}
+            onChange={(e) => setFilterRank(e.target.value === "Tất cả" ? "Tất cả" : Number(e.target.value))}
+          >
+            {RANK_LEVELS.map(([label, val]) => (
+              <option key={label} value={val}>{label}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2 w-full pt-1">
+            <div className="px-2.5 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200 shrink-0">
+              Tổng: {filteredStudents.length}
+            </div>
+            <button
+              className="flex-1 px-3 py-2 bg-[var(--main_d)] text-white text-xs font-medium rounded-lg cursor-pointer border-none flex items-center justify-center gap-1.5 transition-colors hover:brightness-110"
+              onClick={ReLoadData}
+            >
+              <Svg_Reload w={14} h={14} c='white' />
+              <span>Tải lại</span>
+            </button>
+            <ImportStudent />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Khung bảng dữ liệu riêng biệt */}
+      <div className="flex-1 rounded-lg border border-[var(--border-color)] bg-white flex flex-col overflow-auto min-h-0">
+        <div className="flex-1 overflow-auto">
+          {filteredStudents.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse bg-white text-left">
+                <thead>
+                  <tr className="bg-gray-50/80 border-b border-[var(--border-color)] sticky top-0 z-10 backdrop-blur-xs">
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[220px]">Học sinh</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[130px]">Khu vực</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[120px]">Liên hệ</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[110px]">Ngày tạo</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center min-w-[110px]">Xếp hạng</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center min-w-[130px]">Đã hoàn thành</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center min-w-[160px]">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredStudents.map((t, index) => (
+                    <Li_l key={t._id || t.ID || index} data={t} dataArea={data_area} ReLoadData={ReLoadData} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-48 text-sm text-[var(--text-secondary)] italic">
+              Không tìm thấy học sinh nào phù hợp.
+            </div>
+          )}
         </div>
       </div>
 

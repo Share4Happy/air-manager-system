@@ -116,7 +116,7 @@ const DateInput = ({
 
     return (
         <div
-            className={`relative inline-flex items-center ${isFullWidth ? 'w-full' : ''} ${isFlex1 ? 'flex-1' : ''} ${wrapperClassName}`}
+            className={`relative inline-flex items-center ${isFullWidth ? 'w-full' : ''} ${isFlex1 ? 'flex-1 min-w-0' : ''} ${wrapperClassName}`}
             style={{ width: style?.width, flex: style?.flex, ...style }}
         >
             {name && <input type="hidden" name={name} value={value || ''} />}
@@ -128,7 +128,7 @@ const DateInput = ({
                 onChange={handleTextChange}
                 onFocus={() => { focused.current = true; }}
                 onBlur={() => { focused.current = false; }}
-                className={`pr-8 ${className}`}
+                className={`w-full pr-8 ${className}`}
                 disabled={disabled}
                 {...rest}
             />

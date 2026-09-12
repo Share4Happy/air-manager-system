@@ -40,17 +40,37 @@ export async function POST(request, { params }) {
             return jsonRes(200, { status: true, mes: 'Tất cả học sinh đã có trong khóa học.' });
         }
 
-        const newStudentDocs = newStudentIDsToAdd.map(studentId => ({ ID: studentId, Learn: [] }));
+        // Khởi tạo mảng Learn đầy đủ cho tất cả các buổi học trong khóa
+        const initialLearn = (course.Detail || []).map(d => ({
+            Lesson: d._id,
+            Checkin: 0,
+            Cmt: [],
+            CmtFn: '',
+            Note: '',
+            Image: [],
+            absenceReason: '',
+            makeupStatus: 'NOT_REQUIRED'
+        }));
+
+        const newStudentDocs = newStudentIDsToAdd.map(studentId => ({
+            ID: studentId,
+            Learn: initialLearn
+        }));
+
         const studentBulkUpdateOps = newStudentIDsToAdd.map(studentId => {
             const newCourseEntry = { course: id, tuition: null, status: 0 };
             const newLearningStatus = { status: 2, act: 'học', note: `Tham gia khóa học ${course.ID}`, date: new Date() };
             return { updateOne: { filter: { ID: studentId }, update: { $push: { Course: newCourseEntry, Status: newLearningStatus } } } };
         });
 
-        // Insert Attendances into LMS collection
+        // Insert Attendances into LMS collection (nếu có Session docs hoặc fallback Course.Detail)
+        const sessionList = sessions.length > 0
+            ? sessions
+            : (course.Detail || []).map((d, i) => ({ _id: d._id, buoi: i + 1 }));
+
         const attDocs = [];
         newStudentIDsToAdd.forEach(studentId => {
-            sessions.forEach(ses => {
+            sessionList.forEach(ses => {
                 attDocs.push({
                     session: ses._id,
                     course: id,
@@ -74,6 +94,12 @@ export async function POST(request, { params }) {
         ]);
         reloadStudent();
         reloadCourse(id);
+        (course.Detail || []).forEach(d => {
+            if (d._id) {
+                const { revalidateTag } = require('next/cache');
+                try { revalidateTag(`data_lesson${d._id}`); } catch {}
+            }
+        });
         return jsonRes(200, { status: true, mes: `Thêm thành công ${newStudentDocs.length} học sinh.` });
     } catch (err) {
         console.error('[API_COURSE_ADD_STUDENT_ERROR]', err);

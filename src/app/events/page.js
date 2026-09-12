@@ -198,21 +198,30 @@ export default function EventsDashboardPage() {
         <>
             <div className={'flex flex-col h-full gap-2'}>
                 {/* Navbar / Toolbar */}
-                <div className={'flex flex-col gap-2.5 p-2.5 md:p-3.5 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
+                <div className={'flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
                     {/* Top Row: Search input + Actions */}
                     <div className="flex items-center gap-2 w-full">
                         {/* Search Input */}
                         <input
-                            className="px-3 py-2 md:py-2.5 border border-gray-200 rounded-lg bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0"
+                            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0"
                             placeholder="Tìm kiếm sự kiện..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
 
+                        {/* Create Event Button (Mobile) */}
+                        <button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="md:hidden px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white border-none text-xs shrink-0 shadow-sm"
+                        >
+                            <IconPlus className="w-4 h-4" />
+                            <span>Tạo mới</span>
+                        </button>
+
                         {/* Mobile Filter Toggle Button */}
                         <button
                             type="button"
-                            className={`md:hidden relative flex items-center justify-center w-9 h-9 rounded-lg border cursor-pointer transition-colors shrink-0 ${
+                            className={`md:hidden relative flex items-center justify-center w-8 h-8 rounded-lg border cursor-pointer transition-colors shrink-0 ${
                                 showFilters || hasActiveFilters
                                     ? 'bg-blue-50 border-blue-300 text-blue-600 dark:bg-blue-950/50 dark:border-blue-700 dark:text-blue-400'
                                     : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
@@ -226,19 +235,10 @@ export default function EventsDashboardPage() {
                             )}
                         </button>
 
-                        {/* Create Event Button (Mobile) */}
-                        <button
-                            onClick={() => setIsCreateOpen(true)}
-                            className="md:hidden px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white border-none text-xs shrink-0 shadow-sm"
-                        >
-                            <IconPlus className="w-4 h-4" />
-                            <span>Tạo mới</span>
-                        </button>
-
                         {/* Desktop Inline Filters & Buttons */}
                         <div className="hidden md:flex items-center gap-2 shrink-0">
                             <select
-                                className="px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] w-auto"
+                                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] w-auto"
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
                             >
@@ -252,13 +252,13 @@ export default function EventsDashboardPage() {
 
                             <div className="flex gap-2">
                                 <DateInput
-                                    className="px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none w-36"
+                                    className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none w-36"
                                     value={startDate}
                                     onChange={(v) => { setStartDate(v); }}
                                     placeholder="Từ ngày"
                                 />
                                 <DateInput
-                                    className="px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none w-36"
+                                    className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none w-36"
                                     value={endDate}
                                     onChange={(v) => { setEndDate(v); }}
                                     placeholder="Đến ngày"
@@ -266,7 +266,7 @@ export default function EventsDashboardPage() {
                             </div>
 
                             <button
-                                className="px-3.5 py-2.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-[#f8fafc] hover:bg-gray-100 text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 transition-colors"
+                                className="px-3.5 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-[#f8fafc] hover:bg-gray-100 text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 transition-colors"
                                 onClick={fetchEvents}
                                 disabled={isReloading}
                             >
@@ -275,7 +275,7 @@ export default function EventsDashboardPage() {
 
                             <button
                                 onClick={() => setIsManageTemplatesOpen(true)}
-                                className="px-3.5 py-2.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-[#f8fafc] hover:bg-gray-100 text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 transition-colors"
+                                className="px-3.5 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-[#f8fafc] hover:bg-gray-100 text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 transition-colors"
                             >
                                 <IconFileText className="w-4 h-4 text-[var(--text-secondary)]" />
                                 <span>Mẫu quy trình</span>
@@ -283,7 +283,7 @@ export default function EventsDashboardPage() {
 
                             <button
                                 onClick={() => setIsCreateOpen(true)}
-                                className="px-4 py-2.5 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white border-none text-sm shrink-0 shadow-sm"
+                                className="px-3.5 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white border-none text-sm shrink-0 shadow-sm"
                             >
                                 <IconPlus className="w-4 h-4" />
                                 <span>Tạo Sự kiện mới</span>
@@ -361,7 +361,7 @@ export default function EventsDashboardPage() {
                                 {tab.dotColor && <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : tab.dotColor}`} />}
                                 <span>{tab.label}</span>
                                 <span
-                                    className={`px-1.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${
+                                    className={`px-2 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${
                                         isActive
                                             ? 'bg-white/20 text-white'
                                             : 'bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]'

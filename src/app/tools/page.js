@@ -139,38 +139,105 @@ function ToolsClient() {
         return matchSearch && matchLabel
     })
 
+    const [showFilters, setShowFilters] = useState(false)
+    const hasActiveFilters = Boolean(filterLabel)
+
     if (loading) return <div className="h-full overflow-auto p-4"><p className="text-gray-400 text-center pt-8">Đang tải...</p></div>
 
     return (
         <div className="h-full overflow-auto">
-            <div className="p-2">
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Tìm kiếm..."
-                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white w-48"
-                />
-                <select
-                    value={filterLabel}
-                    onChange={e => setFilterLabel(e.target.value)}
-                    className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none bg-white"
-                >
-                    <option value="">Tất cả nhãn</option>
-                    {labels.map(l => (
-                        <option key={l._id} value={l._id}>{l.name}</option>
-                    ))}
-                </select>
-                <div className="flex items-center gap-2">
-                    <button
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none flex-1 sm:flex-none"
-                        onClick={() => { cancelForm(); setShowForm(!showForm) }}
-                    >
-                        <Svg_Add w={16} h={16} c="white" />
-                        Thêm công cụ
-                    </button>
+            <div className="p-2 flex flex-col gap-2">
+                <div className="flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] mt-2">
+                    {/* Main Toolbar Row */}
+                    <div className="flex items-center gap-2 md:gap-3 w-full">
+                        {/* Search Input */}
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Tìm kiếm..."
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white text-[var(--text-primary)] flex-1 min-w-0"
+                        />
+
+                        {/* Mobile Top Row: Add Tool Button (Element 2) */}
+                        <button
+                            className="md:hidden flex items-center justify-center w-8 h-8 bg-[var(--main_d)] text-white rounded-lg cursor-pointer border-none hover:bg-[var(--main_b)] transition-colors shrink-0"
+                            onClick={() => { cancelForm(); setShowForm(true) }}
+                            title="Thêm công cụ"
+                        >
+                            <Svg_Add w={16} h={16} c="white" />
+                        </button>
+
+                        {/* Mobile Funnel Button (Element 3) */}
+                        <button
+                            type="button"
+                            className={`md:hidden flex items-center justify-center w-8 h-8 rounded-full border cursor-pointer transition-colors shrink-0 ${
+                                showFilters || hasActiveFilters
+                                    ? 'bg-blue-50 border-blue-300 text-blue-600'
+                                    : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)]'
+                            }`}
+                            onClick={() => setShowFilters(s => !s)}
+                            title="Bộ lọc"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="currentColor">
+                                <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
+                            </svg>
+                        </button>
+
+                        {/* Desktop Inline Controls */}
+                        <div className="hidden md:flex items-center gap-2 md:gap-3 shrink-0">
+                            <div className="p-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap flex items-center gap-1.5 shrink-0">
+                                <span>Tổng:</span>
+                                <span className="font-semibold text-[var(--text-primary)]">{filtered.length}</span>
+                            </div>
+
+                            <select
+                                value={filterLabel}
+                                onChange={e => setFilterLabel(e.target.value)}
+                                className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white text-[var(--text-primary)] cursor-pointer"
+                            >
+                                <option value="">Tất cả nhãn</option>
+                                {labels.map(l => (
+                                    <option key={l._id} value={l._id}>{l.name}</option>
+                                ))}
+                            </select>
+                            <button
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-[var(--main_d)] text-white rounded-lg text-sm font-medium cursor-pointer border-none hover:bg-[var(--main_b)] transition-colors shrink-0"
+                                onClick={() => { cancelForm(); setShowForm(true) }}
+                            >
+                                <Svg_Add w={16} h={16} c="white" />
+                                Thêm công cụ
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Collapsible Filters & Actions */}
+                    <div className={`${showFilters ? 'flex' : 'hidden'} md:hidden flex-col gap-2 pt-2 border-t border-[var(--border-color)]`}>
+                        <select
+                            value={filterLabel}
+                            onChange={e => setFilterLabel(e.target.value)}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white text-[var(--text-primary)] w-full"
+                        >
+                            <option value="">Tất cả nhãn</option>
+                            {labels.map(l => (
+                                <option key={l._id} value={l._id}>{l.name}</option>
+                            ))}
+                        </select>
+
+                        <div className="flex items-center gap-2 w-full pt-1">
+                            <div className="px-2.5 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200 shrink-0">
+                                Tổng: {filtered.length}
+                            </div>
+                            <button
+                                type="button"
+                                className="flex-1 px-3 py-2 bg-[var(--main_d)] text-white text-xs font-medium rounded-lg cursor-pointer border-none flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors hover:bg-[var(--main_b)]"
+                                onClick={() => { cancelForm(); setShowForm(true) }}
+                            >
+                                <Svg_Add w={14} h={14} c="white" />
+                                <span>Thêm công cụ</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
             {showForm && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={cancelForm}>

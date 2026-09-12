@@ -293,11 +293,12 @@ export default function Create() {
     return (
         <>
             <button
-        className="px-3 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded cursor-pointer border-none flex items-center gap-1.5 whitespace-nowrap transition-colors hover:brightness-110"
+        className="w-8 h-8 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 bg-[var(--main_d)] text-white text-sm font-medium rounded-lg cursor-pointer border-none flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors hover:brightness-110 shrink-0"
         onClick={handleOpenPopup}
+        title="Thêm học sinh"
       >
         <Svg_Add w={16} h={16} c='white' />
-        Thêm học sinh
+        <span className="hidden md:inline">Thêm học sinh</span>
       </button>
 
             {isLoading && (

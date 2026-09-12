@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Menu from '@/components/(ui)/(button)/menu';
 import { Svg_Add } from '@/components/(icon)/svg';
 import FlexiblePopup from '@/components/(features)/(popup)/popup_right';
 import Noti from '@/components/(features)/(noti)/noti';
@@ -163,9 +162,7 @@ const Main = ({ initialTeachers }) => {
   const [users, setUsers] = useState(initialTeachers);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
-  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
-  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isAddUserPopupOpen, setIsAddUserPopupOpen] = useState(false);
   const [isEditUserPopupOpen, setIsEditUserPopupOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -361,45 +358,6 @@ const Main = ({ initialTeachers }) => {
     return ['all', ...Array.from(roles).sort()]
   }, [users]);
 
-  const roleMenuItems = (
-    <div className="w-full rounded-md bg-[var(--bg-primary)] mt-2 shadow-[var(--boxshaw2)] max-h-[350px] overflow-auto p-2">
-      {allRoles.map(role => {
-        const displayName = role === 'all' ? 'Tất cả vai trò' : role
-        return (
-          <p key={role} onClick={() => { setFilterRole(role); setIsRoleMenuOpen(false); }} className="p-2 rounded cursor-pointer transition-all duration-200 hover:bg-[var(--hover)] text-sm font-normal text-[var(--text-primary)]">
-            {displayName}
-          </p>
-        )
-      })}
-    </div>
-  );
-
-  const roleMenuButton = (
-    <div className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" style={{ width: 140, cursor: 'pointer' }}>
-      {filterRole === 'all' ? 'Tất cả vai trò' : filterRole}
-    </div>
-  );
-
-  const statusMenuItems = (
-    <div className="w-full rounded-md bg-[var(--bg-primary)] mt-2 shadow-[var(--boxshaw2)] overflow-auto p-2">
-      {[
-        { value: 'all', label: 'Tất cả trạng thái' },
-        { value: 'active', label: 'Hoạt động' },
-        { value: 'inactive', label: 'Đã vô hiệu' },
-      ].map(item => (
-        <p key={item.value} onClick={() => { setFilterStatus(item.value); setIsStatusMenuOpen(false); }} className="p-2 rounded cursor-pointer transition-all duration-200 hover:bg-[var(--hover)] text-sm font-normal text-[var(--text-primary)]">
-          {item.label}
-        </p>
-      ))}
-    </div>
-  );
-
-  const statusMenuButton = (
-    <div className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" style={{ width: 140, cursor: 'pointer' }}>
-      {filterStatus === 'all' ? 'Tất cả trạng thái' : filterStatus === 'active' ? 'Hoạt động' : 'Đã vô hiệu'}
-    </div>
-  );
-
   const [backupInfo, setBackupInfo] = useState({ hasBackup: false, name: '' })
 
   useEffect(() => {
@@ -407,6 +365,9 @@ const Main = ({ initialTeachers }) => {
     const user = JSON.parse(localStorage.getItem('backupUser') || '{}')
     setBackupInfo({ hasBackup: !!token, name: user.name || '' })
   }, [])
+
+  const [showFilters, setShowFilters] = useState(false);
+  const hasActiveFilters = Boolean(filterRole !== 'all' || filterStatus !== 'all');
 
   return (
     <>
@@ -423,18 +384,117 @@ const Main = ({ initialTeachers }) => {
           </button>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-2 bg-white rounded-md border border-[var(--border-color)]">
-        <div className="flex flex-wrap items-center gap-2 w-full">
-          <input type="text" placeholder="Tìm kiếm theo tên, email hoặc SĐT..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none flex-1 min-w-[200px]" />
-          <div>
-            <Menu isOpen={isRoleMenuOpen} onOpenChange={setIsRoleMenuOpen} menuItems={roleMenuItems} menuPosition="bottom" customButton={roleMenuButton} />
+      <div className="flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] mt-2">
+        {/* Main Toolbar Row */}
+        <div className="flex items-center gap-2 md:gap-3 w-full">
+          {/* Search Input */}
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên, email hoặc SĐT..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0"
+          />
+
+          {/* Mobile Top Row: Add User Button (Element 2) */}
+          <button
+            type="button"
+            onClick={() => setIsAddUserPopupOpen(true)}
+            className="md:hidden flex items-center justify-center w-8 h-8 bg-[var(--main_d)] text-white rounded-lg cursor-pointer border-none hover:bg-[var(--main_b)] transition-colors shrink-0"
+            title="Thêm người dùng"
+          >
+            <Svg_Add w={16} h={16} c="white" />
+          </button>
+
+          {/* Mobile Funnel Button (Element 3) */}
+          <button
+            type="button"
+            className={`md:hidden flex items-center justify-center w-8 h-8 rounded-full border cursor-pointer transition-colors shrink-0 ${
+              showFilters || hasActiveFilters
+                ? 'bg-blue-50 border-blue-300 text-blue-600'
+                : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)]'
+            }`}
+            onClick={() => setShowFilters(s => !s)}
+            title="Bộ lọc"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="currentColor">
+              <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
+            </svg>
+          </button>
+
+          {/* Desktop Inline Controls */}
+          <div className="hidden md:flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="p-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium border border-gray-200 whitespace-nowrap flex items-center gap-1.5 shrink-0">
+              <span>Tổng:</span>
+              <span className="font-semibold text-[var(--text-primary)]">{filteredUsers.length}</span>
+            </div>
+
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
+            >
+              {allRoles.map(role => (
+                <option key={role} value={role}>{role === 'all' ? 'Tất cả vai trò' : role}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="inactive">Đã vô hiệu</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setIsAddUserPopupOpen(true)}
+              className="px-3 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded-lg cursor-pointer border-none flex items-center gap-1.5 whitespace-nowrap transition-colors hover:bg-[var(--main_b)] shrink-0"
+            >
+              <Svg_Add w={16} h={16} c="white" />
+              <span>Thêm người dùng</span>
+            </button>
           </div>
-          <div>
-            <Menu isOpen={isStatusMenuOpen} onOpenChange={setIsStatusMenuOpen} menuItems={statusMenuItems} menuPosition="bottom" customButton={statusMenuButton} />
+        </div>
+
+        {/* Mobile Collapsible Filters & Actions */}
+        <div className={`${showFilters ? 'flex' : 'hidden'} md:hidden flex-col gap-2 pt-2 border-t border-[var(--border-color)]`}>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
+            >
+              {allRoles.map(role => (
+                <option key={role} value={role}>{role === 'all' ? 'Tất cả vai trò' : role}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="inactive">Đã vô hiệu</option>
+            </select>
           </div>
-          <div className="px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100 shrink-0" style={{ padding: 10.5 }} onClick={() => setIsAddUserPopupOpen(true)}>
-            <Svg_Add w="var(--font-size-xs)" h="var(--font-size-xs)" c="var(--text-primary)" />
-            <h5>Thêm người dùng</h5>
+          <div className="flex items-center gap-2 w-full pt-1">
+            <div className="px-2.5 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200 shrink-0">
+              Tổng: {filteredUsers.length}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddUserPopupOpen(true)}
+              className="flex-1 px-3 py-2 bg-[var(--main_d)] text-white text-xs font-medium rounded-lg cursor-pointer border-none flex items-center justify-center gap-1.5 whitespace-nowrap transition-colors hover:bg-[var(--main_b)]"
+            >
+              <Svg_Add w={14} h={14} c="white" />
+              <span>Thêm người dùng</span>
+            </button>
           </div>
         </div>
       </div>

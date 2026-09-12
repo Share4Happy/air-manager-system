@@ -499,9 +499,9 @@ export default function Create({ books = [], areas = [], teachers = [], autoOpen
     return (
         <>
             {!hideButton && (
-            <div className={'p-2.5 bg-[var(--main_d)] flex items-center gap-2 w-max rounded-lg text-white text-sm font-medium cursor-pointer'} onClick={() => setOpenPopup(true)}>
+            <div className={'w-8 h-8 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 bg-[var(--main_d)] flex items-center justify-center gap-2 rounded-lg text-white text-sm font-medium cursor-pointer shrink-0'} onClick={() => setOpenPopup(true)} title="Thêm khóa học">
                 <Svg_Add w={16} h={16} c="white" />
-                <p className='text-sm font-normal text-[var(--text-primary)]' style={{ color: 'white' }}>Thêm khóa học</p>
+                <p className='text-sm font-normal text-white hidden md:inline m-0'>Thêm khóa học</p>
             </div>
             )}
             <FlexiblePopup open={openPopup} onClose={closePopupHandler} title="Thêm khóa học mới" width={700} renderItemList={renderCourseForm} secondaryOpen={secondaryOpen} onCloseSecondary={closeSecondary} renderSecondaryList={renderSecondaryList} secondaryTitle={secondaryType === 'single' ? 'Thêm buổi học' : secondaryType === 'edit' ? 'Chỉnh sửa buổi học' : 'Tạo lịch hàng loạt'} secondaryCentered width2={640} />

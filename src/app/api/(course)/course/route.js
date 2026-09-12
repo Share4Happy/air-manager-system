@@ -67,7 +67,16 @@ export async function POST(request) {
             }
             const roomId = d.Room ? roomNameToIdMap.get(d.Room.trim()) : null;
             
-            return { Topic: d.Topic, Day: new Date(d.Day), Room: roomId || null, Time: d.Time || '', Teacher: mongoose.Types.ObjectId.isValid(d.Teacher) ? d.Teacher : null, TeachingAs: mongoose.Types.ObjectId.isValid(d.TeachingAs) ? d.TeachingAs : null, Image: imageUrls[i] || '' };
+            return {
+                _id: d._id && mongoose.Types.ObjectId.isValid(d._id) ? new mongoose.Types.ObjectId(d._id) : new mongoose.Types.ObjectId(),
+                Topic: d.Topic,
+                Day: new Date(d.Day),
+                Room: roomId || null,
+                Time: d.Time || '',
+                Teacher: mongoose.Types.ObjectId.isValid(d.Teacher) ? d.Teacher : null,
+                TeachingAs: mongoose.Types.ObjectId.isValid(d.TeachingAs) ? d.TeachingAs : null,
+                Image: imageUrls[i] || ''
+            };
         });
         const newCourseData = { ID: newCourseID, Detail: normalizedDetail, Student: [], Version: 1 };
         if (Book && mongoose.Types.ObjectId.isValid(Book)) newCourseData.Book = Book;
@@ -80,9 +89,10 @@ export async function POST(request) {
         try {
             const Session = (await import('@/models/session')).default;
             const sessionDocs = normalizedDetail.map((d, i) => ({
-                _id: d._id || new mongoose.Types.ObjectId(),
+                _id: d._id,
                 course: createdCourse._id,
                 courseCode: newCourseID,
+                courseName: newCourseID,
                 courseType: Type || 'AI Robotic',
                 buoi: i + 1,
                 day: d.Day,

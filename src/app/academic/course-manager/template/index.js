@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import Nav from '@/app/course/ui/nav-item';
+import { useState, useMemo, useCallback } from 'react';
 import CourseItem from '@/app/course/ui/course-item';
 import Create from '@/app/course/ui/create';
 import { useRouter } from 'next/navigation';
@@ -10,80 +9,21 @@ import DateInput from '@/components/(ui)/(input)/DateInput';
 import CourseTryItem from '@/app/course/ui/coursetry-item';
 import { reloadCourse } from '@/data/actions/reload';
 
-function BookIcon({ active }) {
-    return (
-        <svg
-            viewBox="0 0 384 512"
-            height="20"
-            width="20"
-            fill={active ? '#ffffff' : 'var(--text-primary)'}
-            aria-hidden="true"
-        >
-            <path d="M0 48v439.7A24.3 24.3 0 0 0 24.3 512c5 0 9.9-1.5 14-4.4L192 400l153.7 107.6a24.4 24.4 0 0 0 14 4.4A24.3 24.3 0 0 0 384 487.7V48A48 48 0 0 0 336 0H48A48 48 0 0 0 0 48z" />
-        </svg>
-    );
-}
-
-const getIsoDateString = (date) => {
-    return date.toISOString().split('T')[0];
-};
-
 export default function Navbar({ data = [], book = [], user, areas = [], trys, teacher }) {
     const router = useRouter();
     const [isReloading, setIsReloading] = useState(false);
     const [tab, setTab] = useState(0);
     const [search, setSearch] = useState('');
     const [area, setArea] = useState('');
-    const [timeRange, setTimeRange] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [showFilters, setShowFilters] = useState(true);
-
-    useEffect(() => {
-        const now = new Date();
-        let start = new Date();
-        let end = new Date();
-
-        switch (timeRange) {
-            case 'currentWeek':
-                start.setDate(now.getDate() - now.getDay());
-                end.setDate(now.getDate() + (6 - now.getDay()));
-                break;
-            case 'lastWeek':
-                start.setDate(now.getDate() - now.getDay() - 7);
-                end.setDate(now.getDate() - now.getDay() - 1);
-                break;
-            case 'currentMonth':
-                start = new Date(now.getFullYear(), now.getMonth(), 1);
-                end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                break;
-            case 'lastMonth':
-                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                end = new Date(now.getFullYear(), now.getMonth(), 0);
-                break;
-            case 'currentYear':
-                start = new Date(now.getFullYear(), 0, 1);
-                end = new Date(now.getFullYear(), 11, 31);
-                break;
-            case 'lastYear':
-                start = new Date(now.getFullYear() - 1, 0, 1);
-                end = new Date(now.getFullYear() - 1, 11, 31);
-                break;
-            default:
-                setStartDate('');
-                setEndDate('');
-                return;
-        }
-
-        setStartDate(getIsoDateString(start));
-        setEndDate(getIsoDateString(end));
-    }, [timeRange]);
+    const [showFilters, setShowFilters] = useState(false);
 
     const reloadData = useCallback(async () => {
-        setIsReloading(true)
-        await reloadCourse()
-        router.refresh()
-        setIsReloading(false)
+        setIsReloading(true);
+        await reloadCourse();
+        router.refresh();
+        setIsReloading(false);
     }, [router]);
 
     const { counts, groups, areaOptions } = useMemo(() => {
@@ -95,8 +35,8 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
 
         data.forEach((c) => {
             if (c.Area && c.Area._id) { result.areaMap.set(c.Area._id, c.Area); }
-            if (!c.Status && c.Type !== 'Học thử') { result.groups.inProgress.push(c) }
-            else if (c.Status && c.Type === 'AI Robotic') { result.groups.completed.push(c) }
+            if (!c.Status && c.Type !== 'Học thử') { result.groups.inProgress.push(c); }
+            else if (c.Status && c.Type === 'AI Robotic') { result.groups.completed.push(c); }
         });
 
         result.counts.inProgress = result.groups.inProgress.length;
@@ -111,10 +51,10 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
 
     const courseFilter = useCallback(
         (c) => {
-            if (area && c.Area._id !== area) return false;
+            if (area && c.Area?._id !== area) return false;
 
             const q = search.trim().toLowerCase();
-            const hasMatch = !q || c.ID.toLowerCase().includes(q) || (c.TeacherHR && c.TeacherHR.name.toLowerCase().includes(q));
+            const hasMatch = !q || c.ID.toLowerCase().includes(q) || (c.TeacherHR && c.TeacherHR.name?.toLowerCase().includes(q));
             if (!hasMatch) return false;
 
             if (startDate && endDate) {
@@ -151,55 +91,164 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
         }
     }, [tab, groups, courseFilter]);
 
-    const TABS = [
-        { label: 'Khóa học đang học', count: counts.inProgress, icon: <BookIcon active={tab === 0} /> },
-        { label: 'Khóa học hoàn thành', count: counts.completed, icon: <BookIcon active={tab === 1} /> },
-    ];
+    const hasActiveFilters = Boolean(area || startDate || endDate);
 
     return (
         <>
             <div className={'flex flex-col h-full'}>
-                <div className={'flex bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--border-color)]'}>
-                    {TABS.map((t, i) => (
-                        <div
-                            key={t.label}
-                            className={`flex-1 flex items-center justify-center cursor-pointer transition-[background-color] duration-200 ${i === tab ? 'bg-[var(--main_d)] text-white rounded' : ''}`}
-                            onClick={() => setTab(i)}
-                        >
-                            <Nav
-                                icon={t.icon}
-                                title={t.label}
-                                sl={t.count}
-                                status={i === tab}
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                <div className={'flex items-center gap-3 p-3 mt-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
-                    <button className={'lg:hidden p-1.5 border border-[var(--border-color)] rounded cursor-pointer bg-transparent shrink-0'}
-                        onClick={() => setShowFilters(p => !p)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={16} height={16}
-                            fill="var(--text-primary)"
-                            style={{ transform: showFilters ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
-                            <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z"/>
-                        </svg>
-                    </button>
-
-                    <div className={`flex items-center gap-3 flex-1 flex-wrap ${showFilters ? 'flex' : 'hidden lg:flex'}`}>
+                <div className={'flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] mt-2'}>
+                    {/* Main Toolbar Row */}
+                    <div className="flex items-center gap-2 md:gap-3 w-full">
+                        {/* Search Input */}
                         <input
-                            className={`px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none resize-none text-[var(--text-primary)] w-full sm:w-[250px] lg:w-[300px]`}
-                            placeholder="Nhập ID khóa học hoặc tên GVCN"
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0'
+                            placeholder="Nhập ID khóa học hoặc tên GVCN..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
 
+                        {/* 2 Tab buttons (Desktop) */}
+                        <div className="hidden md:flex bg-gray-100 p-1 rounded-lg border border-gray-200 shrink-0">
+                            <button
+                                type="button"
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                                    tab === 0
+                                        ? 'bg-[var(--main_d)] text-white shadow-sm'
+                                        : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
+                                onClick={() => setTab(0)}
+                            >
+                                <span>Khóa đang diễn ra</span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tab === 0 ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                    {counts.inProgress}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                                    tab === 1
+                                        ? 'bg-[var(--main_d)] text-white shadow-sm'
+                                        : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
+                                onClick={() => setTab(1)}
+                            >
+                                <span>Khóa hoàn thành</span>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tab === 1 ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                    {counts.completed}
+                                </span>
+                            </button>
+                        </div>
+
+                        {/* Mobile Create Button */}
+                        <div className="md:hidden shrink-0">
+                            {(user.role.includes('Admin') || user.role.includes('Academic')) && (
+                                <Create teachers={teacher} books={book} areas={areas} />
+                            )}
+                        </div>
+
+                        {/* Mobile Funnel Button */}
+                        <button
+                            type="button"
+                            className={`md:hidden flex items-center justify-center w-8 h-8 rounded-full border cursor-pointer transition-colors shrink-0 ${
+                                showFilters || hasActiveFilters
+                                    ? 'bg-blue-50 border-blue-300 text-blue-600'
+                                    : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)]'
+                            }`}
+                            onClick={() => setShowFilters(s => !s)}
+                            title="Bộ lọc"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={14} height={14} fill="currentColor">
+                                <path d="M3.9 54.9C10.5 40.9 24.5 32 40 32l432 0c15.5 0 29.5 8.9 36.1 22.9s4.6 30.5-5.2 42.5L320 320.9 320 448c0 12.1-6.8 23.2-17.7 28.6s-23.8 4.3-33.5-3l-64-48c-8.1-6-12.8-15.5-12.8-25.6l0-79.1L9 97.5C-.7 85.4-2.8 68.8 3.9 54.9z"/>
+                            </svg>
+                        </button>
+
+                        {/* Desktop Inline Filters */}
+                        <div className="hidden md:flex items-center gap-2 md:gap-3 shrink-0">
+                            <select
+                                className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] w-auto'
+                                value={area}
+                                onChange={(e) => setArea(e.target.value)}
+                            >
+                                <option value="" className='text-sm font-normal text-[var(--text-primary)]'>Tất cả khu vực</option>
+                                {areaOptions.map((a, index) =>
+                                    a && (
+                                        <option key={index} value={a._id} className='text-sm font-normal text-[var(--text-primary)]'>
+                                            {a.name}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+
+                            <div className='flex gap-2 w-auto'>
+                                <DateInput
+                                    className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-32'
+                                    value={startDate}
+                                    onChange={(v) => setStartDate(v)}
+                                    placeholder="Từ ngày"
+                                />
+
+                                <DateInput
+                                    className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-32'
+                                    value={endDate}
+                                    onChange={(v) => setEndDate(v)}
+                                    placeholder="Đến ngày"
+                                />
+                            </div>
+
+                            <button
+                                className='px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 hover:bg-gray-100 transition-colors'
+                                onClick={reloadData}
+                                disabled={isReloading}
+                            >
+                                {isReloading ? 'Đang tải...' : 'Làm mới'}
+                            </button>
+
+                            {(user.role.includes('Admin') || user.role.includes('Academic')) && (
+                                <Create teachers={teacher} books={book} areas={areas} />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 2 Tab buttons (Mobile row) */}
+                    <div className="flex md:hidden bg-gray-100 p-1 rounded-lg border border-gray-200 w-full">
+                        <button
+                            type="button"
+                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                                tab === 0
+                                    ? 'bg-[var(--main_d)] text-white shadow-sm'
+                                    : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                            onClick={() => setTab(0)}
+                        >
+                            <span>Khóa đang diễn ra</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tab === 0 ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                {counts.inProgress}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                                tab === 1
+                                    ? 'bg-[var(--main_d)] text-white shadow-sm'
+                                    : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                            onClick={() => setTab(1)}
+                        >
+                            <span>Khóa hoàn thành</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tab === 1 ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                                {counts.completed}
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Mobile Collapsible Filters */}
+                    <div className={`${showFilters ? 'flex' : 'hidden'} md:hidden flex-col gap-2 pt-2 border-t border-[var(--border-color)]`}>
                         <select
-                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] min-w-[130px]'
+                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] w-full'
                             value={area}
                             onChange={(e) => setArea(e.target.value)}
                         >
-                            <option value="" className='text-sm font-normal text-[var(--text-primary)]'>Tất cả khu vực</option>
+                            <option value="">Tất cả khu vực</option>
                             {areaOptions.map((a, index) =>
                                 a && (
                                     <option key={index} value={a._id} className='text-sm font-normal text-[var(--text-primary)]'>
@@ -209,40 +258,29 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
                             )}
                         </select>
 
-                        <select
-                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none min-w-[130px]'
-                            value={timeRange}
-                            onChange={(e) => setTimeRange(e.target.value)}
-                        >
-                            <option value="">Tùy chọn thời gian</option>
-                            <option value="currentWeek">Tuần này</option>
-                            <option value="lastWeek">Tuần trước</option>
-                            <option value="currentMonth">Tháng này</option>
-                            <option value="lastMonth">Tháng trước</option>
-                            <option value="currentYear">Năm này</option>
-                            <option value="lastYear">Năm trước</option>
-                        </select>
+                        <div className='grid grid-cols-2 gap-2 w-full'>
+                            <DateInput
+                                className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full min-w-0'
+                                value={startDate}
+                                onChange={(v) => setStartDate(v)}
+                                placeholder="Từ ngày"
+                            />
 
-                        <DateInput
-                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
-                            value={startDate}
-                            onChange={(v) => { setStartDate(v); setTimeRange('') }}
-                        />
-
-                        <DateInput
-                            className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-[140px]'
-                            value={endDate}
-                            onChange={(v) => { setEndDate(v); setTimeRange('') }}
-                        />
+                            <DateInput
+                                className='px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none w-full min-w-0'
+                                value={endDate}
+                                onChange={(v) => setEndDate(v)}
+                                placeholder="Đến ngày"
+                            />
+                        </div>
 
                         <button
-                            className={`px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-sm whitespace-nowrap`}
+                            className='w-full px-4 py-2 rounded-lg font-medium cursor-pointer flex items-center justify-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-sm shrink-0 hover:bg-gray-100 transition-colors'
                             onClick={reloadData}
                             disabled={isReloading}
                         >
                             {isReloading ? 'Đang tải...' : 'Làm mới'}
                         </button>
-                        {(user.role.includes('Admin') || user.role.includes('Academic')) && <Create teachers={teacher} books={book} areas={areas} />}
                     </div>
                 </div>
 

@@ -273,9 +273,9 @@ export default function Create({ availableTypes = [], typeCounts = {}, onTypeDel
     );
     return (
         <>
-            <div className={'px-3 sm:px-4 py-2 bg-[var(--main_d)] flex items-center justify-center gap-2 w-full sm:w-max rounded-lg text-white text-sm font-medium cursor-pointer hover:bg-[var(--main_b)] transition-colors whitespace-nowrap'} onClick={openPopupHandler}>
+            <div className={'w-8 h-8 sm:w-auto sm:h-auto p-0 sm:px-4 sm:py-2.5 bg-[var(--main_d)] flex items-center justify-center gap-2 rounded-lg text-white text-sm font-medium cursor-pointer hover:bg-[var(--main_b)] transition-colors whitespace-nowrap shrink-0'} onClick={openPopupHandler} title="Thêm chương trình">
                 <Svg_Add w={16} h={16} c="white" />
-                <span className='text-sm' style={{ color: 'white' }}>Thêm chương trình</span>
+                <span className='text-sm hidden sm:inline' style={{ color: 'white' }}>Thêm chương trình</span>
             </div>
             <FlexiblePopup open={openPopup} onClose={closePopupHandler} title="Tạo chương trình học mới" width={600} renderItemList={renderProgramForm} secondaryOpen={secondaryOpen} onCloseSecondary={closeSecondary}
                 renderSecondaryList={() => {

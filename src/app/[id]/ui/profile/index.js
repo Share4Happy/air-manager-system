@@ -21,7 +21,7 @@ const defaultProfile = { Intro: '', Avatar: '', ImgSkill: '', ImgPJ: [], Skill: 
 export default function Profile({ data, onSave }) {
     const [editableProfile, setEditableProfile] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [popupState, setPopupState] = useState({ type: null, bookId: null });
+    const [popupState, setPopupState] = useState({ type: null, courseId: null });
     const [expandedPresentation, setExpandedPresentation] = useState(null);
     const router = useRouter();
 
@@ -29,16 +29,17 @@ export default function Profile({ data, onSave }) {
         const profile = { ...defaultProfile, ...(data.Profile || {}) };
         const completedCourses = data.Course?.filter(c => c.enrollmentStatus === 2) || [];
         const presentArr = Array.isArray(profile.Present) ? profile.Present : [];
-        const presentMap = new Map(presentArr.map(p => [p.course, p]));
+        const presentMap = new Map(presentArr.map(p => [p.course ? String(p.course) : p.bookId, p]));
         const syncedPresent = completedCourses.map(course => {
-            const existingPresent = presentMap.get(course._id) || {};
+            const courseIdStr = String(course._id);
+            const existingPresent = presentMap.get(courseIdStr) || presentMap.get(course.Book?.ID) || {};
             return {
-                bookId: course.Book.ID,
-                bookName: course.Book.Name,
+                bookId: course.Book?.ID || '',
+                bookName: course.Book?.Name || '',
                 Video: extractId(existingPresent.Video || ''),
                 Img: extractId(existingPresent.Img || ''),
                 Comment: existingPresent.Comment || '',
-                course: existingPresent.course || course._id
+                course: course._id
             };
         }).filter(Boolean);
 
@@ -54,18 +55,25 @@ export default function Profile({ data, onSave }) {
     const handleInputChange = (field, value) => setEditableProfile(p => ({ ...p, [field]: value }));
     const handleSkillChange = (skill, value) => setEditableProfile(p => ({ ...p, Skill: { ...p.Skill, [skill]: value } }));
     const handleRemoveImgPj = (idToRemove) => setEditableProfile(p => ({ ...p, ImgPJ: p.ImgPJ.filter(id => id !== idToRemove) }));
-    const handlePresentationChange = (bookId, field, value) => {
-        setEditableProfile(p => ({ ...p, Present: p.Present.map(item => item.bookId === bookId ? { ...item, [field]: value } : item) }));
+    const handlePresentationChange = (courseId, field, value) => {
+        setEditableProfile(p => ({
+            ...p,
+            Present: p.Present.map(item =>
+                (item.course ? String(item.course) === String(courseId) : item.bookId === courseId)
+                    ? { ...item, [field]: value }
+                    : item
+            )
+        }));
     };
 
     const handleSelectionChange = (id) => {
-        const { type, bookId } = popupState;
-        if (type === 'presentImg') handlePresentationChange(bookId, 'Img', id);
-        else if (type === 'presentVideo') handlePresentationChange(bookId, 'Video', id);
+        const { type, courseId } = popupState;
+        if (type === 'presentImg') handlePresentationChange(courseId, 'Img', id);
+        else if (type === 'presentVideo') handlePresentationChange(courseId, 'Video', id);
         else if (type === 'avatar') handleInputChange('Avatar', id);
         else if (type === 'imgSkill') handleInputChange('ImgSkill', id);
         else if (type === 'imgPj') handleInputChange('ImgPJ', id);
-        setPopupState({ type: null, bookId: null });
+        setPopupState({ type: null, courseId: null });
     };
 
     const handleSaveChanges = async () => {
@@ -89,8 +97,17 @@ export default function Profile({ data, onSave }) {
         avatar: { title: "Chọn ảnh đại diện", mode: "single", selected: Avatar },
         imgPj: { title: "Chọn ảnh sản phẩm", mode: "multiple", selected: ImgPJ },
         imgSkill: { title: "Chọn ảnh kĩ năng", mode: "single", selected: ImgSkill },
-        presentImg: { title: "Chọn ảnh đại diện video", mode: "single", selected: Present.find(p => p.bookId === popupState.bookId)?.Img },
-        presentVideo: { title: "Chọn video thuyết trình", mode: "single", selected: Present.find(p => p.bookId === popupState.bookId)?.Video, filter: "video" }
+        presentImg: {
+            title: "Chọn ảnh đại diện video",
+            mode: "single",
+            selected: Present.find(p => (p.course ? String(p.course) === String(popupState.courseId) : p.bookId === popupState.courseId))?.Img
+        },
+        presentVideo: {
+            title: "Chọn video thuyết trình",
+            mode: "single",
+            selected: Present.find(p => (p.course ? String(p.course) === String(popupState.courseId) : p.bookId === popupState.courseId))?.Video,
+            filter: "video"
+        }
     };
     const currentPopup = popups[popupState.type];
 
@@ -125,27 +142,27 @@ export default function Profile({ data, onSave }) {
                 <div className="p-4 border border-[#e0e0e0] rounded-lg bg-white">
                     <div className="flex justify-between items-center pb-3 border-b border-[#e0e0e0]"><p className="font-semibold text-lg">Thuyết trình tổng kết</p></div>
                     <div className="flex flex-col gap-2.5 pt-4">
-                        {Present.length === 0 ? <p>Học sinh chưa hoàn thành khóa học nào</p> : Present.map(p => {
-
-                            const isExpanded = expandedPresentation === p.bookId;
+                        {Present.length === 0 ? <p className="text-sm text-[#888]">Học sinh chưa hoàn thành khóa học nào</p> : Present.map((p, index) => {
+                            const presKey = p.course ? String(p.course) : `${p.bookId || 'pres'}-${index}`;
+                            const isExpanded = expandedPresentation === presKey;
                             return (
-                                <div key={p.bookId} className="border border-[#e0e0e0] rounded-lg overflow-hidden">
-                                    <button className="flex justify-between items-center w-full px-4 py-3 bg-[#f8f9fa] border-none cursor-pointer text-left font-medium text-base" onClick={() => setExpandedPresentation(prev => (prev === p.bookId ? null : p.bookId))}><span>{p.bookName}</span><ArrowIcon isOpen={isExpanded} /></button>
+                                <div key={presKey} className="border border-[#e0e0e0] rounded-lg overflow-hidden">
+                                    <button className="flex justify-between items-center w-full px-4 py-3 bg-[#f8f9fa] border-none cursor-pointer text-left font-medium text-base" onClick={() => setExpandedPresentation(prev => (prev === presKey ? null : presKey))}><span>{p.bookName || p.bookId}</span><ArrowIcon isOpen={isExpanded} /></button>
                                     <div className={`max-h-0 overflow-hidden transition-[max-height,padding] duration-[0.4s] ease-out px-4 ${isExpanded ? 'max-h-[500px] p-4 transition-[max-height,padding] duration-[0.5s] ease-in' : ''}`}>
                                         <div className="grid grid-cols-[1fr_2fr] gap-6 max-md:grid-cols-1">
                                             <div className="flex flex-col gap-4">
-                                                <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentVideo', bookId: p.bookId })}>
+                                                <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentVideo', courseId: presKey })}>
                                                     {p.Video ? <Image src={driveThumbnailUrl(p.Video)} fill alt="Thumbnail" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#8d949e] text-sm">Chưa có video</div>}
                                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Svg_Pen w={18} h={18} c="white" /></div>
                                                 </div>
-                                                <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentImg', bookId: p.bookId })}>
+                                                <div className="relative w-full aspect-video rounded-md overflow-hidden cursor-pointer border border-[#ddd] bg-[#f0f2f5] group" onClick={() => setPopupState({ type: 'presentImg', courseId: presKey })}>
                                                     {p.Img ? <Image src={buildUrl(p.Img)} fill alt="Thumbnail" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#8d949e] text-sm">Chưa có ảnh</div>}
                                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Svg_Pen w={18} h={18} c="white" /></div>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-2">
                                                 <p className='text-sm font-semibold text-[var(--text-primary)]'>Nhận xét tổng kết khóa</p>
-                                                <textarea className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" style={{ height: '100%' }} placeholder="Nhập nhận xét của bạn..." value={p.Comment || ''} onChange={e => handlePresentationChange(p.bookId, 'Comment', e.target.value)}></textarea>
+                                                <textarea className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" style={{ height: '100%' }} placeholder="Nhập nhận xét của bạn..." value={p.Comment || ''} onChange={e => handlePresentationChange(presKey, 'Comment', e.target.value)}></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -156,7 +173,7 @@ export default function Profile({ data, onSave }) {
                 </div>
             </div>
             {currentPopup && (
-                <FlexiblePopup open={!!popupState.type} onClose={() => setPopupState({ type: null, bookId: null })} title={currentPopup.title} width={800} renderItemList={() => (<CourseAndImageSelection studentData={data} selectionMode={currentPopup.mode} selected={currentPopup.selected} onSelectionChange={handleSelectionChange} filterType={currentPopup.filter || "image"} />)} />
+                <FlexiblePopup open={!!popupState.type} onClose={() => setPopupState({ type: null, courseId: null })} title={currentPopup.title} width={800} renderItemList={() => (<CourseAndImageSelection studentData={data} selectionMode={currentPopup.mode} selected={currentPopup.selected} onSelectionChange={handleSelectionChange} filterType={currentPopup.filter || "image"} />)} />
             )}
         </>
     );

@@ -60,7 +60,7 @@ export async function GET(request, { params }) {
         const mergedProfile = { ...defaultProfile, ...(student.Profile || {}) };
 
         const existingPresentations = new Map(
-            mergedProfile.Present.map(p => [p.bookId, p])
+            mergedProfile.Present.map(p => [p.course ? String(p.course) : p.bookId, p])
         );
         if (!student.Course || !Array.isArray(student.Course)) {
             student.Course = [];
@@ -73,14 +73,16 @@ export async function GET(request, { params }) {
                 return null;
             }
 
-            const existingData = existingPresentations.get(bookInfo.ID) || {};
+            const courseIdStr = courseItem.course?._id ? String(courseItem.course._id) : null;
+            const existingData = (courseIdStr && existingPresentations.get(courseIdStr)) || existingPresentations.get(bookInfo.ID) || {};
 
             return {
                 bookId: bookInfo.ID,
                 bookName: bookInfo.Name || "",
                 Video: existingData.Video || "",
                 Img: existingData.Img || "",
-                Comment: existingData.Comment || ""
+                Comment: existingData.Comment || "",
+                course: courseItem.course?._id
             };
         }).filter(Boolean);
 
