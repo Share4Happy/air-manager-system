@@ -64,47 +64,105 @@ function TableControls({ total, limit, page, onDeselectAll, createURL, selectedC
         onVisibleColumnsChange(newVisibleColumns);
     };
     return (
-        <div className={'flex justify-between items-center p-2.5 border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex-shrink-0'}>
-            <div className={'flex items-center gap-3'}>
-                <input type="number" min="10" max="200" value={currentLimit} onChange={(e) => setCurrentLimit(Number(e.target.value))} className='px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none' />
-                <h5>/ trang</h5>
+        <div className="flex flex-wrap justify-between items-center gap-2 p-2.5 border-t border-[var(--border-color)] bg-[var(--bg-primary)] shrink-0">
+            <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                    <input
+                        type="number"
+                        min="10"
+                        max="200"
+                        value={currentLimit}
+                        onChange={(e) => setCurrentLimit(Number(e.target.value))}
+                        className="h-8 w-16 px-2 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 text-center"
+                    />
+                    <span>/ trang</span>
+                </div>
                 {viewMode === 'manage' && selectedCount > 0 && (
-                    <div onClick={onDeselectAll} className={`px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100`}>
+                    <button
+                        type="button"
+                        onClick={onDeselectAll}
+                        className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-1.5 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all shadow-2xs"
+                    >
                         <Svg_Delete w={'var(--font-size-xs)'} h={'var(--font-size-xs)'} c={'var(--text-primary)'} />
-                        <h5>Bỏ chọn ({selectedCount})</h5>
-                    </div>
+                        <span>Bỏ chọn ({selectedCount})</span>
+                    </button>
                 )}
-                <div className={'relative'} ref={settingsRef}>
-                    <div onClick={() => setIsSettingsOpen(prev => !prev)} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'>
+                <div className="relative" ref={settingsRef}>
+                    <button
+                        type="button"
+                        onClick={() => setIsSettingsOpen(prev => !prev)}
+                        className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-1.5 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all shadow-2xs"
+                    >
                         <Svg_Setting w={'var(--font-size-xs)'} h={'var(--font-size-xs)'} c={'var(--text-primary)'} />
-                        <h5>Chỉnh sửa cột</h5>
-                    </div>
+                        <span>Chỉnh sửa cột</span>
+                    </button>
                     {isSettingsOpen && (
-                        <div className={'absolute bottom-full left-0 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-md shadow-[0_4px_8px_rgba(0,0,0,0.1)] p-[10px] z-20 w-[200px] flex flex-col gap-2 mb-[5px]'}>
-                            <h5 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: 8 }}>Chọn cột (tối đa 6)</h5>
+                        <div className="absolute bottom-full left-0 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg shadow-lg p-3 z-20 w-[200px] flex flex-col gap-2 mb-1.5">
+                            <h5 className="font-semibold text-xs text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1.5">Chọn cột (tối đa 6)</h5>
                             {ALL_COLUMNS.map(col => (
-                                <label key={col.key} className={'flex items-center gap-2 cursor-pointer'}>
-                                    <input type="checkbox" checked={visibleColumns.includes(col.key)} onChange={() => handleColumnToggle(col.key)} disabled={!visibleColumns.includes(col.key) && visibleColumns.length >= 6} />
+                                <label key={col.key} className="flex items-center gap-2 cursor-pointer text-xs text-[var(--text-primary)]">
+                                    <input type="checkbox" checked={visibleColumns.includes(col.key)} onChange={() => handleColumnToggle(col.key)} disabled={!visibleColumns.includes(col.key) && visibleColumns.length >= 6} className="accent-[var(--main_d)]" />
                                     {col.header}
                                 </label>
                             ))}
                         </div>
                     )}
                 </div>
-                <div onClick={onToggleViewMode} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'>
+                <button
+                    type="button"
+                    onClick={onToggleViewMode}
+                    className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-1.5 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all shadow-2xs"
+                >
                     <Svg_Eye w={'var(--font-size-xs)'} h={'var(--font-size-xs)'} c={'var(--text-primary)'} />
-                    <h5>{viewMode === 'manage' ? 'Chế độ xem' : 'Chế độ chăm sóc'}</h5>
-                </div>
+                    <span>{viewMode === 'manage' ? 'Chế độ xem' : 'Chế độ chăm sóc'}</span>
+                </button>
             </div>
             {totalPages > 0 && (
-                <div className={'flex items-center gap-3'}>
-                    <button onClick={() => createURL({ page: page - 1 })} disabled={page <= 1} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'><h5>«</h5></button>
-                    <div className={'flex gap-1 items-center'}>
-                        <button onClick={() => createURL({ page: 1 })} disabled={page === 1} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'><h5>1</h5></button>
-                        <input type="number" value={pageInput} onChange={(e) => setPageInput(e.target.value)} onBlur={handlePageInputBlur} onKeyPress={handlePageInputKeyPress} className={`px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none`} style={{ width: 50 }} />
-                        <button onClick={() => createURL({ page: totalPages })} disabled={page === totalPages || totalPages <= 1} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'><h5>{totalPages}</h5></button>
+                <div className="flex items-center gap-1.5">
+                    <button
+                        type="button"
+                        onClick={() => createURL({ page: page - 1 })}
+                        disabled={page <= 1}
+                        className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                    >
+                        «
+                    </button>
+                    <div className="flex gap-1 items-center">
+                        <button
+                            type="button"
+                            onClick={() => createURL({ page: 1 })}
+                            disabled={page === 1}
+                            className={`h-8 px-2.5 rounded-lg border text-xs font-medium cursor-pointer shadow-2xs ${page === 1 ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]' : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-[var(--text-primary)]'}`}
+                        >
+                            1
+                        </button>
+                        <input
+                            type="number"
+                            value={pageInput}
+                            onChange={(e) => setPageInput(e.target.value)}
+                            onBlur={handlePageInputBlur}
+                            onKeyPress={handlePageInputKeyPress}
+                            className="h-8 w-12 px-1 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 text-center"
+                        />
+                        {totalPages > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => createURL({ page: totalPages })}
+                                disabled={page === totalPages}
+                                className={`h-8 px-2.5 rounded-lg border text-xs font-medium cursor-pointer shadow-2xs ${page === totalPages ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]' : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-[var(--text-primary)]'}`}
+                            >
+                                {totalPages}
+                            </button>
+                        )}
                     </div>
-                    <button onClick={() => createURL({ page: page + 1 })} disabled={page >= totalPages} className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100'><h5>»</h5></button>
+                    <button
+                        type="button"
+                        onClick={() => createURL({ page: page + 1 })}
+                        disabled={page >= totalPages}
+                        className="h-8 px-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                    >
+                        »
+                    </button>
                 </div>
             )}
         </div>

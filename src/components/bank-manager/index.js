@@ -161,7 +161,7 @@ export default function BankManager() {
 
             <CenterPopup open={showPopup} onClose={() => setShowPopup(false)} size="md">
                 <Title content={editing ? 'Sửa tài khoản' : 'Thêm tài khoản mới'} click={() => setShowPopup(false)} />
-                <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="p-4 sm:p-6 flex flex-col gap-3.5 min-w-0 w-full break-words">
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-medium text-[var(--text-secondary)]">Ngân hàng</label>
                         <select

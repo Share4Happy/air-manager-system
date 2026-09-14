@@ -352,9 +352,13 @@ export default function BulkActions({ selectedCustomers, onActionComplete, label
 
     return (
         <>
-            <button className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100' onClick={() => setIsPopupOpen(true)} disabled={selectedCustomers.size === 0}>
+            <button
+                className="h-9 px-3 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-2 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all whitespace-nowrap shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setIsPopupOpen(true)}
+                disabled={selectedCustomers.size === 0}
+            >
                 <Svg_Send w={'var(--font-size-xs)'} h={'var(--font-size-xs)'} c={'var(--text-primary)'} />
-                <h5 className='font-normal'>Hành động ({selectedCustomers.size})</h5>
+                <span>Hành động ({selectedCustomers.size})</span>
             </button>
             <FlexiblePopup
                 open={isPopupOpen}

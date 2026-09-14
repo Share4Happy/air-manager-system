@@ -235,10 +235,10 @@ export default function RunningActions({ user, running = [] }) {
 
     return (
         <>
-            <button className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100' onClick={handleOpenPopup}>
-                <h5>Hiện tại: {currentZaloJobs.length}</h5>
-                <div className='w-px h-4 bg-gray-300 mx-2'></div>
-                <h5>Tổng: {running.length}</h5>
+            <button className="h-9 px-3 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-2 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all whitespace-nowrap shadow-2xs" onClick={handleOpenPopup}>
+                <span>Hiện tại: {currentZaloJobs.length}</span>
+                <div className="w-px h-3.5 bg-gray-300 mx-1"></div>
+                <span>Tổng: {running.length}</span>
             </button>
             <FlexiblePopup
                 open={isPopupOpen}

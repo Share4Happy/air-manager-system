@@ -163,9 +163,9 @@ export default function ActionHistory({ history = [] }) {
 
     return (
         <>
-            <button className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100' onClick={handleOpenPopup}>
+            <button className="h-9 px-3 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-2 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all whitespace-nowrap shadow-2xs" onClick={handleOpenPopup}>
                 <Svg_History w={'var(--font-size-sm)'} h={'var(--font-size-sm)'} c={'var(--text-primary)'}/>
-                <h5>Lịch sử: {history.length}</h5>
+                <span>Lịch sử: {history.length}</span>
             </button>
             <FlexiblePopup
                 open={isPopupOpen}

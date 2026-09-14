@@ -33,13 +33,13 @@ export default function Toolbar({
     className = '',
 }) {
     return (
-        <div className={`flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] mt-2 ${className}`}>
+        <div className={`flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] ${className}`}>
             {/* Main Toolbar Row */}
-            <div className="flex items-center gap-2 md:gap-3 w-full">
+            <div className="flex items-center gap-2 md:gap-3 w-full flex-wrap">
                 {/* Search Input */}
                 {onSearchChange !== undefined && (
                     <input
-                        className="px-2.5 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none resize-none text-[var(--text-primary)] flex-1 min-w-0"
+                        className="h-9 px-3 border border-gray-300 rounded-lg bg-white text-xs sm:text-sm outline-none resize-none text-[var(--text-primary)] placeholder:text-gray-400 focus:border-[var(--main_d)] flex-1 min-w-[180px]"
                         placeholder={searchPlaceholder}
                         value={search ?? ''}
                         onChange={(e) => onSearchChange(e.target.value)}
@@ -57,10 +57,10 @@ export default function Toolbar({
                 {hasFilters && onToggleFilters && (
                     <button
                         type="button"
-                        className={`md:hidden flex items-center justify-center w-8 h-8 rounded-full border cursor-pointer transition-colors shrink-0 ${
+                        className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg border cursor-pointer transition-colors shrink-0 ${
                             showFilters || hasActiveFilters
                                 ? 'bg-blue-50 border-blue-300 text-blue-600'
-                                : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)]'
+                                : 'border-[var(--border-color)] bg-white text-[var(--text-secondary)] hover:bg-[var(--hover)]'
                         }`}
                         onClick={onToggleFilters}
                         title="Bộ lọc"
@@ -73,7 +73,7 @@ export default function Toolbar({
 
                 {/* Desktop Inline Controls */}
                 {desktopActions && (
-                    <div className="hidden md:flex items-center gap-2 md:gap-3 shrink-0">
+                    <div className="hidden md:flex items-center gap-2 flex-wrap">
                         {desktopActions}
                     </div>
                 )}

@@ -129,6 +129,7 @@ export async function GET(req) {
                     contentToMakeup: topicName,
                     note: ses.note || 'Buổi học bù giáo viên tạo trong khóa',
                     makeupStatus: st,
+                    isProcessed: st === 'MAKEUP_COMPLETED',
                     createdAt: ses.createdAt || ses.day,
                     isTeacherCreated: true,
                     source: 'Giáo viên tạo'

@@ -16,6 +16,7 @@ const makeupSessionSchema = new Schema({
     contentToMakeup: { type: String, default: '' },
     completedAt: { type: Date },
     note: { type: String, default: '' },
+    isProcessed: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'user' },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'user' },
 }, { timestamps: true });

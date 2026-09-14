@@ -61,23 +61,23 @@ const AlertPopup = ({ open, onClose, title, content, type = 'info', actions, wid
     const indicatorColor = colorMap[type] || colorMap.info;
 
     return (
-        <div className={`fixed inset-0 bg-black/50 z-[2000] flex justify-center items-center opacity-0 invisible transition-opacity duration-300 ease-in-out ${visible ? 'opacity-100 visible' : ''}`} onClick={handleBackdropClick}>
+        <div className={`fixed inset-0 bg-black/50 backdrop-blur-[1px] z-[2000] flex justify-center items-center p-3 sm:p-4 opacity-0 invisible transition-opacity duration-300 ease-in-out ${visible ? 'opacity-100 visible' : ''}`} onClick={handleBackdropClick}>
             <div
                 ref={popupRef}
-                className={`relative bg-[var(--bg-primary)] w-full rounded-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.15)] overflow-hidden scale-95 transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] ${visible ? 'scale-100 opacity-100' : 'opacity-0'}`}
-                style={{ width }}
+                className={`relative bg-[var(--bg-primary)] w-full max-w-[calc(100vw-32px)] rounded-2xl shadow-2xl overflow-hidden scale-95 transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] min-w-0 break-words ${visible ? 'scale-100 opacity-100' : 'opacity-0'}`}
+                style={{ width, maxWidth: typeof width === 'number' ? `min(${width}px, calc(100vw - 32px))` : undefined }}
                 onClick={handlePopupClick}
             >
                 <div className='absolute left-0 top-0 bottom-0 w-[6px]' style={{ backgroundColor: indicatorColor }} />
-                <div className='flex items-center gap-3 px-8 py-4'>
+                <div className='flex items-center gap-3 px-6 sm:px-8 py-4 min-w-0'>
                     <AlertIcon type={type} />
-                    <h4>{title || 'Thông báo'}</h4>
+                    <h4 className="font-semibold text-base sm:text-lg min-w-0 truncate flex-1">{title || 'Thông báo'}</h4>
                 </div>
-                <div className='px-8'>
+                <div className='px-6 sm:px-8 text-xs sm:text-sm text-[var(--text-secondary)] break-words leading-relaxed min-w-0'>
                     {content}
                 </div>
                 {actions && (
-                    <div className='mt-4 px-8 py-3 flex justify-end gap-3' >
+                    <div className='mt-4 px-6 sm:px-8 py-3 flex justify-end gap-3 min-w-0' >
                         {actions}
                     </div>
                 )}

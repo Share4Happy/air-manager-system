@@ -4,16 +4,22 @@ export default function Noti({ open, onClose, status, mes, button }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-[var(--bg-secondary)] p-4 w-[350px] rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.26)] z-10 relative" onClick={e => e.stopPropagation()}>
-        <h4 className="mt-4 mb-[-16px] text-center" style={{ color: status ? 'var(--green)' : 'var(--red)' }}>
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" />
+      <div
+        className="bg-[var(--bg-secondary)] p-4 sm:p-6 w-full max-w-[360px] sm:max-w-[400px] rounded-xl shadow-2xl z-10 relative flex flex-col items-center min-w-0 break-words"
+        onClick={e => e.stopPropagation()}
+      >
+        <h4 className="font-bold text-base sm:text-lg mb-1 text-center" style={{ color: status ? 'var(--green)' : 'var(--red)' }}>
           {status ? 'THÀNH CÔNG' : 'THẤT BẠI'}
         </h4>
-        <div className="flex justify-center my-4">
+        <div className="flex justify-center my-3 shrink-0">
           {status ? <IconSuccess /> : <IconFailure />}
         </div>
-        <h5 className="px-4 pb-2 text-center -mt-3">{mes}</h5>
-        <div>{button}</div>
+        <div className="px-2 pb-3 text-center text-xs sm:text-sm text-[var(--text-primary)] break-words leading-relaxed w-full min-w-0">
+          {mes}
+        </div>
+        <div className="w-full mt-2 flex justify-center min-w-0">{button}</div>
       </div>
     </div>
   );

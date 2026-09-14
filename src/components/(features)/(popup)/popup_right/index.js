@@ -203,10 +203,10 @@ export default function FlexiblePopup({
                     }}
                     onMouseDown={e => e.stopPropagation()}
                 >
-                    <div className={`items-center px-4 py-3 h-12 border-b border-[var(--border-color)] ${titleCentered ? 'grid grid-cols-[1fr_auto_1fr]' : 'flex justify-between'}`}>
+                    <div className={`items-center px-4 py-3 h-12 border-b border-[var(--border-color)] min-w-0 ${titleCentered ? 'grid grid-cols-[1fr_auto_1fr]' : 'flex justify-between'}`}>
                         {titleCentered && <div />}
-                        <h4 className={`${titleCentered ? 'text-lg font-semibold text-center' : 'font-normal'}`}>{title}</h4>
-                        <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={onClose}>&times;</button>
+                        <h4 className={`min-w-0 truncate mr-2 ${titleCentered ? 'text-lg font-semibold text-center' : 'font-medium'}`}>{title}</h4>
+                        <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)] shrink-0 leading-none hover:opacity-70 transition-opacity' onClick={onClose}>&times;</button>
                     </div>
                     <div className='scroll overflow-x-hidden overflow-y-auto w-full min-w-0' style={{ flex: 1 }}>
                         {loading && <Loading content="Đang tải" />}
@@ -237,9 +237,9 @@ export default function FlexiblePopup({
                         }}
                         onMouseDown={e => e.stopPropagation()}
                     >
-                        <div className='flex justify-between items-center px-4 py-3 border-b border-[var(--border-color)]'>
-                            <h4 className='font-normal'>{secondaryTitle}</h4>
-                            <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)]' onClick={onCloseSecondary}>&times;</button>
+                        <div className='flex justify-between items-center px-4 py-3 border-b border-[var(--border-color)] min-w-0'>
+                            <h4 className='font-medium min-w-0 truncate mr-2'>{secondaryTitle}</h4>
+                            <button className='bg-transparent border-none text-2xl cursor-pointer text-[var(--text-primary)] shrink-0 leading-none hover:opacity-70 transition-opacity' onClick={onCloseSecondary}>&times;</button>
                         </div>
                         <div className='flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0'>
                             {loading2 && <Loading content="Đang tải" />}

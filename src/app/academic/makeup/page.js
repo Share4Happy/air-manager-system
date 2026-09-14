@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import Tabs from '@/components/(ui)/(tabs)'
 import DateInput from '@/components/(ui)/(input)/DateInput'
 import CenterPopup from '@/components/(features)/(popup)/popup_center'
 import Title from '@/components/(features)/(popup)/title'
+import Toolbar from '@/components/(ui)/(toolbar)'
 import {
     Svg_Reload,
-    Svg_Delete,
     Svg_Add,
     Svg_Close,
     Svg_Waring,
@@ -45,6 +46,20 @@ const allStatuses = [
 ]
 const historyStatuses = ['MAKEUP_COMPLETED', 'MAKEUP_ABSENT', 'MAKEUP_EXPIRED', 'MAKEUP_CANCELLED']
 
+const filterOptions = {
+    overview: [],
+    incomplete: [],
+    need: allStatuses,
+    all: allStatuses,
+    history: historyStatuses,
+}
+
+const MAKEUP_TABS = [
+    { id: 'overview', label: 'Tổng quan thiếu buổi' },
+    { id: 'need', label: 'Danh sách tổng hợp' },
+    { id: 'history', label: 'Lịch sử bù' },
+]
+
 export default function MakeupPage() {
     const [tab, setTab] = useState('overview') // 'overview' | 'all' | 'history'
     const [sessions, setSessions] = useState([])
@@ -54,11 +69,15 @@ export default function MakeupPage() {
     const [loading, setLoading] = useState(true)
     const [statusFilter, setStatusFilter] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
+    const [showFilters, setShowFilters] = useState(false)
     const [showForm, setShowForm] = useState(false)
     const [saving, setSaving] = useState(false)
     const [msg, setMsg] = useState({ text: '', type: 'success' })
     const [expandedCourses, setExpandedCourses] = useState({})
     const [expandedStudents, setExpandedStudents] = useState({})
+    const [noteEditingSession, setNoteEditingSession] = useState(null)
+    const [noteText, setNoteText] = useState('')
+    const [savingNote, setSavingNote] = useState(false)
 
     const [formData, setFormData] = useState({
         courseId: '',
@@ -168,6 +187,55 @@ export default function MakeupPage() {
         }
     }
 
+    const handleToggleProcessed = async (s) => {
+        if (s.isTeacherCreated) {
+            showNotification('Phiên học bù do giáo viên tạo trực tiếp trong khóa', 'error')
+            return
+        }
+        const nextVal = !(s.isProcessed || s.makeupStatus === 'MAKEUP_COMPLETED')
+        try {
+            const res = await fetch(`/api/academic/makeup-sessions/${s._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isProcessed: nextVal }),
+            })
+            if (res.ok) {
+                showNotification(nextVal ? 'Đã đánh dấu: Đã xử lý' : 'Đã đánh dấu: Chưa xử lý', 'success')
+                fetchSessions()
+                fetchStats()
+            } else {
+                showNotification('Có lỗi khi cập nhật trạng thái', 'error')
+            }
+        } catch (err) {
+            console.error(err)
+            showNotification('Lỗi kết nối máy chủ', 'error')
+        }
+    }
+
+    const handleSaveNote = async () => {
+        if (!noteEditingSession) return
+        setSavingNote(true)
+        try {
+            const res = await fetch(`/api/academic/makeup-sessions/${noteEditingSession._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: noteText }),
+            })
+            if (res.ok) {
+                showNotification('Lưu ghi chú thành công!', 'success')
+                setNoteEditingSession(null)
+                fetchSessions()
+            } else {
+                showNotification('Có lỗi khi lưu ghi chú', 'error')
+            }
+        } catch (err) {
+            console.error(err)
+            showNotification('Lỗi kết nối máy chủ', 'error')
+        } finally {
+            setSavingNote(false)
+        }
+    }
+
     const handleDelete = async (id) => {
         if (!confirm('Bạn có chắc chắn muốn xóa phiên học bù này không?')) return
         try {
@@ -245,150 +313,132 @@ export default function MakeupPage() {
 
     // Lọc theo search input client-side cho tab need và history
     const filteredSessions = useMemo(() => {
-        if (!searchQuery) return sessions
-        const q = searchQuery.toLowerCase()
+        if (!searchQuery.trim()) return sessions
+        const q = searchQuery.toLowerCase().trim()
         return sessions.filter(s =>
             (s.studentName && s.studentName.toLowerCase().includes(q)) ||
             (s.studentId && s.studentId.toLowerCase().includes(q)) ||
-            (s.course?.Name && s.course.Name.toLowerCase().includes(q)) ||
             (s.course?.ID && s.course.ID.toLowerCase().includes(q)) ||
             (s.contentToMakeup && s.contentToMakeup.toLowerCase().includes(q))
         )
     }, [sessions, searchQuery])
 
     const isOverview = tab === 'overview' || tab === 'incomplete'
-    const currentFilters = tab === 'history' ? historyStatuses : allStatuses
+    const currentFilters = filterOptions[tab] || []
 
     return (
-        <div className="flex flex-col gap-3 p-4 h-full">
-            {/* Page Top Tabs */}
-            <div className="flex gap-0 border-b border-[var(--border-color)]">
-                <button
-                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        isOverview
-                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                    onClick={() => handleTabChange('overview')}
-                >
-                    Tổng quan
-                </button>
-                <button
-                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        tab === 'all'
-                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                    onClick={() => handleTabChange('all')}
-                >
-                    Danh sách tổng hợp
-                </button>
-                <button
-                    className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        tab === 'history'
-                            ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                    onClick={() => handleTabChange('history')}
-                >
-                    Lịch sử bù
-                </button>
-            </div>
+        <div className="flex flex-col gap-3 h-full">
+            <Tabs
+                tabs={MAKEUP_TABS}
+                activeTab={isOverview ? 'overview' : tab}
+                onTabChange={handleTabChange}
+            />
 
-            {/* Notification Toast */}
+            {/* Notification */}
             {msg.text && (
-                <div className={`px-3 py-2 rounded text-xs sm:text-sm flex justify-between items-center ${
+                <div className={`p-3 rounded text-xs font-medium flex items-center justify-between transition-all ${
                     msg.type === 'error'
                         ? 'bg-red-50 text-red-700 border border-red-200'
                         : 'bg-green-50 text-green-700 border border-green-200'
                 }`}>
-                    <span className="flex items-center gap-2">
-                        {msg.type === 'error' ? <Svg_Waring w={14} h={14} c="#b91c1c" /> : <Svg_Check w={14} h={14} c="#15803d" />}
-                        <span>{msg.text}</span>
-                    </span>
-                    <button onClick={() => setMsg({ text: '', type: 'success' })} className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer">
+                    <span>{msg.text}</span>
+                    <button onClick={() => setMsg({ text: '', type: 'success' })} className="border-none bg-transparent cursor-pointer text-inherit">
                         <Svg_Close w={12} h={12} c="currentColor" />
                     </button>
                 </div>
             )}
 
-            {/* Toolbar & Filter Bar */}
-            <div className="flex items-center justify-between gap-2.5 flex-wrap">
-                {/* Search & Status Filters */}
-                <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
-                    <div className="relative w-full sm:w-72">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={13} height={13} fill="var(--text-secondary)">
-                            <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
-                        </svg>
-                        <input
-                            className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded bg-white text-xs md:text-sm outline-none text-gray-700"
-                            placeholder={isOverview ? 'Tìm tên / mã khóa học...' : 'Tìm học sinh, khóa học, bài học...'}
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
-                    {!isOverview && (
-                        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+            {/* Toolbar Area */}
+            <Toolbar
+                searchPlaceholder={isOverview ? 'Tìm theo tên lớp, giáo trình...' : 'Tìm theo học sinh, mã lớp, nội dung...'}
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                onClearSearch={() => setSearchQuery('')}
+                showFilters={showFilters}
+                onToggleFilters={() => setShowFilters(p => !p)}
+                hasActiveFilters={Boolean(statusFilter)}
+                hasFilters={!isOverview}
+                mobileActions={
+                    <button
+                        onClick={() => { fetchSessions(); fetchStats(); }}
+                        className="p-2 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded-lg text-xs text-[var(--text-primary)] hover:bg-[var(--hover)] transition-colors flex items-center justify-center cursor-pointer font-medium"
+                        title="Tải lại dữ liệu"
+                    >
+                        <Svg_Reload w={14} h={14} c="currentColor" />
+                    </button>
+                }
+                desktopActions={
+                    <button
+                        onClick={() => { fetchSessions(); fetchStats(); }}
+                        className="px-3 py-2 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded-lg text-sm text-[var(--text-primary)] hover:bg-[var(--hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium whitespace-nowrap"
+                        title="Tải lại dữ liệu"
+                    >
+                        <Svg_Reload w={14} h={14} c="currentColor" />
+                        <span>Làm mới</span>
+                    </button>
+                }
+                mobileFilters={
+                    !isOverview && (
+                        <div className="flex flex-col gap-2 w-full text-xs">
+                            <span className="font-semibold text-[var(--text-secondary)]">Trạng thái:</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                    onClick={() => setStatusFilter('')}
+                                    className={`px-2.5 py-1 rounded text-xs transition-colors cursor-pointer border font-medium ${
+                                        statusFilter === ''
+                                            ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                            : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)]'
+                                    }`}
+                                >
+                                    Tất cả
+                                </button>
+                                {currentFilters.map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => setStatusFilter(f)}
+                                        className={`px-2.5 py-1 rounded text-xs transition-colors cursor-pointer border font-medium ${
+                                            statusFilter === f
+                                                ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                                : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)]'
+                                        }`}
+                                    >
+                                        {statusMap[f]?.label || f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                }
+            >
+                {!isOverview && (
+                    <div className="hidden md:flex items-center gap-1.5 flex-wrap pt-1 border-t border-[var(--border-color)]/60 text-xs">
+                        <span className="text-[var(--text-secondary)] font-medium mr-1">Trạng thái:</span>
+                        <button
+                            onClick={() => setStatusFilter('')}
+                            className={`px-2.5 py-1 rounded transition-colors cursor-pointer border font-medium ${
+                                statusFilter === ''
+                                    ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
+                                    : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--main_d)] hover:text-[var(--text-primary)]'
+                            }`}
+                        >
+                            Tất cả
+                        </button>
+                        {currentFilters.map(f => (
                             <button
-                                onClick={() => setStatusFilter('')}
-                                className={`px-3 py-1.5 rounded transition-colors cursor-pointer border font-medium ${
-                                    statusFilter === ''
+                                key={f}
+                                onClick={() => setStatusFilter(f)}
+                                className={`px-2.5 py-1 rounded transition-colors cursor-pointer border font-medium ${
+                                    statusFilter === f
                                         ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
                                         : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--main_d)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
-                                Tất cả
+                                {statusMap[f]?.label || f}
                             </button>
-                            {currentFilters.map(f => (
-                                <button
-                                    key={f}
-                                    onClick={() => setStatusFilter(f)}
-                                    className={`px-3 py-1.5 rounded transition-colors cursor-pointer border font-medium ${
-                                        statusFilter === f
-                                            ? 'bg-[var(--main_d)] text-white border-[var(--main_d)]'
-                                            : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--main_d)] hover:text-[var(--text-primary)]'
-                                    }`}
-                                >
-                                    {statusMap[f]?.label || f}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => { fetchSessions(); fetchStats(); }}
-                        className="px-3 py-1.5 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded text-xs text-[var(--text-primary)] hover:bg-[var(--hover)] transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
-                        title="Tải lại dữ liệu"
-                    >
-                        <Svg_Reload w="13" h="13" c="currentColor" />
-                        <span className="hidden sm:inline">Làm mới</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setFormData({
-                                courseId: '',
-                                lessonId: '',
-                                studentId: '',
-                                makeupDate: '',
-                                makeupTime: '18:00 - 19:30',
-                                makeupTeacher: '',
-                                room: '',
-                                contentToMakeup: '',
-                                note: '',
-                            })
-                            setShowForm(true)
-                        }}
-                        className="px-3 py-1.5 rounded text-xs font-medium bg-[var(--main_d)] hover:bg-[var(--main_b)] text-white transition-colors flex items-center gap-1.5 cursor-pointer border-none shadow-xs"
-                    >
-                        <Svg_Add w="13" h="13" c="white" />
-                        <span>Tạo ca học bù</span>
-                    </button>
-                </div>
-            </div>
+                        ))}
+                    </div>
+                )}
+            </Toolbar>
 
             {/* Table Area */}
             {loading ? (
@@ -418,8 +468,7 @@ export default function MakeupPage() {
                             ) : (
                                 incompleteCourses.map(c => {
                                     const cid = c.course?._id || c.courseId
-                                    const courseIdStr = c.course?.ID || c.courseName || ''
-                                    const courseName = c.course?.Name || c.courseName || 'Khóa học'
+                                    const courseName = c.course?.Name || c.course?.ID || c.courseName || 'Khóa học'
                                     const totalMissingInCourse = c.students.reduce((sum, s) => sum + s.missingLessons, 0)
                                     const isExpanded = expandedCourses[cid]
 
@@ -444,7 +493,7 @@ export default function MakeupPage() {
                                                                 onClick={e => e.stopPropagation()}
                                                                 className="px-2 py-0.5 rounded-md text-xs font-semibold text-[var(--main_d)] bg-[var(--main_d)]/10 hover:bg-[var(--main_d)]/20 transition-colors"
                                                             >
-                                                                {courseName} ({courseIdStr})
+                                                                {courseName}
                                                             </Link>
                                                         </div>
 
@@ -587,12 +636,12 @@ export default function MakeupPage() {
                     <table className="w-full text-sm min-w-[950px]">
                         <thead className="sticky top-0 z-10">
                             <tr className="bg-[var(--main_d)] text-white">
-                                <th className="p-2.5 font-medium w-[20%] text-left">Học sinh</th>
-                                <th className="p-2.5 font-medium w-[18%] text-left">Khóa học</th>
-                                <th className="p-2.5 font-medium w-[22%] text-left">Nội dung cần bù</th>
-                                <th className="p-2.5 font-medium w-[16%] text-center">Lịch học bù</th>
-                                <th className="p-2.5 font-medium w-[12%] text-center">Trạng thái</th>
-                                <th className="p-2.5 font-medium w-[12%] text-center">Thao tác</th>
+                                <th className="p-2.5 font-medium w-[18%] text-left">Học sinh</th>
+                                <th className="p-2.5 font-medium w-[16%] text-left">Khóa học</th>
+                                <th className="p-2.5 font-medium w-[24%] text-left">Nội dung cần bù</th>
+                                <th className="p-2.5 font-medium w-[15%] text-center">Lịch học bù</th>
+                                <th className="p-2.5 font-medium w-[17%] text-left">Ghi chú</th>
+                                <th className="p-2.5 font-medium w-[10%] text-center">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border-color)]">
@@ -640,11 +689,6 @@ export default function MakeupPage() {
                                             {/* Nội dung */}
                                             <td className="p-2.5 text-left">
                                                 <span className="text-[var(--text-primary)] text-sm font-medium">{s.contentToMakeup || '—'}</span>
-                                                {s.note && (
-                                                    <div className="text-xs text-[var(--text-secondary)] italic mt-0.5">
-                                                        Ghi chú: {s.note}
-                                                    </div>
-                                                )}
                                             </td>
 
                                             {/* Lịch bù */}
@@ -652,7 +696,7 @@ export default function MakeupPage() {
                                                 {s.makeupDate ? (
                                                     <div className="flex flex-col items-center gap-0.5 text-xs">
                                                         <span className="font-semibold text-[var(--text-primary)]">
-                                                            {new Date(s.makeupDate).toLocaleDateString('vi-VN')}
+                                                             {new Date(s.makeupDate).toLocaleDateString('vi-VN')}
                                                         </span>
                                                         <span className="text-[var(--text-secondary)] font-mono">
                                                             {s.makeupTime || '—'}
@@ -663,48 +707,32 @@ export default function MakeupPage() {
                                                 )}
                                             </td>
 
+                                            {/* Ghi chú */}
+                                            <td className="p-2.5 text-left">
+                                                <div className="flex items-center gap-1.5 group max-w-full">
+                                                    <span className="text-xs text-[var(--text-primary)] truncate flex-1" title={s.note || 'Chưa có ghi chú'}>
+                                                        {s.note ? s.note : <span className="text-[var(--text-secondary)] italic">Chưa có ghi chú</span>}
+                                                    </span>
+                                                    {!s.isTeacherCreated && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setNoteEditingSession(s); setNoteText(s.note || ''); }}
+                                                            className="p-1 rounded text-[var(--text-secondary)] hover:text-[var(--main_d)] hover:bg-gray-100 transition-colors cursor-pointer border-none bg-transparent shrink-0 opacity-0 group-hover:opacity-100"
+                                                            title="Sửa ghi chú"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={11} height={11} fill="currentColor">
+                                                                <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.4-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.6 410.3 231zM160 399.4l-91.9 27 27-91.9 204.4-204.4 64.9 64.9L160 399.4zM470.6 41.4c-19.5-19.5-51.2-19.5-70.7 0l-28.3 28.3 99 99 28.3-28.3c19.5-19.5 19.5-51.2 0-70.7l-28.3-28.3z"/>
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+
                                             {/* Trạng thái */}
                                             <td className="p-2.5 text-center whitespace-nowrap">
                                                 <span className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${st.color}`}>
                                                     {st.label}
                                                 </span>
-                                            </td>
-
-                                            {/* Thao tác */}
-                                            <td className="p-2.5 text-center whitespace-nowrap">
-                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                                                    {s.makeupStatus === 'MAKEUP_PENDING' && (
-                                                        <button
-                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_SCHEDULED')}
-                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors border-none cursor-pointer"
-                                                        >
-                                                            Xếp lịch
-                                                        </button>
-                                                    )}
-                                                    {s.makeupStatus === 'MAKEUP_SCHEDULED' && (
-                                                        <button
-                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_COMPLETED')}
-                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors border-none cursor-pointer"
-                                                        >
-                                                            Đã học bù
-                                                        </button>
-                                                    )}
-                                                    {['MAKEUP_PENDING', 'MAKEUP_SCHEDULED'].includes(s.makeupStatus) && (
-                                                        <button
-                                                            onClick={() => handleStatusChange(s._id, 'MAKEUP_CANCELLED')}
-                                                            className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors border-none cursor-pointer"
-                                                        >
-                                                            Hủy
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleDelete(s._id)}
-                                                        className="p-1 rounded hover:bg-red-50 text-[var(--text-secondary)] hover:text-red-600 transition-colors border-none bg-transparent cursor-pointer"
-                                                        title="Xóa yêu cầu"
-                                                    >
-                                                        <Svg_Delete w="13" h="13" c="currentColor" />
-                                                    </button>
-                                                </div>
                                             </td>
                                         </tr>
                                     )
@@ -844,6 +872,44 @@ export default function MakeupPage() {
                         </button>
                     </div>
                 </form>
+            </CenterPopup>
+
+            {/* Modal Sửa Ghi Chú */}
+            <CenterPopup
+                open={Boolean(noteEditingSession)}
+                onClose={() => setNoteEditingSession(null)}
+                size="sm"
+            >
+                <Title content={`Ghi chú ca bù: ${noteEditingSession?.studentName || ''}`} click={() => setNoteEditingSession(null)} />
+                <div className="p-4 flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-[var(--text-secondary)]">Nội dung ghi chú</label>
+                        <textarea
+                            rows={3}
+                            className="w-full p-2.5 border border-gray-200 rounded text-sm outline-none bg-white text-gray-700 resize-none"
+                            placeholder="Nhập ghi chú cho ca học bù này..."
+                            value={noteText}
+                            onChange={e => setNoteText(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-color)]">
+                        <button
+                            type="button"
+                            onClick={() => setNoteEditingSession(null)}
+                            className="px-3.5 py-1.5 border border-[var(--border-color)] rounded text-xs font-medium cursor-pointer hover:bg-gray-50 bg-white"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSaveNote}
+                            disabled={savingNote}
+                            className="px-4 py-1.5 bg-[var(--main_d)] hover:bg-[var(--main_b)] rounded text-xs font-medium text-white cursor-pointer border-none disabled:opacity-50"
+                        >
+                            {savingNote ? 'Đang lưu...' : 'Lưu ghi chú'}
+                        </button>
+                    </div>
+                </div>
             </CenterPopup>
         </div>
     )

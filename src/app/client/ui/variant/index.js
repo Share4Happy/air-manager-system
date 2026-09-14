@@ -81,9 +81,9 @@ export default function SettingVariant({ data }) {
     };
     return (
         <>
-            <button className='px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100' onClick={() => setIsListOpen(true)}>
+            <button className="h-9 px-3 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-2 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all whitespace-nowrap shadow-2xs" onClick={() => setIsListOpen(true)}>
                 <Svg_Variant w={'var(--font-size-sm)'} h={'var(--font-size-sm)'} c={'var(--text-primary)'} />
-                <h5 className='font-normal'>Biến thể</h5>
+                <span>Biến thể</span>
             </button>
             <FlexiblePopup open={isListOpen} onClose={() => setIsListOpen(false)} title="Cài đặt Biến thể" width={'600px'}
                 renderItemList={() => (

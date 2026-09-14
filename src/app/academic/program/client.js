@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Tabs from '@/components/(ui)/(tabs)'
 import ProgramList from '@/app/course/ui/book-item'
 import CourseManagementPage from '@/app/course/ui/createbook'
 import Loading from '@/components/(ui)/(loading)/loading'
@@ -28,9 +29,21 @@ export default function ProgramClient({ programs }) {
         }
     }
 
-    const typeOptions = [...new Set(programs.map(p => p.Type).filter(Boolean))]
-    const typeCounts = {}
-    programs.forEach(p => { if (p.Type) typeCounts[p.Type] = (typeCounts[p.Type] || 0) + 1 })
+    const typeOptions = useMemo(() => [...new Set(programs.map(p => p.Type).filter(Boolean))], [programs])
+    const typeCounts = useMemo(() => {
+        const counts = {}
+        programs.forEach(p => { if (p.Type) counts[p.Type] = (counts[p.Type] || 0) + 1 })
+        return counts
+    }, [programs])
+
+    const programTabs = useMemo(() => [
+        { id: '', label: 'Tất cả', count: programs.length },
+        ...typeOptions.map(t => ({
+            id: t,
+            label: t,
+            count: typeCounts[t] || 0
+        }))
+    ], [programs.length, typeOptions, typeCounts])
 
     const filtered = programs.filter(p => {
         if (search.trim() && !p.Name?.toLowerCase().includes(search.toLowerCase()) && !p.ID?.toLowerCase().includes(search.toLowerCase())) return false
@@ -41,7 +54,13 @@ export default function ProgramClient({ programs }) {
     const hasActiveFilters = Boolean(typeFilter)
 
     return (
-        <div className="h-full flex flex-col min-h-0 p-2">
+        <div className="h-full flex flex-col min-h-0 p-2 gap-2">
+            <Tabs
+                tabs={programTabs}
+                activeTab={typeFilter}
+                onTabChange={setTypeFilter}
+            />
+
             <div>
                 <Toolbar
                     search={search}
@@ -60,17 +79,6 @@ export default function ProgramClient({ programs }) {
                                 <span className="font-semibold text-[var(--text-primary)]">{filtered.length}</span>
                             </div>
 
-                            <select
-                                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-auto cursor-pointer"
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                            >
-                                <option value="">Tất cả loại</option>
-                                {typeOptions.map(t => (
-                                    <option key={t} value={t}>{t} ({typeCounts[t] || 0})</option>
-                                ))}
-                            </select>
-
                             <button
                                 className="px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center gap-2 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-sm hover:bg-[#f1f5f9] transition-colors whitespace-nowrap"
                                 onClick={reloadData}
@@ -85,17 +93,6 @@ export default function ProgramClient({ programs }) {
                     }
                     mobileFilters={
                         <div className="flex flex-col gap-2 w-full">
-                            <select
-                                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 w-full"
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                            >
-                                <option value="">Tất cả loại</option>
-                                {typeOptions.map(t => (
-                                    <option key={t} value={t}>{t} ({typeCounts[t] || 0})</option>
-                                ))}
-                            </select>
-
                             <div className="flex items-center gap-2 w-full pt-1">
                                 <div className="px-2.5 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200 shrink-0">
                                     Tổng: {filtered.length}

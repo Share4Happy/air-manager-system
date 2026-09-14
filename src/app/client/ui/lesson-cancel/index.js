@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import Link from 'next/link';
 import Noti from '@/components/(features)/(noti)/noti';
+import Toolbar from '@/components/(ui)/(toolbar)';
 import DateInput from '@/components/(ui)/(input)/DateInput';
 import SettingZalo from '@/app/client/ui/zalo';
 import { fmtDate, progressBadge, kindBadge, careBadge, zaloBadge } from './constants';
@@ -19,6 +20,8 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
     const [noti, setNoti] = useState({ open: false, status: true, mes: '' });
     const [expandedIds, setExpandedIds] = useState({});
     const [selectedDate, setSelectedDate] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
 
     // Popups states
     const [historyOpen, setHistoryOpen] = useState(false);
@@ -122,28 +125,73 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
         setSendInitialIds(customStudentIds);
     };
 
+    const filteredItems = useMemo(() => {
+        if (!searchQuery.trim()) return items;
+        const q = searchQuery.toLowerCase().trim();
+        return items.filter(it =>
+            it.courseID?.toLowerCase().includes(q) ||
+            it.courseId?.toLowerCase().includes(q) ||
+            it.areaName?.toLowerCase().includes(q) ||
+            it.teacherName?.toLowerCase().includes(q) ||
+            it.reason?.toLowerCase().includes(q)
+        );
+    }, [items, searchQuery]);
+
     return (
         <div className="flex flex-col gap-3">
             <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.mes} />
 
-            <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)]">
-                {/* Header Toolbar */}
-                <div className="flex justify-between items-center p-3 border-b border-[var(--border-color)] flex-wrap gap-2">
-                    <h5 className="font-semibold text-[var(--text-primary)]">Chăm sóc lớp học</h5>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+            {/* Header Toolbar */}
+            <Toolbar
+                search={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Tìm kiếm mã lớp, GV, khu vực, lý do..."
+                showFilters={showFilters}
+                onToggleFilters={() => setShowFilters(p => !p)}
+                hasActiveFilters={Boolean(selectedDate)}
+                hasFilters={true}
+                mobileActions={
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => fetchList(false)}
+                            className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer hover:bg-gray-200 flex items-center justify-center shrink-0"
+                            title="Làm mới"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width={12} height={12} fill="currentColor">
+                                <path d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 184c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/>
+                            </svg>
+                        </button>
+                        {filteredItems.length > 0 && (
+                            <button
+                                onClick={toggleExpandAll}
+                                className="w-9 h-9 rounded-lg border border-gray-300 bg-[var(--bg-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center justify-center cursor-pointer shrink-0"
+                                title={isAllExpanded ? 'Thu gọn tất cả' : 'Mở tất cả'}
+                            >
+                                <svg
+                                    className={`transition-transform duration-150 ${isAllExpanded ? 'rotate-180' : ''}`}
+                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width={12} height={12} fill="currentColor"
+                                >
+                                    <path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                }
+                desktopActions={
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] shrink-0">
                             <span>Ngày:</span>
                             <DateInput
                                 value={selectedDate}
                                 onChange={setSelectedDate}
-                                className="px-2 py-1.5 border border-gray-300 rounded bg-white text-sm outline-none text-gray-700 cursor-pointer"
+                                className="h-9 px-2.5 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 cursor-pointer w-[120px]"
                             />
                         </label>
                         <SettingZalo user={user?.[0]} zalo={zaloData} />
-                        {items.length > 0 && (
+                        {filteredItems.length > 0 && (
                             <button
                                 onClick={toggleExpandAll}
-                                className="px-3 py-1.5 rounded border border-gray-300 bg-[var(--bg-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--main_d)] hover:bg-[var(--hover)] transition-colors flex items-center gap-1.5 cursor-pointer"
+                                className="h-9 px-3 rounded-lg border border-gray-300 bg-[var(--bg-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--main_d)] hover:bg-[var(--hover)] transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                                 title={isAllExpanded ? 'Thu gọn tất cả lớp' : 'Mở tất cả lớp'}
                             >
                                 <svg
@@ -157,37 +205,76 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                         )}
                         <button
                             onClick={() => fetchList(false)}
-                            className="px-3.5 py-1.5 rounded bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200"
+                            className="h-9 px-3 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200 flex items-center justify-center whitespace-nowrap shrink-0"
                         >
                             Làm mới
                         </button>
                         <button
                             onClick={() => { fetchTemplates(); setTemplateListOpen(true); }}
-                            className="px-3.5 py-1.5 rounded bg-[var(--main_d)] text-white text-xs font-medium cursor-pointer transition-colors hover:bg-[var(--main_b)] shadow-xs"
+                            className="h-9 px-3 rounded-lg bg-[var(--main_d)] text-white text-xs font-medium cursor-pointer transition-colors hover:bg-[var(--main_b)] shadow-xs flex items-center justify-center whitespace-nowrap shrink-0"
                         >
                             Mẫu tin nhắn
                         </button>
                         <button
                             onClick={() => { setHistoryOpen(true); fetchList(true); }}
-                            className="px-3.5 py-1.5 rounded bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200"
+                            className="h-9 px-3 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200 flex items-center justify-center whitespace-nowrap shrink-0"
                         >
                             Lịch sử lớp nghỉ
                         </button>
                         <button
                             onClick={() => { setSendHistoryOpen(true); fetchSendHistory(); }}
-                            className="px-3.5 py-1.5 rounded bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200"
+                            className="h-9 px-3 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-[var(--text-primary)] cursor-pointer transition-colors hover:bg-gray-200 flex items-center justify-center whitespace-nowrap shrink-0"
                         >
                             Lịch sử gửi tin
                         </button>
                     </div>
-                </div>
+                }
+                mobileFilters={
+                    <div className="flex flex-col gap-2.5">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                                <span>Ngày:</span>
+                                <DateInput
+                                    value={selectedDate}
+                                    onChange={setSelectedDate}
+                                    className="h-9 px-2.5 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 cursor-pointer w-[120px]"
+                                />
+                            </label>
+                            <SettingZalo user={user?.[0]} zalo={zaloData} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border-color)]">
+                            <button
+                                onClick={() => { fetchTemplates(); setTemplateListOpen(true); }}
+                                className="h-9 px-3 rounded-lg bg-[var(--main_d)] text-white text-xs font-medium text-center flex items-center justify-center cursor-pointer hover:bg-[var(--main_b)] shadow-xs"
+                            >
+                                Mẫu tin nhắn
+                            </button>
+                            <button
+                                onClick={() => { setHistoryOpen(true); fetchList(true); }}
+                                className="h-9 px-3 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-center flex items-center justify-center text-[var(--text-primary)] cursor-pointer hover:bg-gray-200"
+                            >
+                                Lịch sử lớp nghỉ
+                            </button>
+                            <button
+                                onClick={() => { setSendHistoryOpen(true); fetchSendHistory(); }}
+                                className="col-span-2 h-9 px-3 rounded-lg bg-gray-100 border border-gray-300 text-xs font-medium text-center flex items-center justify-center text-[var(--text-primary)] cursor-pointer hover:bg-gray-200"
+                            >
+                                Lịch sử gửi tin
+                            </button>
+                        </div>
+                    </div>
+                }
+            />
 
+            <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] overflow-hidden">
                 {/* Content Table */}
                 {loading ? (
                     <p className="p-4 text-sm text-[var(--text-secondary)] italic">Đang tải...</p>
-                ) : items.length === 0 ? (
+                ) : filteredItems.length === 0 ? (
                     <p className="p-4 text-sm text-[var(--text-secondary)] italic">
-                        {selectedDate
+                        {searchQuery
+                            ? 'Không tìm thấy lớp học nào phù hợp với từ khóa tìm kiếm.'
+                            : selectedDate
                             ? `Không có buổi học nào báo nghỉ hoặc diễn ra ngày ${fmtDate(selectedDate)}.`
                             : 'Không có buổi học nào hôm nay hoặc lớp nghỉ trong thời gian tới.'}
                     </p>
@@ -211,7 +298,7 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                 </tr>
                             </thead>
                             <tbody>
-                                {items.map(item => {
+                                {filteredItems.map(item => {
                                     const isOpen = !!expandedIds[item.detailId];
                                     const isCancel = item.kind === 'cancel';
                                     const isRegular = !isCancel;
@@ -252,12 +339,6 @@ export default function LessonCancelTab({ user = [], users = [], zaloData = [] }
                                                 <td className="p-2.5 whitespace-nowrap">{zaloBadge(item)}</td>
                                                 <td className="p-2.5" onClick={e => e.stopPropagation()}>
                                                     <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
-                                                        <button
-                                                            onClick={() => openSend(item)}
-                                                            className="px-2.5 py-1 rounded bg-[var(--main_d)] hover:bg-[var(--main_b)] text-white text-xs font-medium cursor-pointer border-none shadow-xs transition-colors"
-                                                        >
-                                                            Gửi Zalo
-                                                        </button>
                                                         <button
                                                             onClick={() => setNotifyTarget(item)}
                                                             className="px-2.5 py-1 rounded bg-emerald-600 text-white text-xs font-medium cursor-pointer border-none hover:bg-emerald-700 shadow-xs transition-colors"

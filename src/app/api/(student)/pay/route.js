@@ -2,6 +2,7 @@ import connectDB from '@/config/connectDB';
 import PostStudent from '@/models/student';
 import Invoice from '@/models/invoices';
 import Bank from '@/models/bank';
+import Debt from '@/models/debt';
 import '@/models/course';
 import '@/models/book';
 import '@/models/users';
@@ -117,9 +118,9 @@ export async function POST(request) {
         );
 
         if (!updatedStudent) {
-            return NextResponse.json(
-                { status: 1, mes: `Tạo hóa đơn thành công, nhưng không tìm thấy khóa học của học sinh để cập nhật.`, data: [savedInvoice] },
-                { status: 200 }
+            await Debt.findOneAndUpdate(
+                { _id: courseId },
+                { $set: { status: 1 } }
             );
         }
 
@@ -128,7 +129,7 @@ export async function POST(request) {
         revalidateTag(`course:${courseId}`, 'max');
         revalidateTag('courses', 'max');
         return NextResponse.json(
-            { status: 2, mes: 'Tạo hóa đơn và cập nhật học sinh thành công.', data: [savedInvoice] },
+            { status: 2, mes: 'Tạo hóa đơn và ghi nhận thanh toán thành công.', data: [savedInvoice] },
             { status: 201 }
         );
 

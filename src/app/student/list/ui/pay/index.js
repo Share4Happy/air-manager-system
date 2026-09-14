@@ -182,8 +182,18 @@ export default function Pay({ _id, courseId = null, status = false }) {
     const handlePayCash = useCallback(async () => {
         if (!studentData || !selectedCourse) return;
         setPendingAction('cash');
+        setConfirmOpen(false);
         setPaymentConfirmOpen(true);
     }, [studentData, selectedCourse]);
+
+    const handleCancelPaymentConfirm = useCallback(() => {
+        setPaymentConfirmOpen(false);
+        if (pendingAction === 'cash') {
+            setConfirmOpen(true);
+        } else if (pendingAction === 'confirm') {
+            setQrOpen(true);
+        }
+    }, [pendingAction]);
 
     const executePayCash = useCallback(async () => {
         if (!studentData || !selectedCourse) return;
@@ -323,8 +333,8 @@ export default function Pay({ _id, courseId = null, status = false }) {
     );
 
     const customPromotionBtn = (
-        <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-full rounded text-white text-xs sm:text-sm font-medium cursor-pointer border-none transition-all duration-100 justify-center whitespace-nowrap hover:bg-[var(--main_d)]' style={{ background: 'var(--hover)', margin: 0 }}>
-            <p className='text-xs sm:text-sm font-normal text-[var(--text-primary)] truncate'>{promotion.description} ({promotion.value}%)</p>
+        <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-full rounded text-white text-xs sm:text-sm font-medium cursor-pointer border-none transition-all duration-100 justify-center hover:bg-[var(--main_d)] min-w-0 overflow-hidden' style={{ background: 'var(--hover)', margin: 0 }}>
+            <p className='text-xs sm:text-sm font-normal text-[var(--text-primary)] truncate min-w-0'>{promotion.description} ({promotion.value}%)</p>
         </div>
     );
 
@@ -340,28 +350,28 @@ export default function Pay({ _id, courseId = null, status = false }) {
                 {selectedCourse && studentData && (
                     <>
                         <Title content='Tạo hóa đơn' click={handleCloseConfirm} />
-                        <div className="flex flex-col gap-3 p-3 sm:p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+                        <div className="flex flex-col gap-3 p-3 sm:p-4 max-h-[calc(90vh-120px)] overflow-y-auto overflow-x-hidden min-w-0">
                             <div>
                                 <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin học sinh</p>
-                                <div className="flex flex-col gap-1 p-2 text-xs sm:text-sm break-words">
-                                    <p><span className='font-semibold'>ID:</span> {studentData.ID}</p>
-                                    <p><span className='font-semibold'>Họ tên:</span> {studentData.Name}</p>
-                                    <p><span className='font-semibold'>Liên hệ:</span> {studentData.Phone || '—'}</p>
+                                <div className="flex flex-col gap-1.5 p-2 text-xs sm:text-sm">
+                                    <p className="flex justify-between items-start gap-2 min-w-0"><span className='font-semibold shrink-0'>ID:</span> <span className="font-medium text-right text-[var(--text-primary)] font-mono">{studentData.ID}</span></p>
+                                    <p className="flex justify-between items-start gap-2 min-w-0"><span className='font-semibold shrink-0'>Họ tên:</span> <span className="font-medium text-right text-[var(--text-primary)] break-words min-w-0 flex-1">{studentData.Name}</span></p>
+                                    <p className="flex justify-between items-start gap-2 min-w-0"><span className='font-semibold shrink-0'>Liên hệ:</span> <span className="font-medium text-right text-[var(--text-primary)]">{studentData.Phone || '—'}</span></p>
                                 </div>
                             </div>
 
                             <div>
                                 <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin khóa học</p>
-                                <div className="flex flex-col gap-1 p-2 text-xs sm:text-sm break-words">
-                                    <p><span className='font-semibold'>Khóa học:</span> {selectedCourse.ID}</p>
-                                    <p><span className='font-semibold'>Chương trình:</span> {selectedCourse.Book?.Name || '—'}</p>
+                                <div className="flex flex-col gap-1.5 p-2 text-xs sm:text-sm">
+                                    <p className="flex justify-between items-start gap-2 min-w-0"><span className='font-semibold shrink-0'>Khóa học:</span> <span className="font-medium text-right text-[var(--text-primary)] break-words min-w-0 flex-1">{selectedCourse.ID}</span></p>
+                                    <p className="flex justify-between items-start gap-2 min-w-0"><span className='font-semibold shrink-0'>Chương trình:</span> <span className="font-medium text-right text-[var(--text-primary)] break-words min-w-0 flex-1">{selectedCourse.Book?.Name || '—'}</span></p>
                                 </div>
                             </div>
 
                             <div>
                                 <p className='text-xs sm:text-sm font-semibold text-white px-2.5 py-1.5 bg-[var(--main_b)] rounded'>Thông tin thanh toán</p>
-                                <div className="flex flex-col gap-2.5 p-2 text-xs sm:text-sm">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                <div className="flex flex-col gap-2.5 p-2 text-xs sm:text-sm min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
                                         <span className='font-semibold sm:w-24 shrink-0'>Số tiền:</span>
                                         <input
                                             type="number"
@@ -370,20 +380,20 @@ export default function Pay({ _id, courseId = null, status = false }) {
                                             className="w-full sm:flex-1 px-3 py-1.5 border border-gray-200 rounded text-xs sm:text-sm outline-none text-gray-700 bg-white"
                                         />
                                     </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0">
                                         <span className='font-semibold sm:w-24 shrink-0'>Giảm giá:</span>
                                         <div className="w-full sm:flex-1 min-w-0">
                                             <Menu menuItems={promotionItems} customButton={customPromotionBtn} menuPosition="top" />
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between sm:justify-start gap-2 pt-1 border-t border-gray-100">
+                                    <div className="flex items-center justify-between sm:justify-start gap-2 pt-1 border-t border-gray-100 min-w-0">
                                         <span className='font-semibold sm:w-24 shrink-0'>Thành tiền:</span>
-                                        <span className="text-base sm:text-lg font-bold text-[var(--red)]">{formatCurrencyVN(finalAmount)}</span>
+                                        <span className="text-base sm:text-lg font-bold text-[var(--red)] truncate">{formatCurrencyVN(finalAmount)}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-3 sm:p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)]">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-3 sm:p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)] min-w-0">
                             <button className='flex-1 px-3 py-2 bg-[var(--main_b)] flex items-center justify-center gap-2 rounded text-white text-xs sm:text-sm font-medium cursor-pointer hover:bg-[var(--main_d)] border-none' onClick={handlePayCash}>
                                 💵 Tiền mặt
                             </button>
@@ -395,23 +405,43 @@ export default function Pay({ _id, courseId = null, status = false }) {
                 )}
             </CenterPopup>
 
-            <CenterPopup open={isPaymentConfirmOpen} onClose={() => setPaymentConfirmOpen(false)} size="sm">
-                <div className="p-5 sm:p-8 text-center break-words">
-                    <p className="text-base font-semibold mb-4 text-[var(--text-primary)]">Xác nhận thanh toán</p>
-                    <p className="text-xs sm:text-sm text-[var(--text-secondary)] mb-6">
-                        {pendingAction === 'cash'
-                            ? `Thu ${formatCurrencyVN(finalAmount)} của học sinh ${studentData?.Name || ''}?`
-                            : 'Xác nhận đã nhận được tiền chuyển khoản?'}
+            <CenterPopup open={isPaymentConfirmOpen} onClose={handleCancelPaymentConfirm} size="sm" globalZIndex={1100}>
+                <div className="p-5 sm:p-6 text-center break-words min-w-0 flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3 shrink-0">
+                        {pendingAction === 'cash' ? '💵' : '✅'}
+                    </div>
+                    <p className="text-base sm:text-lg font-bold mb-2 text-[var(--text-primary)]">
+                        {pendingAction === 'cash' ? 'Xác nhận thu tiền mặt' : 'Xác nhận đã nhận tiền'}
                     </p>
-                    <div className="flex gap-3 justify-center">
+                    {pendingAction === 'cash' ? (
+                        <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 my-3 text-left space-y-1.5 text-xs sm:text-sm">
+                            <p className="flex justify-between items-start gap-2 min-w-0">
+                                <span className="text-[var(--text-secondary)] shrink-0">Học sinh:</span>
+                                <span className="font-semibold text-right text-[var(--text-primary)] break-words min-w-0 flex-1">{studentData?.Name || '—'}</span>
+                            </p>
+                            <p className="flex justify-between items-start gap-2 min-w-0">
+                                <span className="text-[var(--text-secondary)] shrink-0">Khóa học:</span>
+                                <span className="font-medium text-right text-[var(--text-primary)] break-words min-w-0 flex-1">{selectedCourse?.ID || '—'}</span>
+                            </p>
+                            <div className="border-t border-gray-200 pt-2 flex justify-between items-center gap-2 min-w-0">
+                                <span className="font-semibold text-gray-700 shrink-0">Số tiền:</span>
+                                <span className="text-base sm:text-lg font-bold text-[var(--red)] truncate">{formatCurrencyVN(finalAmount)}</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-xs sm:text-sm text-[var(--text-secondary)] my-3 break-words leading-relaxed">
+                            Xác nhận đã nhận được đầy đủ số tiền thanh toán chuyển khoản từ học sinh?
+                        </p>
+                    )}
+                    <div className="flex gap-3 justify-center w-full mt-2 min-w-0">
                         <button
-                            className='px-4 py-2 border border-[var(--border-color)] rounded text-xs sm:text-sm font-medium cursor-pointer hover:bg-gray-50 bg-white'
-                            onClick={() => setPaymentConfirmOpen(false)}
+                            className='flex-1 px-4 py-2.5 border border-[var(--border-color)] rounded-lg text-xs sm:text-sm font-medium cursor-pointer hover:bg-gray-50 bg-white text-[var(--text-primary)] transition-colors'
+                            onClick={handleCancelPaymentConfirm}
                         >
                             Hủy
                         </button>
                         <button
-                            className='px-4 py-2 bg-[var(--main_b)] rounded text-xs sm:text-sm font-medium text-white cursor-pointer hover:bg-[var(--main_d)] border-none'
+                            className='flex-1 px-4 py-2.5 bg-[var(--main_b)] rounded-lg text-xs sm:text-sm font-semibold text-white cursor-pointer hover:bg-[var(--main_d)] border-none transition-colors'
                             onClick={() => {
                                 if (pendingAction === 'cash') executePayCash()
                                 else if (pendingAction === 'confirm') executeConfirmPayment()
@@ -432,12 +462,12 @@ export default function Pay({ _id, courseId = null, status = false }) {
                     return (
                         <>
                             <Title content='Quét mã QR để thanh toán' click={handleCloseQr} />
-                            <div className="flex flex-col gap-3 sm:gap-4 p-3 sm:p-5 items-center max-h-[calc(90vh-80px)] overflow-y-auto w-full">
+                            <div className="flex flex-col gap-3 sm:gap-4 p-3 sm:p-5 items-center max-h-[calc(90vh-80px)] overflow-y-auto overflow-x-hidden w-full min-w-0">
                                 {banks.length > 0 && (
-                                    <div className="w-full flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                                    <div className="w-full flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0">
                                         <span className='text-xs sm:text-sm text-[var(--text-secondary)] shrink-0'>Tài khoản:</span>
                                         <select
-                                            className="w-full sm:flex-1 p-2 border border-[var(--border-color)] rounded-md text-xs sm:text-sm outline-none bg-white text-[var(--text-primary)]"
+                                            className="w-full sm:flex-1 p-2 border border-[var(--border-color)] rounded-md text-xs sm:text-sm outline-none bg-white text-[var(--text-primary)] min-w-0 truncate"
                                             value={selectedBankId || ''}
                                             onChange={e => setSelectedBankId(e.target.value)}
                                         >
@@ -451,7 +481,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
                                     </div>
                                 )}
                                 {qrUrl && (
-                                    <div className="w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] bg-white rounded-lg border border-[var(--border-color)] p-2 shadow-sm shrink-0">
+                                    <div className="w-[190px] h-[190px] sm:w-[230px] sm:h-[230px] bg-white rounded-lg border border-[var(--border-color)] p-2 shadow-sm shrink-0">
                                         <img
                                             src={qrUrl}
                                             alt="Mã QR chuyển khoản"
@@ -460,27 +490,27 @@ export default function Pay({ _id, courseId = null, status = false }) {
                                     </div>
                                 )}
                                 {selectedBank && (
-                                    <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm leading-relaxed text-blue-900 break-words">
-                                        <p>Ngân hàng: <span className="font-semibold">{getBankInfo(selectedBank.bankName).name}</span></p>
-                                        <p>Số TK: <span className="font-semibold">{selectedBank.accountNumber}</span></p>
-                                        <p>Chủ TK: <span className="font-semibold">{selectedBank.accountName}</span></p>
-                                        <div className="border-t border-blue-200 mt-2 pt-2 text-center">
+                                    <div className="w-full bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm leading-relaxed text-blue-900 break-words min-w-0 space-y-1">
+                                        <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-blue-700 shrink-0">Ngân hàng:</span> <span className="font-semibold text-right break-words min-w-0 flex-1">{getBankInfo(selectedBank.bankName).name}</span></p>
+                                        <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-blue-700 shrink-0">Số TK:</span> <span className="font-semibold text-right font-mono">{selectedBank.accountNumber}</span></p>
+                                        <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-blue-700 shrink-0">Chủ TK:</span> <span className="font-semibold text-right break-words min-w-0 flex-1">{selectedBank.accountName}</span></p>
+                                        <div className="border-t border-blue-200 mt-2 pt-2 text-center min-w-0">
                                             <p className="text-[11px] sm:text-xs text-blue-700 mb-1">Nội dung chuyển khoản</p>
                                             <p className="font-bold text-xs sm:text-sm tracking-wide break-all text-blue-950 bg-blue-100/70 p-1.5 rounded select-all">{qrInfo.content}</p>
                                         </div>
                                     </div>
                                 )}
-                                <div className="w-full bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs sm:text-sm leading-relaxed text-gray-700 break-words">
-                                    <p className='font-semibold text-sm sm:text-base text-gray-900'>{qrInfo.studentName}</p>
-                                    <p className='text-[var(--text-secondary)]'>Mã HS: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.studentId}</span></p>
-                                    <p className='text-[var(--text-secondary)]'>Khóa học: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.courseName}</span></p>
-                                    <p className='text-[var(--text-secondary)]'>Mã HĐ: <span className='font-medium text-[var(--text-primary)]'>{qrInfo.invoiceId.slice(-8).toUpperCase()}</span></p>
+                                <div className="w-full bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs sm:text-sm leading-relaxed text-gray-700 break-words min-w-0 space-y-1">
+                                    <p className='font-semibold text-sm sm:text-base text-gray-900 break-words'>{qrInfo.studentName}</p>
+                                    <p className='text-[var(--text-secondary)] flex justify-between items-start gap-2 min-w-0'><span>Mã HS:</span> <span className='font-medium text-[var(--text-primary)] font-mono'>{qrInfo.studentId}</span></p>
+                                    <p className='text-[var(--text-secondary)] flex justify-between items-start gap-2 min-w-0'><span>Khóa học:</span> <span className='font-medium text-[var(--text-primary)] break-words text-right min-w-0 flex-1'>{qrInfo.courseName}</span></p>
+                                    <p className='text-[var(--text-secondary)] flex justify-between items-start gap-2 min-w-0'><span>Mã HĐ:</span> <span className='font-medium text-[var(--text-primary)] font-mono'>{qrInfo.invoiceId.slice(-8).toUpperCase()}</span></p>
                                 </div>
-                                <div className="text-center w-full">
+                                <div className="text-center w-full min-w-0">
                                     <p className='text-xs text-[var(--text-secondary)] mb-0.5'>Thành tiền</p>
-                                    <p className="text-lg sm:text-2xl font-extrabold text-[var(--red)]">{formatCurrencyVN(qrInfo.amount)}</p>
+                                    <p className="text-lg sm:text-2xl font-extrabold text-[var(--red)] truncate">{formatCurrencyVN(qrInfo.amount)}</p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full min-w-0">
                                     <button
                                         className='flex-1 px-3 py-2.5 bg-[var(--green)] flex items-center justify-center gap-2 rounded-lg text-white text-xs sm:text-sm font-medium cursor-pointer hover:opacity-90 border-none'
                                         onClick={handleConfirmPayment}
@@ -508,8 +538,8 @@ export default function Pay({ _id, courseId = null, status = false }) {
                 ) : invoiceState.error ? (
                     <>
                         <Title content='Lỗi' click={handleCloseDetail} />
-                        <div className="p-6 sm:p-8 text-center">
-                            <p className='text-xs sm:text-sm font-medium text-[var(--red)]'>{invoiceState.error}</p>
+                        <div className="p-6 sm:p-8 text-center min-w-0">
+                            <p className='text-xs sm:text-sm font-medium text-[var(--red)] break-words'>{invoiceState.error}</p>
                         </div>
                     </>
                 ) : invoiceState.data ? (
@@ -521,17 +551,17 @@ export default function Pay({ _id, courseId = null, status = false }) {
                         return (
                             <>
                                 <Title content='Hóa đơn thanh toán' click={handleCloseDetail} />
-                                <div className="p-3 sm:p-6 md:p-8 text-xs sm:text-sm leading-relaxed max-h-[calc(90vh-80px)] overflow-y-auto">
+                                <div className="p-3 sm:p-6 md:p-8 text-xs sm:text-sm leading-relaxed max-h-[calc(90vh-80px)] overflow-y-auto overflow-x-hidden min-w-0 break-words">
                                     {/* Header */}
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pb-3 sm:pb-4 border-b-2 border-[var(--main_d)]">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pb-3 sm:pb-4 border-b-2 border-[var(--main_d)] min-w-0">
+                                        <div className="flex items-center gap-3 min-w-0">
                                             <div className="text-2xl sm:text-3xl font-extrabold tracking-wider shrink-0">
                                                 <span className="text-black">AI</span>
                                                 <span className="text-blue-600"> ROBOTIC</span>
                                             </div>
                                             <div className="border-l-2 border-[var(--border-color)] pl-3 min-w-0">
-                                                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] font-medium leading-tight">CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
-                                                <p className="text-[11px] sm:text-xs text-blue-600 italic font-medium mt-0.5">"Learn AI - Grasp your future"</p>
+                                                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] font-medium leading-tight truncate">CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
+                                                <p className="text-[11px] sm:text-xs text-blue-600 italic font-medium mt-0.5 truncate">"Learn AI - Grasp your future"</p>
                                             </div>
                                         </div>
                                         <div className="text-left sm:text-right text-xs text-[var(--text-secondary)] shrink-0">
@@ -540,54 +570,54 @@ export default function Pay({ _id, courseId = null, status = false }) {
                                     </div>
 
                                     {/* Address */}
-                                    <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] pt-2 pb-3 sm:pb-4 break-words">Địa chỉ: {COMPANY.address}</p>
+                                    <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] pt-2 pb-3 sm:pb-4 break-words leading-relaxed">Địa chỉ: {COMPANY.address}</p>
 
                                     {/* Title */}
                                     <h2 className="text-center text-xl sm:text-2xl md:text-3xl font-extrabold my-3 sm:my-4 text-[var(--text-primary)] tracking-wide">HÓA ĐƠN THANH TOÁN</h2>
                                     <p className="text-center text-xs text-[var(--text-secondary)] mb-4 sm:mb-6 break-words">Mã HĐ: {inv._id.slice(-12).toUpperCase()}  |  Ngày: {date}</p>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5 min-w-0">
                                         {/* Student & Course Info */}
-                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white">
+                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white min-w-0">
                                             <div className="px-3.5 py-2 bg-[var(--main_d)] text-white font-semibold text-xs sm:text-sm">
                                                 📋 THÔNG TIN HỌC SINH & KHÓA HỌC
                                             </div>
-                                            <div className="p-3.5 sm:p-4 text-xs sm:text-sm space-y-2 flex-1 break-words">
-                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Họ tên:</span> <span className="font-semibold text-right">{inv.studentId?.Name || '—'}</span></p>
-                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Mã HS:</span> <span className="font-semibold text-right">{inv.studentId?.ID || '—'}</span></p>
-                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Khóa học:</span> <span className="font-semibold text-right">{inv.courseId?.ID || '—'}</span></p>
-                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Chương trình:</span> <span className="font-semibold text-right">{inv.courseId?.Book?.Name || '—'}</span></p>
-                                                <p className="flex justify-between gap-2"><span className="text-[var(--text-secondary)] shrink-0">Số buổi học:</span> <span className="font-semibold text-right">{sessions} buổi</span></p>
+                                            <div className="p-3.5 sm:p-4 text-xs sm:text-sm space-y-2 flex-1 break-words min-w-0">
+                                                <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-[var(--text-secondary)] shrink-0">Họ tên:</span> <span className="font-semibold text-right break-words min-w-0 flex-1">{inv.studentId?.Name || '—'}</span></p>
+                                                <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-[var(--text-secondary)] shrink-0">Mã HS:</span> <span className="font-semibold text-right font-mono">{inv.studentId?.ID || '—'}</span></p>
+                                                <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-[var(--text-secondary)] shrink-0">Khóa học:</span> <span className="font-semibold text-right break-words min-w-0 flex-1">{inv.courseId?.ID || '—'}</span></p>
+                                                <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-[var(--text-secondary)] shrink-0">Chương trình:</span> <span className="font-semibold text-right break-words min-w-0 flex-1">{inv.courseId?.Book?.Name || '—'}</span></p>
+                                                <p className="flex justify-between items-start gap-2 min-w-0"><span className="text-[var(--text-secondary)] shrink-0">Số buổi học:</span> <span className="font-semibold text-right">{sessions} buổi</span></p>
                                             </div>
                                         </div>
 
                                         {/* Payment Content */}
-                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white">
+                                        <div className="border border-[var(--border-color)] rounded-lg overflow-hidden flex flex-col bg-white min-w-0">
                                             <div className="px-3.5 py-2 bg-[var(--main_d)] text-white font-semibold text-xs sm:text-sm">
                                                 💳 NỘI DUNG THANH TOÁN
                                             </div>
-                                            <div className="flex flex-col flex-1">
-                                                <div className="p-3.5 sm:p-4 space-y-2 text-xs sm:text-sm">
-                                                    <div className="flex justify-between items-start gap-2">
-                                                        <span className="text-gray-700 break-words flex-1">Học phí khóa học {inv.courseId?.ID || ''}</span>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <div className="p-3.5 sm:p-4 space-y-2 text-xs sm:text-sm min-w-0">
+                                                    <div className="flex justify-between items-start gap-2 min-w-0">
+                                                        <span className="text-gray-700 break-words flex-1 min-w-0">Học phí khóa học {inv.courseId?.ID || ''}</span>
                                                         <span className="font-medium text-right shrink-0 whitespace-nowrap">{formatCurrencyVN(inv.amountInitial || 0)}</span>
                                                     </div>
                                                     {inv.discount > 0 && (
-                                                        <div className="flex justify-between items-center gap-2 text-green-600">
+                                                        <div className="flex justify-between items-center gap-2 text-green-600 min-w-0">
                                                             <span>Giảm giá ({inv.discount}%)</span>
                                                             <span className="font-medium text-right shrink-0 whitespace-nowrap">-{formatCurrencyVN(discountAmount)}</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="mt-auto">
-                                                    <div className="px-3.5 py-2.5 border-t-2 border-[var(--main_d)] bg-gray-50 flex justify-between items-center font-bold text-sm sm:text-base">
+                                                <div className="mt-auto min-w-0">
+                                                    <div className="px-3.5 py-2.5 border-t-2 border-[var(--main_d)] bg-gray-50 flex justify-between items-center font-bold text-sm sm:text-base min-w-0">
                                                         <span>TỔNG CỘNG</span>
-                                                        <span className="text-[var(--red)] text-base sm:text-lg">{formatCurrencyVN(inv.amountPaid || 0)}</span>
+                                                        <span className="text-[var(--red)] text-base sm:text-lg shrink-0 whitespace-nowrap">{formatCurrencyVN(inv.amountPaid || 0)}</span>
                                                     </div>
-                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs text-[var(--text-secondary)] italic break-words">
-                                                        Bằng chữ: <span className="font-medium text-[var(--text-primary)] not-italic">{numberToWords(inv.amountPaid || 0)}</span>
+                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs text-[var(--text-secondary)] italic break-words leading-relaxed min-w-0">
+                                                        Bằng chữ: <span className="font-medium text-[var(--text-primary)] not-italic break-words">{numberToWords(inv.amountPaid || 0)}</span>
                                                     </div>
-                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs sm:text-sm bg-blue-50/60 flex justify-between items-center">
+                                                    <div className="px-3.5 py-2 border-t border-[var(--border-color)] text-xs sm:text-sm bg-blue-50/60 flex justify-between items-center min-w-0">
                                                         <span>💳 Hình thức:</span>
                                                         <span className="font-semibold text-blue-900">{PAYMENT_METHODS[inv.paymentMethod] || '—'}</span>
                                                     </div>
@@ -597,7 +627,7 @@ export default function Pay({ _id, courseId = null, status = false }) {
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="border-t border-[var(--border-color)] pt-3 sm:pt-4 text-center text-xs text-[var(--text-secondary)] space-y-1">
+                                    <div className="border-t border-[var(--border-color)] pt-3 sm:pt-4 text-center text-xs text-[var(--text-secondary)] space-y-1 min-w-0">
                                         <p className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">CÔNG TY TNHH GIÁO DỤC AI ROBOTIC</p>
                                         <p>Hotline: <span className="font-semibold text-[var(--main_d)]">{COMPANY.hotline}</span></p>
                                         <p className="font-medium italic text-blue-600 pt-1">Trân trọng cảm ơn Quý phụ huynh đã tin tưởng đồng hành cùng AI ROBOTIC!</p>

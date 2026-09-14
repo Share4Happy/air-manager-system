@@ -14,7 +14,8 @@ export default function Menu({
     isOpen: controlledIsOpen,
     onOpenChange,
     customButton,
-    style
+    style,
+    className = '',
 }) {
     if(style && typeof style !== 'object') {
         style = {};
@@ -93,7 +94,7 @@ export default function Menu({
 
     return (
 
-        <div className='relative inline-block w-full cursor-pointer whitespace-nowrap' ref={containerRef} style={style}>
+        <div className={`relative inline-block cursor-pointer whitespace-nowrap ${className ? className : 'w-full'}`} ref={containerRef} style={style}>
 
             {renderButton}
 

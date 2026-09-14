@@ -1,5 +1,13 @@
 'use client';
+
 import { useState, Suspense, useMemo } from 'react';
+import Tabs from '@/components/(ui)/(tabs)';
+
+const CLIENT_TABS = [
+    { id: 'lesson-cancel', label: 'Chăm sóc lớp học' },
+    { id: 'care', label: 'Chăm sóc' },
+    { id: 'zalo-config', label: 'Cấu hình Zalo' },
+];
 import CustomerTable from './ui/table';
 import FilterControls from "./ui/filter";
 import SettingLabel from "./ui/label";
@@ -43,35 +51,20 @@ export default function CustomerView({ c, running, initialResult, user, sources,
     }, [running]);
     return (
         <div className={'flex flex-col gap-3 mx-auto h-full'}>
-            <div className="flex gap-1 bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-1 w-fit flex-wrap">
-                <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'lesson-cancel' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
-                    onClick={() => setActiveTab('lesson-cancel')}
-                >
-                    Chăm sóc lớp học
-                </button>
-                <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'care' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
-                    onClick={() => setActiveTab('care')}
-                >
-                    Chăm sóc
-                </button>
-                <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'zalo-config' ? 'bg-[var(--main_d)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'}`}
-                    onClick={() => setActiveTab('zalo-config')}
-                >
-                    Cấu hình Zalo
-                </button>
-            </div>
+            <Tabs
+                tabs={CLIENT_TABS}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
             {activeTab === 'care' ? (
                 <>
                     {viewMode === 'manage' && (
                         <>
                             <div className={'bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)]'}>
-                                <div className={'flex justify-between items-center p-3 border-b border-[var(--border-color)]'}>
+                                <div className={'flex justify-between items-center p-3 border-b border-[var(--border-color)] flex-wrap gap-2'}>
                                     <h5 className="font-semibold text-[var(--text-primary)]">Quản lý chăm sóc</h5>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap items-center">
                                         <ActionHistory history={historySchedules} />
                                         <SettingZaloRoles data={zaloData} allUsers={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')} />
                                         <SettingVariant data={variant} />
@@ -93,10 +86,13 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                                     )}
                                 </div>
                             </div>
-                            <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-3">
-                                <h5 className="font-semibold text-[var(--text-primary)] mb-3">Bộ lọc</h5>
-                                <FilterControls zaloAccounts={zaloData} users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')} labels={labelData} sources={sources} areas={['Biên Hòa', 'Long Khánh', 'Long Thành', 'TP HCM', 'Khác']} />
-                            </div>
+                            <FilterControls
+                                zaloAccounts={zaloData}
+                                users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')}
+                                labels={labelData}
+                                sources={sources}
+                                areas={['Biên Hòa', 'Long Khánh', 'Long Thành', 'TP HCM', 'Khác']}
+                            />
                         </>
                     )}
                     <div className="flex-1">

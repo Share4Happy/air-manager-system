@@ -8,6 +8,7 @@ import CenterPopup from '@/components/(features)/(popup)/popup_center';
 import Noti from '@/components/(features)/(noti)/noti';
 import Title from '@/components/(features)/(popup)/title';
 import Menu from '@/components/(ui)/(button)/menu';
+import Toolbar from '@/components/(ui)/(toolbar)';
 import { Svg_Add, Svg_Delete } from '@/components/(icon)/svg';
 import Image from 'next/image';
 import { defaultAvatarUrl } from '@/function';
@@ -296,6 +297,7 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
     const [savingProxy, setSavingProxy] = useState(false);
     const [search, setSearch] = useState('');
     const [proxyFilter, setProxyFilter] = useState('all'); // 'all', 'has', 'none'
+    const [showFilters, setShowFilters] = useState(false);
     const [notification, setNotification] = useState({ open: false, status: true, mes: '' });
 
     const [updateState, updateAction] = useActionState(updateZaloRolesAction, { message: null, status: null });
@@ -376,39 +378,29 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
     const saleUsers = allUsers.filter(u => u.role?.[0] === 'Sale' || u.role?.[0] === 'Admin' || u.role?.includes('Sale') || u.role?.includes('Admin'));
 
     return (
-        <div className="flex flex-col gap-4 flex-1">
+        <div className="flex flex-col gap-3 flex-1">
             {/* Top Sub-navigation Bar */}
             <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex gap-1 bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-1">
+                <div className="flex gap-1 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] p-1 overflow-x-auto scrollbar-none max-w-full shrink-0 shadow-xs">
                     <button
                         onClick={() => setSubTab('proxy')}
-                        className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border-none whitespace-nowrap shrink-0 ${
                             subTab === 'proxy'
                                 ? 'bg-[var(--main_d)] text-white shadow-xs'
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)] bg-transparent'
                         }`}
                     >
                         Zalo Proxy ({zaloData.filter(a => a.proxy).length}/{zaloData.length})
                     </button>
                     <button
                         onClick={() => setSubTab('zalolite')}
-                        className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border-none whitespace-nowrap shrink-0 ${
                             subTab === 'zalolite'
                                 ? 'bg-[var(--main_d)] text-white shadow-xs'
-                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)] bg-transparent'
                         }`}
                     >
                         ZaloLite Gateway
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowAddForm(true)}
-                        className="px-3.5 py-1.5 bg-[var(--main_d)] hover:bg-[var(--main_b)] flex items-center gap-1.5 rounded text-white text-xs font-medium cursor-pointer border-none shadow-xs transition-colors"
-                    >
-                        <Svg_Add w="12" h="12" c="white" />
-                        <span>Thêm tài khoản Bot ID</span>
                     </button>
                 </div>
             </div>
@@ -420,43 +412,77 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
 
             {/* Zalo Proxy & Accounts Section */}
             {subTab === 'proxy' && (
-                <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[var(--border-color)]">
-                        <div>
+                <div className="flex flex-col gap-3">
+                    <Toolbar
+                        searchPlaceholder="Tìm theo tên, SĐT, UID, Proxy..."
+                        search={search}
+                        onSearchChange={setSearch}
+                        showFilters={showFilters}
+                        onToggleFilters={() => setShowFilters(p => !p)}
+                        hasActiveFilters={proxyFilter !== 'all'}
+                        hasFilters={true}
+                        mobileActions={
+                            <button
+                                onClick={() => setShowAddForm(true)}
+                                className="w-9 h-9 bg-[var(--main_d)] hover:bg-[var(--main_b)] flex items-center justify-center rounded-lg text-white text-xs font-medium cursor-pointer border-none shadow-xs transition-colors shrink-0"
+                                title="Thêm tài khoản Bot ID"
+                            >
+                                <Svg_Add w="14" h="14" c="white" />
+                            </button>
+                        }
+                        desktopActions={
+                            <div className="flex items-center gap-2">
+                                <select
+                                    value={proxyFilter}
+                                    onChange={e => setProxyFilter(e.target.value)}
+                                    className="h-9 px-2.5 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 cursor-pointer focus:border-[var(--main_d)] shrink-0"
+                                >
+                                    <option value="all">Tất cả tài khoản ({zaloData.length})</option>
+                                    <option value="has">Đã có Proxy ({zaloData.filter(a => a.proxy).length})</option>
+                                    <option value="none">Chưa có Proxy ({zaloData.filter(a => !a.proxy).length})</option>
+                                </select>
+                                <button
+                                    onClick={() => setShowAddForm(true)}
+                                    className="h-9 px-3.5 bg-[var(--main_d)] hover:bg-[var(--main_b)] flex items-center gap-1.5 rounded-lg text-white text-xs font-medium cursor-pointer border-none shadow-xs transition-colors whitespace-nowrap shrink-0"
+                                >
+                                    <Svg_Add w="12" h="12" c="white" />
+                                    <span>Thêm tài khoản Bot ID</span>
+                                </button>
+                            </div>
+                        }
+                        mobileFilters={
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-medium text-[var(--text-secondary)]">Lọc theo proxy:</label>
+                                <select
+                                    value={proxyFilter}
+                                    onChange={e => setProxyFilter(e.target.value)}
+                                    className="w-full h-9 px-3 border border-gray-300 rounded-lg bg-white text-xs outline-none text-gray-700 cursor-pointer focus:border-[var(--main_d)]"
+                                >
+                                    <option value="all">Tất cả tài khoản ({zaloData.length})</option>
+                                    <option value="has">Đã có Proxy ({zaloData.filter(a => a.proxy).length})</option>
+                                    <option value="none">Chưa có Proxy ({zaloData.filter(a => !a.proxy).length})</option>
+                                </select>
+                            </div>
+                        }
+                    />
+
+                    <div className="bg-[var(--bg-primary)] rounded-md border border-[var(--border-color)] p-4 flex flex-col gap-3">
+                        <div className="pb-2 border-b border-[var(--border-color)]">
                             <h5 className="font-semibold text-sm text-[var(--text-primary)]">
-                                Danh sách tài khoản Zalo & Cấu hình Proxy
+                                Danh sách tài khoản Zalo ({filteredAccounts.length})
                             </h5>
                             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                                 Quản lý địa chỉ Proxy, trạng thái kết nối và phân quyền nhân viên sử dụng từng tài khoản Zalo.
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <input
-                                type="text"
-                                placeholder="Tìm theo tên, SĐT, UID, Proxy..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                className="px-3 py-1.5 border border-gray-300 rounded bg-white text-xs outline-none text-gray-700 w-56 focus:border-[var(--main_d)]"
-                            />
-                            <select
-                                value={proxyFilter}
-                                onChange={e => setProxyFilter(e.target.value)}
-                                className="px-2.5 py-1.5 border border-gray-300 rounded bg-white text-xs outline-none text-gray-700 cursor-pointer focus:border-[var(--main_d)]"
-                            >
-                                <option value="all">Tất cả tài khoản ({zaloData.length})</option>
-                                <option value="has">Đã có Proxy ({zaloData.filter(a => a.proxy).length})</option>
-                                <option value="none">Chưa có Proxy ({zaloData.filter(a => !a.proxy).length})</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {filteredAccounts.length === 0 ? (
-                        <div className="text-center py-10 text-xs text-[var(--text-secondary)] italic">
-                            {search || proxyFilter !== 'all' ? 'Không tìm thấy tài khoản phù hợp với bộ lọc.' : 'Chưa có tài khoản Zalo nào.'}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {filteredAccounts.map(acc => {
+                        {filteredAccounts.length === 0 ? (
+                            <div className="text-center py-10 text-xs text-[var(--text-secondary)] italic">
+                                {search || proxyFilter !== 'all' ? 'Không tìm thấy tài khoản phù hợp với bộ lọc.' : 'Chưa có tài khoản Zalo nào.'}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {filteredAccounts.map(acc => {
                                 const isEditing = editingProxy?._id === acc._id;
                                 const hasProxy = !!acc.proxy;
                                 const roleCount = acc.roles?.length || 0;
@@ -580,6 +606,7 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
                         </div>
                     )}
                 </div>
+            </div>
             )}
 
             {/* Add account modal */}

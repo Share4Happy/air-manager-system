@@ -88,28 +88,28 @@ export default function SettingZalo({ user, zalo = [] }) {
             {currentZalo ? (
                 <div
                     onClick={() => setIsRightPopupOpen(true)}
-                    className="flex items-center gap-2.5 px-3 py-1.5 rounded bg-white border border-[var(--border-color)] hover:bg-[var(--hover)] cursor-pointer transition-all shadow-xs"
+                    className="h-9 flex items-center gap-2 px-2.5 rounded-lg bg-white border border-gray-300 hover:bg-[var(--hover)] cursor-pointer transition-all shadow-2xs shrink-0"
                     title="Nhấn để đổi tài khoản Zalo"
                 >
                     <Image
                         src={currentZalo.avt || defaultAvatarUrl()}
                         alt={currentZalo.name}
-                        width={28}
-                        height={28}
-                        className="w-7 h-7 rounded-full object-cover shrink-0 border border-gray-200"
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 rounded-full object-cover shrink-0 border border-gray-200"
                     />
-                    <div className="flex flex-col text-left">
+                    <div className="flex flex-col text-left justify-center">
                         <div className="flex items-center gap-1.5">
                             <h5 className="font-semibold text-xs leading-tight max-w-[120px] truncate">
                                 {currentZalo.name}
                             </h5>
-                            <span className="w-2 h-2 rounded-full bg-[var(--green)] shrink-0"></span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] shrink-0"></span>
                         </div>
-                        <p className="text-[11px] text-[var(--text-secondary)] leading-tight">
+                        <p className="text-[10px] text-[var(--text-secondary)] leading-none">
                             {currentZalo.phone || 'Đang kết nối'}
                         </p>
                     </div>
-                    <span className="text-xs text-[var(--text-secondary)] ml-1 pl-2 border-l border-[var(--border-color)] font-medium">
+                    <span className="text-xs text-[var(--text-secondary)] ml-1 pl-1.5 border-l border-gray-200 font-medium">
                         Đổi
                     </span>
                 </div>
@@ -117,10 +117,10 @@ export default function SettingZalo({ user, zalo = [] }) {
                 <button
                     type="button"
                     onClick={() => setIsRightPopupOpen(true)}
-                    className="px-3 py-2 rounded bg-gray-200 flex items-center gap-2 justify-center cursor-pointer border-none transition-all duration-200 hover:bg-gray-100"
+                    className="h-9 px-3 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-300 flex items-center gap-2 justify-center cursor-pointer text-xs font-medium text-[var(--text-primary)] transition-all whitespace-nowrap shrink-0"
                 >
                     <Svg_Setting w={'var(--font-size-sm)'} h={'var(--font-size-sm)'} c={'var(--text-primary)'} />
-                    <h5 className="font-normal">Chọn tài khoản Zalo</h5>
+                    <span>Chọn tài khoản Zalo</span>
                 </button>
             )}
 
