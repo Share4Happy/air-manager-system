@@ -153,7 +153,9 @@ const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
                     const response = await fetch(`/api/image?id=${imageInfo.id}`, { method: 'DELETE' });
                     const result = await response.json();
 
-                    result.data.forEach(element => Re_lesson(element));
+                    if (Array.isArray(result?.data)) {
+                        result.data.forEach(element => Re_lesson(element));
+                    }
 
                     if (response.ok && result.status === 2) {
                         showNoti(true, result.mes);

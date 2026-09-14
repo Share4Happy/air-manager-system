@@ -5,6 +5,8 @@ import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 import { compressVideoToHD } from '@/function/compress';
+import { reloadCourse, reloadCoursetry } from '@/data/actions/reload';
+import { revalidateTag } from 'next/cache';
 
 
 
@@ -272,22 +274,88 @@ export async function DELETE(request) {
         const Session = (await import('@/models/session')).default;
         const Attendance = (await import('@/models/attendance')).default;
 
+        // Thu thập thông tin các session/khóa học bị ảnh hưởng trước khi xóa
+        const [affectedSessions, affectedCourses] = await Promise.all([
+            Session.find({ 'detailImage.id': id }, { _id: 1, course: 1 }).lean().catch(() => []),
+            PostCourse.find(
+                { $or: [{ 'Detail.DetailImage.id': id }, { 'Student.Learn.Image.id': id }] },
+                { _id: 1, ID: 1, 'Detail._id': 1, 'Detail.DetailImage': 1 }
+            ).lean().catch(() => [])
+        ]);
+
+        const affectedSessionIds = [];
+        (affectedSessions || []).forEach(s => {
+            if (s._id) affectedSessionIds.push(String(s._id));
+        });
+        (affectedCourses || []).forEach(c => {
+            (c.Detail || []).forEach(d => {
+                if (d.DetailImage?.some(img => img.id === id) && d._id) {
+                    affectedSessionIds.push(String(d._id));
+                }
+            });
+        });
+
         await Promise.all([
-            Session.updateMany({}, { $pull: { detailImage: { id: id } } }),
-            Attendance.updateMany({}, { $pull: { images: { id: id } } }),
-            PostCourse.updateMany({}, { $pull: { 'Detail.$[].DetailImage': { id: id }, 'Student.$[].Learn.$[].Image': { id: id } } }).catch(err => console.error('PostCourse.updateMany pull error:', err.message)),
-            TrialCourse.updateMany({}, { $pull: { 'sessions.$[].images': { id: id }, 'sessions.$[].students.$[].images': { id: id } } }).catch(err => console.error('TrialCourse.updateMany pull error:', err.message))
+            // 1. Xóa trong Session (LMS Chuẩn mới)
+            Session.updateMany(
+                { 'detailImage.id': id },
+                { $pull: { detailImage: { id: id } } }
+            ).catch(err => console.error('Session pull detailImage error in updateimage DELETE:', err.message)),
+
+            // 2. Xóa trong Attendance (LMS Chuẩn mới)
+            Attendance.updateMany(
+                { 'images.id': id },
+                { $pull: { images: { id: id } } }
+            ).catch(err => console.error('Attendance pull images error in updateimage DELETE:', err.message)),
+
+            // 3. Xóa trong PostCourse.Detail.DetailImage (Khóa học chính thức)
+            PostCourse.updateMany(
+                { 'Detail.DetailImage.id': id },
+                { $pull: { 'Detail.$[].DetailImage': { id: id } } }
+            ).catch(err => console.error('PostCourse pull DetailImage error in updateimage DELETE:', err.message)),
+
+            // 4. Xóa trong PostCourse.Student.Learn.Image (Khóa học chính thức)
+            PostCourse.updateMany(
+                { 'Student.Learn.Image.id': id },
+                { $pull: { 'Student.$[stu].Learn.$[les].Image': { id: id } } },
+                { arrayFilters: [{ 'stu.Learn.Image.id': id }, { 'les.Image.id': id }] }
+            ).catch(err => console.error('PostCourse pull Student.Learn.Image error in updateimage DELETE:', err.message)),
+
+            // 5. Xóa trong TrialCourse (Khóa học thử)
+            TrialCourse.updateMany(
+                { 'sessions.images.id': id },
+                { $pull: { 'sessions.$[].images': { id: id } } }
+            ).catch(err => console.error('TrialCourse pull images error in updateimage DELETE:', err.message)),
+
+            // 6. Xóa trong TrialCourse học sinh
+            TrialCourse.updateMany(
+                { 'sessions.students.images.id': id },
+                { $pull: { 'sessions.$[ses].students.$[stu].images': { id: id } } },
+                { arrayFilters: [{ 'ses.students.images.id': id }, { 'stu.images.id': id }] }
+            ).catch(err => console.error('TrialCourse pull student images error in updateimage DELETE:', err.message))
         ]);
 
         try {
             await drive.files.delete({ fileId: id, supportsAllDrives: true });
         } catch (driveError) {
-            console.warn(`Đã xóa file ${id} khỏi DB, nhưng không thể xóa khỏi Drive:`, driveError.message);
+            console.warn(`Đã xóa file ${id} khỏi DB, Google Drive cảnh báo:`, driveError.message);
         }
 
-        return NextResponse.json({ status: 2, mes: 'Xóa file thành công.' }, { status: 200 });
+        // Revalidate cache
+        const uniqueSessionIds = Array.from(new Set(affectedSessionIds));
+        uniqueSessionIds.forEach(sesId => {
+            try { revalidateTag(`data_lesson${sesId}`, 'max'); } catch {}
+        });
+        (affectedCourses || []).forEach(c => {
+            if (c._id) reloadCourse(c._id, c.ID);
+        });
+        revalidateTag('courses', 'max');
+        revalidateTag('data_coursetry', 'max');
+        await reloadCoursetry();
+
+        return NextResponse.json({ status: 2, mes: 'Xóa file thành công.', data: uniqueSessionIds }, { status: 200 });
     } catch (error) {
-        console.error('Lỗi API [DELETE]:', error);
+        console.error('Lỗi API [DELETE /api/updateimage]:', error);
         return NextResponse.json({ status: 1, mes: error.message || 'Lỗi server.' }, { status: 500 });
     }
 }
