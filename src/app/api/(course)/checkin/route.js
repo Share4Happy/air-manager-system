@@ -113,11 +113,28 @@ export async function POST(req) {
         }
 
         if (Object.keys(updateCourseFields).length > 0) {
-          await PostCourse.updateOne(
+          const upRes = await PostCourse.updateOne(
             { _id: course._id },
             { $set: updateCourseFields },
             { arrayFilters: [{ 'stu.ID': a.studentId }, { 'les.Lesson': sessionIdObj }] }
-          ).catch(err => console.error('PostCourse.updateOne error in checkin:', err.message))
+          ).catch(err => ({ modifiedCount: 0 }));
+
+          if (upRes?.modifiedCount === 0) {
+            // Nếu học sinh chưa có mục Learn cho buổi học này trong PostCourse, tự động thêm vào
+            const newLearnItem = {
+              Lesson: sessionIdObj,
+              Checkin: checkinNum !== undefined && !isNaN(checkinNum) ? checkinNum : 0,
+              Cmt: a.comment || [],
+              CmtFn: a.cmtFn || '',
+              absenceReason: a.absenceReason || '',
+              Note: a.note || '',
+              Image: []
+            };
+            await PostCourse.updateOne(
+              { _id: course._id, 'Student.ID': a.studentId },
+              { $push: { 'Student.$.Learn': newLearnItem } }
+            ).catch(err => console.error('PostCourse push Learn error in checkin:', err.message));
+          }
         }
       }
 

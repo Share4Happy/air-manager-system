@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { IconClose } from '@/app/events/ui/icons';
 
 /**
- * EventModal - Generic modal dialog wrapper with backdrop, header, body and footer
+ * EventModal - Unified modal dialog wrapper with backdrop, header, body and footer
  * 
  * @param {boolean} isOpen - Whether modal is visible
  * @param {Function} onClose - Close handler
@@ -26,7 +26,7 @@ export default function EventModal({
     children,
     footer,
     onSubmit,
-    submitLabel = 'Lưu',
+    submitLabel = 'Lưu thông tin',
     cancelLabel = 'Hủy',
     loading = false,
     submitDisabled = false,
@@ -51,7 +51,7 @@ export default function EventModal({
         if (hideFooter) return null;
         if (footer !== undefined) {
             return footer ? (
-                <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-3 shrink-0">
+                <div className="px-5 py-3.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-2.5 shrink-0">
                     {footer}
                 </div>
             ) : null;
@@ -59,12 +59,12 @@ export default function EventModal({
 
         // Default footer when onSubmit or submitLabel is present
         return (
-            <div className="p-4 sm:p-5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-3 shrink-0">
+            <div className="px-5 py-3.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/50 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                     type="button"
                     onClick={onClose}
                     disabled={loading}
-                    className="px-4 py-2 rounded-xl text-sm sm:text-base font-semibold border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors bg-transparent cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--border-color)] bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-colors cursor-pointer disabled:opacity-50"
                 >
                     {cancelLabel}
                 </button>
@@ -72,10 +72,10 @@ export default function EventModal({
                     <button
                         type="submit"
                         disabled={loading || submitDisabled}
-                        className="px-5 py-2 rounded-xl text-sm sm:text-base font-semibold bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {loading && (
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
                         )}
                         <span>{submitLabel}</span>
                     </button>
@@ -85,29 +85,29 @@ export default function EventModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
             <div
                 className={`w-full ${maxWidth} bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-4 sm:p-5 border-b border-[var(--border-color)] flex items-center justify-between gap-3 bg-[var(--bg-secondary)]/50 shrink-0">
-                    <div className="flex items-center gap-3">
+                <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between gap-3 bg-[var(--bg-secondary)]/40 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
                         {Icon && (
                             typeof Icon === 'function' ? (
-                                <span className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-900 shrink-0">
-                                    <Icon className="w-5 h-5" />
+                                <span className="w-9 h-9 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                    <Icon className="w-4.5 h-4.5" />
                                 </span>
                             ) : (
                                 Icon
                             )
                         )}
-                        <div>
-                            <h3 className="font-bold text-base sm:text-lg text-[var(--text-primary)]">
+                        <div className="min-w-0">
+                            <h3 className="font-bold text-sm sm:text-base text-[var(--text-primary)] leading-snug truncate">
                                 {title}
                             </h3>
                             {subtitle && (
-                                <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
+                                <p className="text-xs text-[var(--text-secondary)] mt-0.5 truncate">
                                     {subtitle}
                                 </p>
                             )}
@@ -116,16 +116,16 @@ export default function EventModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border-none bg-transparent cursor-pointer transition-colors shrink-0"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] cursor-pointer transition-colors shrink-0"
                     >
-                        <IconClose className="w-4 h-4" />
+                        <IconClose className="w-3.5 h-3.5" />
                     </button>
                 </div>
 
                 {/* Form or Div Body */}
                 <ContentWrapper {...wrapperProps} className="flex flex-col flex-1 overflow-hidden">
                     {/* Scrollable Body Content */}
-                    <div className={`p-4 sm:p-6 overflow-y-auto flex flex-col gap-4 text-sm sm:text-base flex-1 ${bodyClassName}`}>
+                    <div className={`p-4 sm:p-5 overflow-y-auto flex flex-col gap-3.5 text-xs sm:text-sm flex-1 ${bodyClassName}`}>
                         {children}
                     </div>
 

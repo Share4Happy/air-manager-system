@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { formatDate } from '@/function';
 import AddEditStationModal from './AddEditStationModal';
 import ScenarioMatrixTable from './ScenarioMatrixTable';
+import TaskCommentsModal from './TaskCommentsModal';
+import SendTaskZaloModal from './SendTaskZaloModal';
 import { EventModal } from '@/app/events/ui/common';
 import {
     IconTree,
@@ -15,6 +17,11 @@ import {
     IconLayers,
     IconDotsVertical,
     IconTable,
+    IconChatBubble,
+    IconCheckBadge,
+    IconMessageSquare,
+    IconStar,
+    IconCheck,
 } from '@/app/events/ui/icons';
 
 const statusConfig = {
@@ -174,7 +181,10 @@ export default function RoadmapTreeView({
     const [addingParentId, setAddingParentId] = useState(null); // null for new root phase, or phaseId for subtask
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [commentsModalTask, setCommentsModalTask] = useState(null);
+    const [zaloModalTask, setZaloModalTask] = useState(null);
     const [previewPhoto, setPreviewPhoto] = useState(null);
+    const [currentPhaseId, setCurrentPhaseId] = useState(event?.currentPhaseId || null);
 
     const toggleMenu = (e, menuId) => {
         e.stopPropagation();
@@ -191,12 +201,15 @@ export default function RoadmapTreeView({
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
-    // Sync stationPhaseId if event props change
+    // Sync stationPhaseId & currentPhaseId if event props change
     useEffect(() => {
         if (event?.stationPhaseId !== undefined) {
             setStationPhaseId(event.stationPhaseId ?? 'auto');
         }
-    }, [event?.stationPhaseId]);
+        if (event?.currentPhaseId !== undefined) {
+            setCurrentPhaseId(event.currentPhaseId || null);
+        }
+    }, [event?.stationPhaseId, event?.currentPhaseId]);
 
     // Station Add/Edit Modal state
     const [isStationModalOpen, setIsStationModalOpen] = useState(false);
@@ -449,6 +462,89 @@ export default function RoadmapTreeView({
     const rootPhases = useMemo(() => roadmap.filter(node => !node.parentId), [roadmap]);
     const getChildrenOf = (phaseId) => roadmap.filter(node => node.parentId === phaseId);
 
+    // Compute which phase is the current active phase
+    const resolvedCurrentPhaseId = useMemo(() => {
+        if (currentPhaseId && rootPhases.some(p => p.id === currentPhaseId)) {
+            return currentPhaseId;
+        }
+        // Auto-select: first phase having in_progress tasks
+        for (const phase of rootPhases) {
+            const childTasks = getChildrenOf(phase.id);
+            if (childTasks.some(t => t.status === 'in_progress')) {
+                return phase.id;
+            }
+        }
+        // Fallback: first phase with unfinished tasks
+        const firstUnfinished = rootPhases.find(p => {
+            const childTasks = getChildrenOf(p.id);
+            return childTasks.length === 0 || childTasks.some(t => t.status !== 'completed');
+        });
+        if (firstUnfinished) return firstUnfinished.id;
+
+        return rootPhases[0]?.id || null;
+    }, [currentPhaseId, rootPhases, roadmap]);
+
+    const handleSetCurrentPhase = (phaseId) => {
+        const nextPhaseId = currentPhaseId === phaseId ? null : phaseId;
+        setCurrentPhaseId(nextPhaseId);
+        onUpdateMultiple?.({ currentPhaseId: nextPhaseId });
+    };
+
+
+
+    // Task Approval Toggle
+    const handleToggleApprove = (nodeId, shouldApprove) => {
+        const updatedRoadmap = roadmap.map(node => {
+            if (node.id === nodeId) {
+                return {
+                    ...node,
+                    isApproved: shouldApprove,
+                    approvedBy: shouldApprove ? 'Ban tổ chức' : '',
+                    approvedAt: shouldApprove ? new Date() : null,
+                    status: (shouldApprove && node.status === 'pending') ? 'completed' : node.status,
+                    completedAt: (shouldApprove && node.status === 'pending') ? new Date() : node.completedAt,
+                };
+            }
+            return node;
+        });
+        onUpdateRoadmap(updatedRoadmap);
+    };
+
+    // Task Comments Handler
+    const handleAddComment = (nodeId, content) => {
+        const newComment = {
+            id: `cmt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            author: 'Ban tổ chức',
+            authorRole: 'Quản trị',
+            content,
+            createdAt: new Date(),
+        };
+
+        const updatedRoadmap = roadmap.map(node => {
+            if (node.id === nodeId) {
+                const existing = node.comments || [];
+                const updatedComments = [...existing, newComment];
+                const updatedNode = {
+                    ...node,
+                    comments: updatedComments,
+                };
+                if (commentsModalTask && commentsModalTask.id === nodeId) {
+                    setCommentsModalTask(updatedNode);
+                }
+                return updatedNode;
+            }
+            return node;
+        });
+
+        onUpdateRoadmap(updatedRoadmap);
+    };
+
+    const handleSendZaloSuccess = (newHistory) => {
+        if (newHistory && onUpdateMultiple) {
+            onUpdateMultiple({ 'zaloConfig.history': newHistory });
+        }
+    };
+
     // Compute which phase actually holds the scenario matrix
     const resolvedStationPhaseId = useMemo(() => {
         if (stationPhaseId === 'none' || !showStationBranches) return null;
@@ -686,9 +782,9 @@ export default function RoadmapTreeView({
                                 type="button"
                                 onClick={() => handleSelectStationPhase('none')}
                                 className="px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                                title="Bỏ gắn bảng ma trận khỏi giai đoạn này"
+                                title="Bỏ ma trận kịch bản"
                             >
-                                <span>Bỏ gắn khỏi giai đoạn</span>
+                                <span>Bỏ ma trận kịch bản</span>
                             </button>
                         )}
                     </div>
@@ -725,7 +821,7 @@ export default function RoadmapTreeView({
                             }`}
                     >
                         <IconTree className="w-3.5 h-3.5" />
-                        <span>Sơ đồ Cây (Tree View)</span>
+                        <span>Sơ đồ Cây</span>
                     </button>
                     <button
                         type="button"
@@ -738,7 +834,18 @@ export default function RoadmapTreeView({
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                             <path d="M3 3v18h18" /><rect x="7" y="6" width="6" height="3" rx="1" fill="currentColor" fillOpacity={0.2} /><rect x="11" y="11" width="8" height="3" rx="1" fill="currentColor" fillOpacity={0.2} /><rect x="9" y="16" width="5" height="3" rx="1" fill="currentColor" fillOpacity={0.2} />
                         </svg>
-                        <span>Tiến độ Gantt Timeline</span>
+                        <span>Tiến độ Gantt</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRoadmapMode?.('table')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${roadmapMode === 'table'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                    >
+                        <IconTable className="w-3.5 h-3.5" />
+                        <span>Dạng Bảng</span>
                     </button>
                 </div>
 
@@ -784,12 +891,15 @@ export default function RoadmapTreeView({
                         const completedCount = children.filter(c => c.status === 'completed').length;
                         const phasePercent = children.length > 0 ? Math.round((completedCount / children.length) * 100) : 0;
                         const isPhaseHoldingStations = resolvedStationPhaseId === phase.id;
+                        const isCurrentPhase = resolvedCurrentPhaseId === phase.id;
                         const phaseTheme = phaseColorPalette[pIndex % phaseColorPalette.length];
 
                         return (
                             <div
                                 key={phase.id}
-                                className={`bg-[var(--bg-primary)] rounded-2xl border ${isPhaseHoldingStations ? phaseTheme.activeHoldingBorder : phaseTheme.cardBorder} shadow-xs transition-all duration-300`}
+                                className={`bg-[var(--bg-primary)] rounded-2xl border transition-all duration-300 ${
+                                    isPhaseHoldingStations ? phaseTheme.activeHoldingBorder : phaseTheme.cardBorder
+                                } shadow-xs`}
                             >
                                 {/* Phase Header Card (Root Node) */}
                                 <div className={`p-4 sm:p-5 ${phaseTheme.headerBg} ${!isCollapsed ? 'border-b border-[var(--border-color)] rounded-t-2xl' : 'rounded-2xl'} flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
@@ -801,13 +911,28 @@ export default function RoadmapTreeView({
                                             {isCollapsed ? <IconChevronRight className="w-3.5 h-3.5" /> : <IconChevronDown className="w-3.5 h-3.5" />}
                                         </button>
                                         <div>
+                                            {/* Green Tag "Giai đoạn đang diễn ra" placed on top - Squared & Longer */}
+                                            {isCurrentPhase && (
+                                                <div className="mb-2.5">
+                                                    <span className="inline-flex items-center gap-2 text-xs font-bold px-4 py-1.5 rounded-lg bg-emerald-600 text-white shadow-xs tracking-wide uppercase">
+                                                        <span className="relative flex h-2 w-2">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-90"></span>
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                                        </span>
+                                                        <span>Giai đoạn đang diễn ra</span>
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             <div className="flex items-center gap-2.5 flex-wrap">
                                                 <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${phaseTheme.badge} uppercase tracking-wider`}>
                                                     Giai đoạn {pIndex + 1}
                                                 </span>
+
                                                 <h4 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
                                                     {phase.name}
                                                 </h4>
+
                                                 {/* Badge if this phase holds the scenario matrix */}
                                                 {isPhaseHoldingStations && stations.length > 0 && (
                                                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${phaseTheme.holdingBadge} flex items-center gap-1.5 shadow-2xs`}>
@@ -874,6 +999,22 @@ export default function RoadmapTreeView({
                                                             type="button"
                                                             onClick={() => {
                                                                 setActiveMenuId(null);
+                                                                handleSetCurrentPhase(phase.id);
+                                                            }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer ${
+                                                                isCurrentPhase
+                                                                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                                                    : 'text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                                                            }`}
+                                                        >
+                                                            <IconStar className={`w-3.5 h-3.5 ${isCurrentPhase ? 'text-emerald-500 fill-emerald-500' : 'text-emerald-600 dark:text-emerald-400'}`} />
+                                                            <span>{isCurrentPhase ? 'Giai đoạn hiện tại' : 'Đặt làm Giai đoạn hiện tại'}</span>
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setActiveMenuId(null);
                                                                 handleSelectStationPhase(isPhaseHoldingStations ? 'none' : phase.id);
                                                             }}
                                                             className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2.5 transition-colors border-none bg-transparent cursor-pointer ${isPhaseHoldingStations
@@ -882,7 +1023,7 @@ export default function RoadmapTreeView({
                                                                 }`}
                                                         >
                                                             <IconTable className={`w-3.5 h-3.5 ${isPhaseHoldingStations ? 'text-amber-600' : 'text-blue-600 dark:text-blue-400'}`} />
-                                                            <span>{isPhaseHoldingStations ? 'Bỏ gắn Ma trận Kịch bản khỏi đây' : 'Gắn Ma trận Kịch bản vào giai đoạn này'}</span>
+                                                            <span>{isPhaseHoldingStations ? 'Bỏ ma trận kịch bản' : 'Gắn ma trận kịch bản'}</span>
                                                         </button>
 
                                                         <div className="my-1 border-t border-[var(--border-color)]" />
@@ -964,8 +1105,66 @@ export default function RoadmapTreeView({
                                                             </div>
                                                         </div>
 
-                                                        {/* Right: Assignee + Due Date + 3-Dots Menu */}
-                                                        <div className="flex items-center gap-3 text-sm shrink-0 self-end md:self-center flex-wrap justify-end">
+                                                        {/* Right: Actions, Zalo, Comments, Approval, Assignee, Due Date & 3-Dots Menu */}
+                                                        <div className="flex items-center gap-2 sm:gap-2.5 text-xs shrink-0 self-end md:self-center flex-wrap justify-end">
+                                                            {/* 1. Duyệt Task Button */}
+                                                            {child.isApproved ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => !readOnly && handleToggleApprove(child.id, false)}
+                                                                    className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800 text-xs font-bold flex items-center gap-1 hover:bg-emerald-200/80 cursor-pointer shadow-2xs"
+                                                                    title={`Đã duyệt bởi ${child.approvedBy || 'Ban tổ chức'}. Bấm để hủy duyệt.`}
+                                                                >
+                                                                    <IconCheckBadge className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                                    <span>✓ Đã duyệt</span>
+                                                                </button>
+                                                            ) : (
+                                                                !readOnly && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleToggleApprove(child.id, true)}
+                                                                        className="px-2.5 py-1 rounded-lg bg-[var(--bg-primary)] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-[var(--border-color)] hover:border-emerald-300 text-[var(--text-secondary)] hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                                                                        title="Bấm để phê duyệt nhiệm vụ này"
+                                                                    >
+                                                                        <IconCheck className="w-3.5 h-3.5" />
+                                                                        <span>Duyệt task</span>
+                                                                    </button>
+                                                                )
+                                                            )}
+
+                                                            {/* 2. Gửi Zalo Button */}
+                                                            {!readOnly && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setZaloModalTask(child)}
+                                                                    className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                                                                    title="Gửi tin nhắn Zalo giao việc/nhắc hạn cho người phụ trách"
+                                                                >
+                                                                    <IconMessageSquare className="w-3.5 h-3.5" />
+                                                                    <span>Gửi Zalo</span>
+                                                                </button>
+                                                            )}
+
+                                                            {/* 3. Comment Indicator / Button */}
+                                                            {(() => {
+                                                                const commentCount = (child.comments || []).length;
+                                                                return (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setCommentsModalTask(child)}
+                                                                        className={`px-2 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                                                                            commentCount > 0
+                                                                                ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-bold'
+                                                                                : 'bg-transparent border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]'
+                                                                        }`}
+                                                                        title={commentCount > 0 ? `Có ${commentCount} nhận xét` : 'Thêm nhận xét'}
+                                                                    >
+                                                                        <IconChatBubble className="w-3.5 h-3.5" />
+                                                                        {commentCount > 0 && <span>{commentCount}</span>}
+                                                                    </button>
+                                                                );
+                                                            })()}
+
                                                             {/* Quick Assign Select / Badge */}
                                                             {(() => {
                                                                 const assInfo = getAssigneeInfo(child.assignee);
@@ -981,7 +1180,7 @@ export default function RoadmapTreeView({
                                                                         <select
                                                                             value={child.assignee?._id || child.assignee?.id || child.assignee || ''}
                                                                             onChange={(e) => handleQuickAssign(child.id, e.target.value)}
-                                                                            className={`text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[190px] truncate ${assInfo ? (assInfo.type === 'user' ? 'text-blue-700 dark:text-blue-300 font-semibold' : 'text-emerald-700 dark:text-emerald-300 font-semibold') : 'text-[var(--text-secondary)] italic'
+                                                                            className={`text-xs font-medium py-1 px-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[160px] truncate ${assInfo ? (assInfo.type === 'user' ? 'text-blue-700 dark:text-blue-300 font-semibold' : 'text-emerald-700 dark:text-emerald-300 font-semibold') : 'text-[var(--text-secondary)] italic'
                                                                                 }`}
                                                                             title="Gán người phụ trách"
                                                                         >
@@ -1002,10 +1201,10 @@ export default function RoadmapTreeView({
 
                                                             {/* Due Date */}
                                                             {child.dueDate && (
-                                                                <div className={`flex items-center gap-1.5 text-xs sm:text-sm font-medium ${isOverdue ? 'text-rose-600 font-bold' : 'text-[var(--text-secondary)]'}`}>
-                                                                    <IconCalendar className="w-4 h-4" />
+                                                                <div className={`flex items-center gap-1 text-xs font-medium ${isOverdue ? 'text-rose-600 font-bold' : 'text-[var(--text-secondary)]'}`}>
+                                                                    <IconCalendar className="w-3.5 h-3.5" />
                                                                     <span>{formatDate(child.dueDate)}</span>
-                                                                    {isOverdue && <span className="text-xs px-1.5 py-0.2 bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 rounded font-bold">Trễ</span>}
+                                                                    {isOverdue && <span className="text-[10px] px-1 py-0.2 bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 rounded font-bold">Trễ</span>}
                                                                 </div>
                                                             )}
 
@@ -1291,6 +1490,26 @@ export default function RoadmapTreeView({
                     </div>
                 </div>
             )}
+
+            {/* Modal: Task Comments / Feedback */}
+            <TaskCommentsModal
+                isOpen={!!commentsModalTask}
+                task={commentsModalTask}
+                onClose={() => setCommentsModalTask(null)}
+                onAddComment={handleAddComment}
+                readOnly={readOnly}
+            />
+
+            {/* Modal: Send Task Zalo Message */}
+            <SendTaskZaloModal
+                isOpen={!!zaloModalTask}
+                task={zaloModalTask}
+                event={event}
+                users={users}
+                members={members}
+                onClose={() => setZaloModalTask(null)}
+                onSendSuccess={handleSendZaloSuccess}
+            />
         </div>
     );
 }

@@ -114,7 +114,7 @@ export default function ScenarioMatrixTable({
         <div className={`overflow-x-auto scrollbar-thin rounded-2xl border border-[var(--border-color)] shadow-xs bg-[var(--bg-primary)] ${className}`}>
             {/* Title Header Bar */}
             {!hideTitleBar && (
-                <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 text-[var(--text-primary)] border-b border-[var(--border-color)] text-center py-4 px-4 font-bold text-base sm:text-lg uppercase tracking-wide min-w-[850px]">
+                <div className="bg-gradient-to-r from-blue-50/90 via-blue-50/40 to-transparent dark:from-blue-950/40 dark:via-blue-950/20 dark:to-transparent text-[var(--text-primary)] border-b border-[var(--border-color)] text-center py-4 px-4 font-bold text-base sm:text-lg uppercase tracking-wider min-w-[850px]">
                     KỊCH BẢN ĐIỀU PHỐI CHI TIẾT SỰ KIỆN - {event?.title || 'NGÀY HỘI STEM'}
                 </div>
             )}
@@ -135,10 +135,10 @@ export default function ScenarioMatrixTable({
                                 >
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <div className="flex items-center gap-2">
-                                            <span className={`px-2.5 py-1 rounded-md ${meta.stationNum} text-xs sm:text-sm font-bold`}>
+                                            <span className={`px-2.5 py-0.5 rounded-md ${meta.stationNum} text-xs font-bold uppercase tracking-wider`}>
                                                 0{i + 1}
                                             </span>
-                                            <span className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold border ${meta.badge}`}>
+                                            <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${meta.badge}`}>
                                                 {meta.label}
                                             </span>
                                         </div>

@@ -4,12 +4,15 @@ import { useRouter } from 'next/navigation';
 import EventHeader from './ui/EventHeader';
 import RoadmapTreeView from './ui/RoadmapTreeView';
 import RoadmapGanttView from './ui/RoadmapGanttView';
+import RoadmapTableView from './ui/RoadmapTableView';
 import EventStationMatrixView from './ui/EventStationMatrixView';
 import EventMembersView from './ui/EventMembersView';
 import BudgetExpenseView from './ui/BudgetExpenseView';
 import MediaDriveGalleryView from './ui/MediaDriveGalleryView';
 import RetrospectiveView from './ui/RetrospectiveView';
 import EventEquipmentChecklistView from './ui/EventEquipmentChecklistView';
+import EventZaloConfigView from './ui/EventZaloConfigView';
+import EventBlankTabView from './ui/EventBlankTabView';
 
 export default function EventDetailPage({ params }) {
     const unwrappedParams = use(params);
@@ -125,6 +128,16 @@ export default function EventDetailPage({ params }) {
         updateEventInDB({ summaryReport: newReport });
     };
 
+    const handleUpdateZaloConfig = (newConfig) => {
+        setEvent(prev => ({ ...prev, zaloConfig: newConfig }));
+        updateEventInDB({ zaloConfig: newConfig });
+    };
+
+    const handleUpdateCustomTabContent = (newCustomTab) => {
+        setEvent(prev => ({ ...prev, customTabContent: newCustomTab }));
+        updateEventInDB({ customTabContent: newCustomTab });
+    };
+
     const handleCoverUpload = (coverFileId) => {
         setEvent(prev => ({ ...prev, coverImage: coverFileId }));
     };
@@ -237,7 +250,6 @@ export default function EventDetailPage({ params }) {
                 onTabChange={setActiveTab}
                 canViewBudget={canViewBudget}
                 onSaveAsTemplate={handleSaveAsTemplate}
-                onDeleteEvent={handleDeleteEvent}
                 onUpdateEvent={handleUpdateMultiple}
             />
 
@@ -256,12 +268,29 @@ export default function EventDetailPage({ params }) {
                         roadmapMode={roadmapMode}
                         setRoadmapMode={setRoadmapMode}
                     />
-                ) : (
+                ) : roadmapMode === 'gantt' ? (
                     <RoadmapGanttView
                         event={event}
                         roadmap={event.roadmap || []}
+                        stations={event.stations || []}
                         users={users}
                         members={event.members || []}
+                        onUpdateRoadmap={handleUpdateRoadmap}
+                        onUpdateStations={handleUpdateStations}
+                        onUpdateMultiple={handleUpdateMultiple}
+                        roadmapMode={roadmapMode}
+                        setRoadmapMode={setRoadmapMode}
+                    />
+                ) : (
+                    <RoadmapTableView
+                        event={event}
+                        roadmap={event.roadmap || []}
+                        stations={event.stations || []}
+                        users={users}
+                        members={event.members || []}
+                        onUpdateRoadmap={handleUpdateRoadmap}
+                        onUpdateStations={handleUpdateStations}
+                        onUpdateMultiple={handleUpdateMultiple}
                         roadmapMode={roadmapMode}
                         setRoadmapMode={setRoadmapMode}
                     />
@@ -283,6 +312,7 @@ export default function EventDetailPage({ params }) {
                     event={event}
                     checklist={event.equipmentChecklist || []}
                     onUpdateChecklist={handleUpdateEquipmentChecklist}
+                    onUpdateMultiple={handleUpdateMultiple}
                     users={users}
                     members={event.members || []}
                 />
@@ -306,6 +336,23 @@ export default function EventDetailPage({ params }) {
                     users={users}
                     members={event.members || []}
                     event={event}
+                />
+            )}
+
+            {activeTab === 'zalo-config' && (
+                <EventZaloConfigView
+                    event={event}
+                    users={users}
+                    members={event.members || []}
+                    roadmap={event.roadmap || []}
+                    onUpdateZaloConfig={handleUpdateZaloConfig}
+                />
+            )}
+
+            {activeTab === 'custom-tab' && (
+                <EventBlankTabView
+                    event={event}
+                    onUpdateCustomTabContent={handleUpdateCustomTabContent}
                 />
             )}
 

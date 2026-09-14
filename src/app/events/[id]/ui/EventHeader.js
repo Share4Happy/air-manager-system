@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { formatDate } from '@/function';
 import {
@@ -10,6 +10,7 @@ import {
     IconCamera,
     IconFileText,
     IconChevronLeft,
+    IconChevronRight,
     IconCalendar,
     IconLocation,
     IconTrash,
@@ -17,9 +18,15 @@ import {
     IconClose,
     IconCheck,
     IconPackage,
+    IconLink,
+    IconExternalLink,
+    IconCopy,
+    IconMessageSquare,
+    IconLayers,
 } from '@/app/events/ui/icons';
 
 import ShareEventModal from './ShareEventModal';
+import { EventModal } from '@/app/events/ui/common';
 
 const statusOptions = [
     { value: 'planning', label: 'Đang chuẩn bị', dotColor: 'bg-slate-400' },
@@ -48,25 +55,36 @@ export default function EventHeader({
         endDate,
         location,
         description = '',
+        link = '',
         participantsCount,
     } = event || {};
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [isCopiedLink, setIsCopiedLink] = useState(false);
+    const [isFastLinkInputOpen, setIsFastLinkInputOpen] = useState(false);
+    const [fastLinkValue, setFastLinkValue] = useState(link || '');
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+    const tabsContainerRef = useRef(null);
+
     const [editForm, setEditForm] = useState({
         title: title || '',
         description: description || '',
         startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : '',
         endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : '',
         location: location || '',
+        link: link || '',
     });
 
     const allNavTabs = [
         { id: 'roadmap', label: 'Lộ trình & Tiến độ', icon: IconTree },
         { id: 'stations', label: 'Kịch bản Trạm', icon: IconStation },
-        { id: 'equipment', label: 'Thiết bị mang theo', icon: IconPackage },
-        { id: 'staff', label: 'Thành viên & Nhân sự', icon: IconUsers },
-        ...((canViewBudget || (allowedTabs && allowedTabs.budget)) ? [{ id: 'budget', label: 'Ngân sách & Thu chi', icon: IconDollar }] : []),
+        { id: 'equipment', label: 'Danh sách thiết bị', icon: IconPackage },
+        { id: 'staff', label: 'Nhân sự', icon: IconUsers },
+        ...((canViewBudget || (allowedTabs && allowedTabs.budget)) ? [{ id: 'budget', label: 'Ngân sách', icon: IconDollar }] : []),
+        { id: 'zalo-config', label: 'Cấu hình gửi Zalo', icon: IconMessageSquare },
+        { id: 'custom-tab', label: 'Tab trống', icon: IconLayers },
         { id: 'media', label: 'Album Ảnh Drive', icon: IconCamera },
         { id: 'retro', label: 'Tổng kết & Đánh giá', icon: IconFileText },
     ];
@@ -94,6 +112,7 @@ export default function EventHeader({
             startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : '',
             endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : '',
             location: location || '',
+            link: link || '',
         });
         setIsEditModalOpen(true);
     };
@@ -106,8 +125,70 @@ export default function EventHeader({
             startDate: editForm.startDate ? new Date(editForm.startDate) : null,
             endDate: editForm.endDate ? new Date(editForm.endDate) : null,
             location: editForm.location.trim(),
+            link: editForm.link.trim(),
         });
         setIsEditModalOpen(false);
+    };
+
+    const handleSaveFastLink = (e) => {
+        e?.preventDefault();
+        onUpdateEvent?.({
+            link: fastLinkValue.trim(),
+        });
+        setIsFastLinkInputOpen(false);
+    };
+
+    const handleRemoveFastLink = () => {
+        if (!confirm('Bạn có muốn xóa đường link liên kết này?')) return;
+        setFastLinkValue('');
+        onUpdateEvent?.({
+            link: '',
+        });
+        setIsFastLinkInputOpen(false);
+    };
+
+    const handleCopyLink = () => {
+        if (!link) return;
+        navigator.clipboard.writeText(link);
+        setIsCopiedLink(true);
+        setTimeout(() => setIsCopiedLink(false), 2000);
+    };
+
+    const checkScrollButtons = useCallback(() => {
+        const el = tabsContainerRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 6);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 6);
+    }, []);
+
+    useEffect(() => {
+        const el = tabsContainerRef.current;
+        if (!el) return;
+        checkScrollButtons();
+        el.addEventListener('scroll', checkScrollButtons, { passive: true });
+        window.addEventListener('resize', checkScrollButtons);
+        return () => {
+            el.removeEventListener('scroll', checkScrollButtons);
+            window.removeEventListener('resize', checkScrollButtons);
+        };
+    }, [checkScrollButtons, navTabs.length]);
+
+    // Auto-scroll to active tab on change
+    useEffect(() => {
+        const el = tabsContainerRef.current;
+        if (!el) return;
+        const activeBtn = el.querySelector(`[data-tab-id="${activeTab}"]`);
+        if (activeBtn) {
+            activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }, [activeTab]);
+
+    const scrollLeft = () => {
+        tabsContainerRef.current?.scrollBy({ left: -220, behavior: 'smooth' });
+    };
+
+    const scrollRight = () => {
+        tabsContainerRef.current?.scrollBy({ left: 220, behavior: 'smooth' });
     };
 
     const currentStatusOption = statusOptions.find(opt => opt.value === status) || statusOptions[0];
@@ -200,6 +281,127 @@ export default function EventHeader({
                                 {description}
                             </p>
                         )}
+
+                        {/* Event Link Bar right under the description with gray box and highlighted blue text */}
+                        <div className="flex items-center gap-2 flex-wrap text-xs mt-1">
+                            {isFastLinkInputOpen ? (
+                                <form onSubmit={handleSaveFastLink} className="flex items-center gap-1.5 flex-wrap">
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-400 bg-gray-100 dark:bg-gray-800 shadow-xs">
+                                        <IconLink className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                        <input
+                                            type="text"
+                                            value={fastLinkValue}
+                                            onChange={e => setFastLinkValue(e.target.value)}
+                                            placeholder="Dán link (Drive, Canva, Docs, Họp online...)"
+                                            className="w-56 sm:w-80 text-xs bg-transparent border-none focus:outline-none text-[var(--text-primary)]"
+                                            autoFocus
+                                        />
+                                        {fastLinkValue && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFastLinkValue('')}
+                                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 border-none bg-transparent cursor-pointer p-0.5"
+                                                title="Xóa ô nhập"
+                                            >
+                                                <IconClose className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold border-none cursor-pointer shadow-xs transition-all"
+                                    >
+                                        Lưu
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFastLinkInputOpen(false)}
+                                        className="px-2.5 py-1.5 rounded-xl bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-[var(--text-primary)] text-xs border border-[var(--border-color)] cursor-pointer transition-colors"
+                                    >
+                                        Hủy
+                                    </button>
+                                    {link && (
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveFastLink}
+                                            className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs border border-rose-200 dark:border-rose-900 cursor-pointer transition-colors"
+                                            title="Xóa link liên kết"
+                                        >
+                                            Xóa link
+                                        </button>
+                                    )}
+                                </form>
+                            ) : link ? (
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-100/90 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium max-w-full shadow-2xs">
+                                    <IconLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                                    <a
+                                        href={link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:underline max-w-[260px] sm:max-w-md truncate text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-bold no-underline"
+                                        title={`Mở liên kết: ${link}`}
+                                    >
+                                        {link}
+                                    </a>
+                                    <div className="flex items-center gap-1 pl-1 border-l border-gray-300 dark:border-gray-600">
+                                        <a
+                                            href={link.startsWith('http://') || link.startsWith('https://') ? link : `https://${link}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 transition-colors"
+                                            title="Mở tab mới"
+                                        >
+                                            <IconExternalLink className="w-3.5 h-3.5" />
+                                        </a>
+                                        <button
+                                            type="button"
+                                            onClick={handleCopyLink}
+                                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 transition-colors border-none bg-transparent cursor-pointer"
+                                            title="Sao chép link"
+                                        >
+                                            {isCopiedLink ? <IconCheck className="w-3.5 h-3.5 text-emerald-600" /> : <IconCopy className="w-3.5 h-3.5" />}
+                                        </button>
+                                        {!readOnly && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFastLinkValue(link);
+                                                        setIsFastLinkInputOpen(true);
+                                                    }}
+                                                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 transition-colors border-none bg-transparent cursor-pointer"
+                                                    title="Sửa link"
+                                                >
+                                                    <IconEdit className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveFastLink}
+                                                    className="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors border-none bg-transparent cursor-pointer"
+                                                    title="Xóa link"
+                                                >
+                                                    <IconTrash className="w-3.5 h-3.5" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                !readOnly && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setFastLinkValue('');
+                                            setIsFastLinkInputOpen(true);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800/80 dark:hover:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 text-xs font-semibold cursor-pointer transition-colors"
+                                    >
+                                        <IconLink className="w-3.5 h-3.5 text-blue-500" />
+                                        <span>+ Gắn link tài liệu / Drive / Canva</span>
+                                    </button>
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -259,7 +461,7 @@ export default function EventHeader({
                             {onSaveAsTemplate && (
                                 <button
                                     onClick={onSaveAsTemplate}
-                                    className="px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-2"
+                                    className="px-3.5 py-2 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs sm:text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1.5"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -268,13 +470,32 @@ export default function EventHeader({
                                 </button>
                             )}
 
-                            {onDeleteEvent && (
+                            {status !== 'cancelled' ? (
                                 <button
-                                    onClick={onDeleteEvent}
-                                    className="px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-sm font-semibold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-2"
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn chuyển sự kiện này sang trạng thái "Đã hủy"?')) {
+                                            onStatusChange?.('cancelled');
+                                        }
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                                    title="Chuyển sự kiện sang trạng thái Đã hủy"
                                 >
-                                    <IconTrash className="w-4 h-4" />
-                                    <span>Xóa</span>
+                                    <IconClose className="w-4 h-4" />
+                                    <span>Hủy sự kiện</span>
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (confirm('Khôi phục sự kiện này sang trạng thái "Đang chuẩn bị"?')) {
+                                            onStatusChange?.('planning');
+                                        }
+                                    }}
+                                    className="px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-xs sm:text-sm font-semibold hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                                    title="Khôi phục lại sự kiện"
+                                >
+                                    <span>Khôi phục sự kiện</span>
                                 </button>
                             )}
                         </>
@@ -282,133 +503,173 @@ export default function EventHeader({
                 </div>
             </div>
 
-            {/* Sub-Navigation Tabs */}
-            <div className="px-4 sm:px-5 flex items-center gap-1.5 sm:gap-3 border-t border-[var(--border-color)] overflow-x-auto scrollbar-none bg-[var(--bg-secondary)]/30">
-                {navTabs.map(t => {
-                    const isActive = activeTab === t.id;
-                    const TabIcon = t.icon;
-                    return (
-                        <button
-                            key={t.id}
-                            onClick={() => onTabChange?.(t.id)}
-                            className={`py-3.5 px-3.5 sm:px-5 text-sm sm:text-base font-bold transition-all border-b-2 whitespace-nowrap bg-transparent cursor-pointer flex items-center gap-2 ${
-                                isActive
-                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
-                                    : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            <TabIcon className={`w-4.5 h-4.5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-secondary)]'}`} />
-                            <span>{t.label}</span>
-                        </button>
-                    );
-                })}
+            {/* Sub-Navigation Tabs with Smooth Horizontal Scroll & Arrows */}
+            <div className="relative border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/30 group">
+                {/* Left Scroll Arrow Button */}
+                {canScrollLeft && (
+                    <button
+                        type="button"
+                        onClick={scrollLeft}
+                        className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[var(--bg-primary)]/95 hover:bg-[var(--bg-primary)] border border-[var(--border-color)] shadow-md flex items-center justify-center text-[var(--text-primary)] cursor-pointer transition-all hover:scale-105"
+                        title="Cuộn sang trái"
+                    >
+                        <IconChevronLeft className="w-4 h-4" />
+                    </button>
+                )}
+
+                {/* Left Fade Gradient Mask */}
+                {canScrollLeft && (
+                    <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-primary)]/70 to-transparent pointer-events-none z-10" />
+                )}
+
+                {/* Scrollable Tabs Track */}
+                <div
+                    ref={tabsContainerRef}
+                    className="px-4 sm:px-6 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none scroll-smooth"
+                >
+                    {navTabs.map(t => {
+                        const isActive = activeTab === t.id;
+                        const TabIcon = t.icon;
+                        return (
+                            <button
+                                key={t.id}
+                                data-tab-id={t.id}
+                                onClick={() => onTabChange?.(t.id)}
+                                className={`py-3.5 px-3.5 sm:px-4 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap bg-transparent cursor-pointer flex items-center gap-2 shrink-0 ${
+                                    isActive
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                                        : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-gray-300 dark:hover:border-gray-700'
+                                }`}
+                            >
+                                <TabIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-secondary)]'}`} />
+                                <span>{t.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Right Fade Gradient Mask */}
+                {canScrollRight && (
+                    <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[var(--bg-primary)] via-[var(--bg-primary)]/70 to-transparent pointer-events-none z-10" />
+                )}
+
+                {/* Right Scroll Arrow Button */}
+                {canScrollRight && (
+                    <button
+                        type="button"
+                        onClick={scrollRight}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[var(--bg-primary)]/95 hover:bg-[var(--bg-primary)] border border-[var(--border-color)] shadow-md flex items-center justify-center text-[var(--text-primary)] cursor-pointer transition-all hover:scale-105"
+                        title="Cuộn sang phải"
+                    >
+                        <IconChevronRight className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
             {/* Quick Edit Event Info Modal */}
-            {isEditModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-[var(--bg-primary)] w-full max-w-lg rounded-2xl border border-[var(--border-color)] shadow-2xl overflow-hidden flex flex-col">
-                        <div className="p-4 sm:p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]">
-                            <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
-                                <IconEdit className="w-5 h-5 text-blue-600" />
-                                <span>Chỉnh sửa Thông tin Sự kiện / Workshop</span>
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsEditModalOpen(false)}
-                                className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] border border-[var(--border-color)] cursor-pointer"
-                            >
-                                <IconClose className="w-4 h-4" />
-                            </button>
-                        </div>
+            <EventModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                title="Chỉnh sửa Thông tin Sự kiện / Workshop"
+                subtitle="Cập nhật nhanh tên, thời gian, liên kết và địa điểm tổ chức"
+                icon={IconEdit}
+                maxWidth="max-w-lg"
+                onSubmit={handleSaveEdit}
+                submitLabel="Lưu thay đổi"
+            >
+                {/* General Info Card */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-3">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                        Thông tin chính
+                    </span>
 
-                        <form onSubmit={handleSaveEdit} className="p-4 sm:p-6 flex flex-col gap-4 text-sm">
-                            <div>
-                                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                                    Tên Sự kiện / Workshop *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={editForm.title}
-                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                    placeholder="Ví dụ: Workshop Trải nghiệm STEM & Tuyển sinh"
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                            </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                            Tên Sự kiện / Workshop <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                            placeholder="Ví dụ: Workshop Trải nghiệm STEM & Tuyển sinh"
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                    </div>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                                    Mô tả ngắn sự kiện
-                                </label>
-                                <textarea
-                                    rows={2}
-                                    value={editForm.description}
-                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                    placeholder="Nhập tóm tắt nội dung, quy mô, đối tượng tham gia sự kiện..."
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-xs text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                <div>
-                                    <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                                        Ngày bắt đầu
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={editForm.startDate}
-                                        onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
-                                        className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-xs font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                                        Ngày kết thúc
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={editForm.endDate}
-                                        onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
-                                        className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-xs font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                                    Địa điểm tổ chức
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editForm.location}
-                                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                    placeholder="Ví dụ: Trường Tiểu học Hoà Bình, Q. Tân Bình"
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            <div className="pt-4 border-t border-[var(--border-color)] flex items-center justify-end gap-2.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors bg-transparent cursor-pointer"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer shadow-xs transition-all flex items-center gap-1.5"
-                                >
-                                    <IconCheck className="w-3.5 h-3.5" />
-                                    <span>Lưu thay đổi</span>
-                                </button>
-                            </div>
-                        </form>
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                            Mô tả ngắn sự kiện
+                        </label>
+                        <textarea
+                            rows={2}
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            placeholder="Nhập tóm tắt nội dung, quy mô, đối tượng tham gia sự kiện..."
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-y transition-all"
+                        />
                     </div>
                 </div>
-            )}
+
+                {/* Schedule & Location Card */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-3">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                        Thời gian & Địa điểm
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Ngày bắt đầu
+                            </label>
+                            <input
+                                type="date"
+                                value={editForm.startDate}
+                                onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Ngày kết thúc
+                            </label>
+                            <input
+                                type="date"
+                                value={editForm.endDate}
+                                onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                            Link liên kết sự kiện (Google Drive / Canva / Kịch bản / Họp online)
+                        </label>
+                        <input
+                            type="text"
+                            value={editForm.link}
+                            onChange={(e) => setEditForm({ ...editForm, link: e.target.value })}
+                            placeholder="https://... hoặc drive.google.com/..."
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                            Địa điểm tổ chức
+                        </label>
+                        <input
+                            type="text"
+                            value={editForm.location}
+                            onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                            placeholder="Ví dụ: Trường Tiểu học Hoà Bình, Q. Tân Bình"
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                    </div>
+                </div>
+            </EventModal>
 
             {/* Share Event Modal */}
             <ShareEventModal

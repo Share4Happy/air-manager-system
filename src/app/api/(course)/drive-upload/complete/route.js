@@ -88,36 +88,63 @@ export async function POST(request) {
         };
 
         const Session = (await import('@/models/session')).default;
-        const sessionQuery = (sessionId && mongoose.Types.ObjectId.isValid(sessionId))
-            ? (folderId ? { $or: [{ _id: new mongoose.Types.ObjectId(sessionId) }, { image: folderId }] } : { _id: new mongoose.Types.ObjectId(sessionId) })
-            : { image: folderId };
+        let sessionMatched = false;
+        let courseMatched = false;
+        let trialMatched = false;
 
-        const sessionUpdate = await Session.updateOne(
-            sessionQuery,
-            {
-                $push: { detailImage: newMediaObject },
-                ...(folderId ? { $set: { image: folderId } } : {})
+        // 1. Cập nhật vào Session collection (LMS chuẩn mới)
+        if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
+            const sRes = await Session.updateOne(
+                { _id: new mongoose.Types.ObjectId(sessionId) },
+                {
+                    $push: { detailImage: newMediaObject },
+                    ...(folderId ? { $set: { image: folderId } } : {})
+                }
+            ).catch(() => ({ matchedCount: 0 }));
+            if (sRes?.matchedCount > 0) sessionMatched = true;
+        }
+        if (!sessionMatched && folderId) {
+            const sRes = await Session.updateOne(
+                { image: folderId },
+                { $push: { detailImage: newMediaObject } }
+            ).catch(() => ({ matchedCount: 0 }));
+            if (sRes?.matchedCount > 0) sessionMatched = true;
+        }
+
+        // 2. Cập nhật vào PostCourse (Dữ liệu lớp học)
+        if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
+            const cRes = await PostCourse.updateOne(
+                { 'Detail._id': new mongoose.Types.ObjectId(sessionId) },
+                { $push: { 'Detail.$.DetailImage': newMediaObject } }
+            ).catch(() => ({ matchedCount: 0 }));
+            if (cRes?.matchedCount > 0) courseMatched = true;
+        }
+        if (!courseMatched && folderId) {
+            const cRes = await PostCourse.updateOne(
+                { 'Detail.Image': folderId },
+                { $push: { 'Detail.$.DetailImage': newMediaObject } }
+            ).catch(() => ({ matchedCount: 0 }));
+            if (cRes?.matchedCount > 0) courseMatched = true;
+        }
+
+        // 3. Cập nhật vào TrialCourse (Khóa học thử nếu có)
+        if (!sessionMatched && !courseMatched) {
+            if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
+                const tRes = await TrialCourse.updateOne(
+                    { 'sessions._id': new mongoose.Types.ObjectId(sessionId) },
+                    { $set: { 'sessions.$.images': newMediaObject } }
+                ).catch(() => ({ matchedCount: 0 }));
+                if (tRes?.matchedCount > 0) trialMatched = true;
             }
-        ).catch(() => ({ matchedCount: 0 }));
-
-        const courseQuery = (sessionId && mongoose.Types.ObjectId.isValid(sessionId))
-            ? (folderId ? { $or: [{ 'Detail._id': new mongoose.Types.ObjectId(sessionId) }, { 'Detail.Image': folderId }] } : { 'Detail._id': new mongoose.Types.ObjectId(sessionId) })
-            : { 'Detail.Image': folderId };
-
-        let updateResult = await PostCourse.updateOne(
-            courseQuery,
-            { $push: { 'Detail.$.DetailImage': newMediaObject } }
-        ).catch(() => ({ matchedCount: 0 }));
-
-        if (sessionUpdate?.matchedCount === 0 && updateResult?.matchedCount === 0) {
-            if (folderId) {
-                updateResult = await TrialCourse.updateOne(
+            if (!trialMatched && folderId) {
+                const tRes = await TrialCourse.updateOne(
                     { 'sessions.folderId': folderId },
                     { $set: { 'sessions.$.images': newMediaObject } }
                 ).catch(() => ({ matchedCount: 0 }));
+                if (tRes?.matchedCount > 0) trialMatched = true;
             }
 
-            if (updateResult?.matchedCount === 0 && sessionUpdate?.matchedCount === 0) {
+            if (!trialMatched) {
                 // Rollback xóa file vừa tạo trên Drive
                 await drive.files.delete({ fileId, supportsAllDrives: true });
                 return NextResponse.json(

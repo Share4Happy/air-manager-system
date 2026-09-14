@@ -81,28 +81,14 @@ export default function ImportExcelModal({
         }
     };
 
-    const modalTitle = (
-        <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shrink-0">
-                <IconComponent className="w-5 h-5 text-white" />
-            </div>
-            <div>
-                <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    {title}
-                </h2>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-                    {subtitle}
-                </p>
-            </div>
-        </div>
-    );
-
     return (
         <EventModal
             isOpen={isOpen}
             onClose={onClose}
-            title={modalTitle}
-            maxWidth="max-w-2xl"
+            title={title}
+            subtitle={subtitle}
+            icon={IconComponent}
+            maxWidth="max-w-xl"
             onSubmit={handleExecuteImport}
             submitLabel="Xác nhận Import"
             loading={loading}
@@ -118,7 +104,7 @@ export default function ImportExcelModal({
                 {/* Drag & Drop File Zone */}
                 <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[var(--border-color)] hover:border-blue-500 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-gray-50/50 dark:bg-gray-900/20 transition-all"
+                    className="border-2 border-dashed border-[var(--border-color)] hover:border-blue-500 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)]/60 transition-all group"
                 >
                     <input
                         ref={fileInputRef}
@@ -127,22 +113,22 @@ export default function ImportExcelModal({
                         className="hidden"
                         onChange={handleFileChange}
                     />
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2 shadow-xs">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center mb-2.5 shadow-xs group-hover:scale-105 transition-transform">
                         <IconUpload className="w-6 h-6" />
                     </div>
                     {selectedFile ? (
                         <div>
-                            <p className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400">{selectedFile.name}</p>
-                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
+                            <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{selectedFile.name}</p>
+                            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                                 {(selectedFile.size / 1024).toFixed(1)} KB • Bấm để chọn file khác
                             </p>
                         </div>
                     ) : (
                         <div>
-                            <p className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
+                            <p className="text-sm font-bold text-[var(--text-primary)]">
                                 Nhấn để chọn file Excel hoặc kéo thả vào đây
                             </p>
-                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">
                                 Hỗ trợ định dạng: .xlsx, .xls, .csv (Tối đa 5MB)
                             </p>
                         </div>
@@ -151,25 +137,25 @@ export default function ImportExcelModal({
 
                 {/* Download template guidance */}
                 {templateUrl && (
-                    <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 flex items-center justify-between text-xs sm:text-sm gap-3">
-                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)]/40 border border-[var(--border-color)] flex items-center justify-between text-xs sm:text-sm gap-3">
+                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                             <IconLightbulb className="w-4 h-4 shrink-0 text-amber-500" />
-                            <span>{templateHint}</span>
+                            <span className="text-xs leading-relaxed">{templateHint}</span>
                         </div>
                         <button
                             type="button"
                             onClick={handleDownloadTemplate}
-                            className="px-3.5 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors border-none cursor-pointer whitespace-nowrap shadow-xs flex items-center gap-1.5 shrink-0 text-xs sm:text-sm"
+                            className="px-3 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold transition-colors cursor-pointer whitespace-nowrap shadow-xs flex items-center gap-1.5 shrink-0 text-xs"
                         >
-                            <IconDownload className="w-3.5 h-3.5" />
+                            <IconDownload className="w-3.5 h-3.5 text-blue-600" />
                             <span>{templateButtonText}</span>
                         </button>
                     </div>
                 )}
 
                 {/* Mode selector (Append vs Replace) */}
-                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between flex-wrap gap-2 text-xs sm:text-sm">
-                    <span className="font-bold text-[var(--text-primary)]">Tùy chọn nhập:</span>
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/30 border border-[var(--border-color)] flex items-center justify-between flex-wrap gap-2 text-xs">
+                    <span className="font-bold text-[var(--text-secondary)] uppercase tracking-wider text-[11px]">Tùy chọn nhập:</span>
                     <div className="flex items-center gap-4">
                         <label className="flex items-center gap-1.5 cursor-pointer">
                             <input

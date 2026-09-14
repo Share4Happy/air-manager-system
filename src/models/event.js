@@ -8,6 +8,15 @@ const AttachmentSchema = new Schema({
     uploadedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
+const TaskCommentSchema = new Schema({
+    id: { type: String, required: true },
+    author: { type: String, default: 'Thành viên' },
+    authorAvatar: { type: String, default: '' },
+    authorRole: { type: String, default: 'Thành viên' },
+    content: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 const RoadmapNodeSchema = new Schema({
     id: { type: String, required: true },
     parentId: { type: String, default: null }, // null if root phase
@@ -32,6 +41,11 @@ const RoadmapNodeSchema = new Schema({
     order: { type: Number, default: 0 },
     notes: { type: String, default: '' },
     attachments: [AttachmentSchema],
+    isApproved: { type: Boolean, default: false },
+    approvedBy: { type: String, default: '' },
+    approvedAt: { type: Date, default: null },
+    isCurrent: { type: Boolean, default: false },
+    comments: [TaskCommentSchema],
 }, { _id: false });
 
 const BudgetItemSchema = new Schema({
@@ -148,12 +162,18 @@ const MediaDriveLinkSchema = new Schema({
     description: { type: String, default: '' },
 }, { _id: false });
 
+const EquipmentCategorySchema = new Schema({
+    id: { type: String, required: true },
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    color: { type: String, default: '' },
+}, { _id: false });
+
 const EquipmentItemSchema = new Schema({
     id: { type: String, required: true },
     name: { type: String, required: true },
     category: {
         type: String,
-        enum: ['robot_model', 'kit', 'electronics', 'laptop_screen', 'tools', 'banner_props', 'other'],
         default: 'robot_model',
     },
     quantity: { type: Number, default: 1 },
@@ -185,9 +205,31 @@ const ShareConfigSchema = new Schema({
     expiresAt: { type: Date, default: null },
 }, { _id: false });
 
+const ZaloSendLogSchema = new Schema({
+    id: { type: String, default: () => `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` },
+    sentAt: { type: Date, default: Date.now },
+    recipientName: { type: String, default: '' },
+    recipientPhone: { type: String, default: '' },
+    message: { type: String, default: '' },
+    status: { type: String, default: 'success' }, // 'success' | 'failed'
+    error: { type: String, default: '' },
+    senderName: { type: String, default: '' },
+}, { _id: false });
+
+const EventZaloConfigSchema = new Schema({
+    enabled: { type: Boolean, default: false },
+    templateReminder: { type: String, default: 'Xin chào {name}, nhắc bạn sự kiện "{event_title}" sẽ diễn ra vào {event_date} tại {event_location}.' },
+    templateTaskAssign: { type: String, default: 'Xin chào {name}, bạn được giao nhiệm vụ "{task_name}" trong sự kiện "{event_title}". Hạn hoàn thành: {due_date}.' },
+    templateThankYou: { type: String, default: 'Cảm ơn {name} đã đồng hành và tham gia sự kiện "{event_title}". Chúc bạn một ngày tuyệt vời!' },
+    customMessage: { type: String, default: '' },
+    history: [ZaloSendLogSchema],
+}, { _id: false });
+
 const EventSchema = new Schema({
     title: { type: String, required: true },
     code: { type: String, default: '' }, // e.g. EVT-2026-ROBOTIC
+    link: { type: String, default: '' }, // Reference/Meeting/Canva/Docs Link attached under title
+    currentPhaseId: { type: String, default: null }, // Active / highlighted phase in roadmap
     type: {
         type: String,
         enum: ['competition', 'workshop', 'showcase', 'internal', 'other'],
@@ -222,6 +264,7 @@ const EventSchema = new Schema({
         default: () => ({}),
     },
 
+    equipmentCategories: [EquipmentCategorySchema],
     equipmentChecklist: [EquipmentItemSchema],
 
     budget: {
@@ -236,6 +279,17 @@ const EventSchema = new Schema({
         additionalDriveLinks: [MediaDriveLinkSchema],
         relatedPosts: [RelatedMediaLinkSchema],
         notes: { type: String, default: '' },
+    },
+
+    zaloConfig: {
+        type: EventZaloConfigSchema,
+        default: () => ({}),
+    },
+
+    customTabContent: {
+        title: { type: String, default: 'Ghi chú & Tài liệu mở rộng' },
+        content: { type: String, default: '' },
+        updatedAt: { type: Date, default: Date.now },
     },
 
     participantsCount: { type: Number, default: 0 },

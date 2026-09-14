@@ -69,12 +69,12 @@ export async function POST(request) {
 
                 // Nếu vẫn chưa có folderId, tự động tạo trên Google Drive
                 if (!targetFolderId) {
-                    const code = ses?.courseCode || 'GENERAL';
-                    const day = ses?.day || new Date();
+                    const code = ses?.courseCode || course?.ID || 'GENERAL';
+                    const day = ses?.day || detail?.Day || new Date();
                     const { getDriveClient, createDriveFolder, lessonFolderName } = await import('@/function/drive/folder');
                     const drive = getDriveClient();
                     const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
-                    if (PARENT_FOLDER_ID) {
+                    if (PARENT_FOLDER_ID && code) {
                         let classFolderId = null;
                         const list = await drive.files.list({
                             q: `name='${code}' and '${PARENT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,

@@ -253,7 +253,7 @@ export default function EventMembersView({
             key: 'role',
             header: 'Vai trò',
             render: (val, mem) => (
-                <span className={`inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border ${getRoleBadgeStyle(mem.role)}`}>
+                <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold border ${getRoleBadgeStyle(mem.role)}`}>
                     {mem.role || 'Thành viên'}
                 </span>
             ),
@@ -283,50 +283,23 @@ export default function EventMembersView({
             render: (val, mem) => (
                 <div>
                     {readOnly ? (
-                        <div
-                            className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border flex items-center justify-center gap-1.5 mx-auto ${
-                                mem.checkInStatus
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                                    : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)]'
-                            }`}
-                        >
-                            {mem.checkInStatus ? (
-                                <>
-                                    <IconCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Đã Check-in</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
-                                    <span>Chưa điểm danh</span>
-                                </>
-                            )}
+                        <div className="px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] inline-flex items-center gap-1.5 shadow-2xs mx-auto">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${mem.checkInStatus ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                            <span>{mem.checkInStatus ? 'Đã Check-in' : 'Chưa điểm danh'}</span>
                         </div>
                     ) : (
                         <button
                             type="button"
                             onClick={() => handleToggleCheckIn(mem.id)}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all border cursor-pointer flex items-center justify-center gap-1.5 mx-auto ${
-                                mem.checkInStatus
-                                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                                    : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)]'
-                            }`}
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs mx-auto"
+                            title={mem.checkInStatus ? 'Đã điểm danh (Bấm để hủy)' : 'Bấm để điểm danh'}
                         >
-                            {mem.checkInStatus ? (
-                                <>
-                                    <IconCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Đã Check-in</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="w-2 h-2 rounded-full bg-gray-400" />
-                                    <span>Chưa điểm danh</span>
-                                </>
-                            )}
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${mem.checkInStatus ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                            <span>{mem.checkInStatus ? 'Đã Check-in' : 'Chưa điểm danh'}</span>
                         </button>
                     )}
                     {mem.checkInTime && (
-                        <span className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 block mt-1 font-medium text-center">
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block mt-1 font-medium text-center">
                             {new Date(mem.checkInTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     )}
@@ -367,9 +340,9 @@ export default function EventMembersView({
                         <button
                             type="button"
                             onClick={handleExportExcel}
-                            className="px-3.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                         >
-                            <IconDownload className="w-3.5 h-3.5" />
+                            <IconDownload className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                             <span>Xuất Excel</span>
                         </button>
                     ) : (
@@ -377,23 +350,23 @@ export default function EventMembersView({
                             <button
                                 type="button"
                                 onClick={() => setIsImportModalOpen(true)}
-                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                                className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                             >
-                                <IconUpload className="w-3.5 h-3.5" />
+                                <IconUpload className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                 <span>Import Excel</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={handleExportExcel}
-                                className="px-3.5 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                                className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
                             >
-                                <IconDownload className="w-3.5 h-3.5" />
+                                <IconDownload className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                 <span>Xuất Excel</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={handleOpenAdd}
-                                className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
                             >
                                 <IconPlus className="w-3.5 h-3.5" />
                                 <span>Thêm người</span>
@@ -476,31 +449,17 @@ export default function EventMembersView({
                 isOpen={isMemberFormOpen}
                 onClose={() => setIsMemberFormOpen(false)}
                 title={editingMember ? 'Chỉnh sửa Thông tin Thành viên' : 'Thêm Thành viên Mới'}
+                subtitle="Quản lý nhân sự, phân công vai trò nhiệm vụ và thông tin liên hệ trong sự kiện"
                 icon={IconUser}
                 maxWidth="max-w-lg"
                 onSubmit={handleSaveMember}
-                footer={
-                    <>
-                        <button
-                            type="button"
-                            onClick={() => setIsMemberFormOpen(false)}
-                            className="px-4 py-2 rounded-xl border border-[var(--border-color)] text-[var(--text-primary)] bg-transparent cursor-pointer text-sm sm:text-base font-semibold hover:bg-[var(--bg-secondary)] transition-colors"
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold border-none cursor-pointer shadow-xs text-sm sm:text-base"
-                        >
-                            Lưu thông tin
-                        </button>
-                    </>
-                }
+                submitLabel={editingMember ? 'Lưu thay đổi' : 'Thêm thành viên'}
             >
+                {/* 1. Quick select from system users */}
                 {users.length > 0 && !editingMember && (
-                    <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                        <label className="block text-blue-950 dark:text-blue-200 font-semibold mb-1 text-xs sm:text-sm">
-                            Chọn nhanh nhân sự từ hệ thống (tùy chọn):
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)]/40 border border-[var(--border-color)] flex flex-col gap-2">
+                        <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                            Chọn nhanh nhân sự từ hệ thống (Tùy chọn)
                         </label>
                         <select
                             onChange={(e) => {
@@ -524,9 +483,9 @@ export default function EventMembersView({
                                     }));
                                 }
                             }}
-                            className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer font-medium transition-all"
                         >
-                            <option value="">-- Chọn nhân sự để tự động điền thông tin --</option>
+                            <option value="">-- Bấm để chọn nhân sự sẵn có --</option>
                             {users.map((u) => (
                                 <option key={u._id} value={u._id}>
                                     {u.name} ({Array.isArray(u.role) ? u.role.join(', ') : u.role || 'Nhân sự'}) {u.email ? `- ${u.email}` : ''}
@@ -536,119 +495,130 @@ export default function EventMembersView({
                     </div>
                 )}
 
-                <div>
-                    <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                        Họ và tên <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={memberFormData.name}
-                        onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })}
-                        placeholder="Ví dụ: Nguyễn Văn An"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
+                {/* 2. Personal info & Role */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-3">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                        Thông tin cá nhân & Vai trò
+                    </span>
 
-                <div className="grid grid-cols-2 gap-3.5">
+                    {/* Full Name */}
                     <div>
-                        <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                            Vai trò trong sự kiện <span className="text-rose-500">*</span>
+                        <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                            Họ và tên <span className="text-rose-500">*</span>
                         </label>
-                        <select
-                            value={isCustomRole ? '__custom__' : (memberFormData.role || 'Trọng tài / Giám khảo')}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === '__custom__') {
-                                    setIsCustomRole(true);
-                                    setCustomRoleInput('');
-                                } else {
-                                    setIsCustomRole(false);
-                                    setMemberFormData({ ...memberFormData, role: val });
-                                }
-                            }}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-medium"
-                        >
-                            {ROLE_GROUPS.map((grp) => (
-                                <optgroup key={grp.group} label={grp.group}>
-                                    {grp.roles.map((r) => (
-                                        <option key={r} value={r}>
-                                            {r}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                            ))}
-                            <option value="__custom__">-- Vai trò khác (Tự nhập) --</option>
-                        </select>
+                        <input
+                            type="text"
+                            required
+                            value={memberFormData.name}
+                            onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })}
+                            placeholder="Ví dụ: Nguyễn Văn An"
+                            className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
+                        />
+                    </div>
 
-                        {isCustomRole && (
+                    {/* Role & Organization */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Vai trò trong sự kiện <span className="text-rose-500">*</span>
+                            </label>
+                            <select
+                                value={isCustomRole ? '__custom__' : (memberFormData.role || 'Trọng tài / Giám khảo')}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '__custom__') {
+                                        setIsCustomRole(true);
+                                        setCustomRoleInput('');
+                                    } else {
+                                        setIsCustomRole(false);
+                                        setMemberFormData({ ...memberFormData, role: val });
+                                    }
+                                }}
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer font-medium transition-all"
+                            >
+                                {ROLE_GROUPS.map((grp) => (
+                                    <optgroup key={grp.group} label={grp.group}>
+                                        {grp.roles.map((r) => (
+                                            <option key={r} value={r}>
+                                                {r}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                                <option value="__custom__">-- Vai trò khác (Tự nhập) --</option>
+                            </select>
+
+                            {isCustomRole && (
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    required
+                                    value={customRoleInput}
+                                    onChange={(e) => {
+                                        setCustomRoleInput(e.target.value);
+                                        setMemberFormData({ ...memberFormData, role: e.target.value });
+                                    }}
+                                    placeholder="Nhập tên vai trò tùy chỉnh..."
+                                    className="w-full mt-2 px-3.5 py-2 rounded-xl border border-blue-500 bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all"
+                                />
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Đơn vị / Trường học
+                            </label>
                             <input
                                 type="text"
-                                autoFocus
-                                required
-                                value={customRoleInput}
-                                onChange={(e) => {
-                                    setCustomRoleInput(e.target.value);
-                                    setMemberFormData({ ...memberFormData, role: e.target.value });
-                                }}
-                                placeholder="Nhập tên vai trò tùy chỉnh..."
-                                className="w-full mt-2 px-3.5 py-2 rounded-xl border border-blue-400 bg-[var(--bg-primary)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                value={memberFormData.organization}
+                                onChange={(e) => setMemberFormData({ ...memberFormData, organization: e.target.value })}
+                                placeholder="Đại học Bách Khoa, THCS Lê Lợi..."
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
                             />
-                        )}
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                            Đơn vị / Trường học
-                        </label>
-                        <input
-                            type="text"
-                            value={memberFormData.organization}
-                            onChange={(e) => setMemberFormData({ ...memberFormData, organization: e.target.value })}
-                            placeholder="Đại học Bách Khoa, THCS Lê Lợi..."
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                </div>
+                    {/* Phone & Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Số điện thoại
+                            </label>
+                            <input
+                                type="text"
+                                value={memberFormData.phone}
+                                onChange={(e) => setMemberFormData({ ...memberFormData, phone: e.target.value })}
+                                placeholder="0901234567"
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
+                            />
+                        </div>
 
-                <div className="grid grid-cols-2 gap-3.5">
-                    <div>
-                        <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                            Số điện thoại
-                        </label>
-                        <input
-                            type="text"
-                            value={memberFormData.phone}
-                            onChange={(e) => setMemberFormData({ ...memberFormData, phone: e.target.value })}
-                            placeholder="0901234567"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            value={memberFormData.email}
-                            onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })}
-                            placeholder="example@gmail.com"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                        <div>
+                            <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={memberFormData.email}
+                                onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })}
+                                placeholder="example@gmail.com"
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-[var(--text-primary)] font-semibold mb-1.5 text-sm sm:text-base">
-                        Ghi chú / Nhiệm vụ cụ thể
-                    </label>
+                {/* 3. Task & Notes */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-2">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                        Phân công nhiệm vụ & Ghi chú
+                    </span>
                     <textarea
                         rows={2}
                         value={memberFormData.notes}
                         onChange={(e) => setMemberFormData({ ...memberFormData, notes: e.target.value })}
-                        placeholder="Nhiệm vụ cụ thể, đội thi, lưu ý..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm sm:text-base resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="Nhiệm vụ cụ thể, đội thi, ghi chú lưu ý..."
+                        className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
                     />
                 </div>
             </EventModal>

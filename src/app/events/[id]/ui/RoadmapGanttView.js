@@ -1,7 +1,15 @@
 'use client';
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatDate } from '@/function';
-import { IconTree, IconGantt, IconCalendar } from '@/app/events/ui/icons';
+import AddEditRoadmapModal from './AddEditRoadmapModal';
+import {
+    IconTree,
+    IconGantt,
+    IconTable,
+    IconCalendar,
+    IconPlus,
+    IconLayers,
+} from '@/app/events/ui/icons';
 
 const phaseColorPalette = [
     {
@@ -51,13 +59,32 @@ const phaseColorPalette = [
 export default function RoadmapGanttView({
     event = {},
     roadmap = [],
+    stations = [],
+    onUpdateRoadmap,
     users = [],
     members = [],
     roadmapMode = 'gantt',
     setRoadmapMode,
+    readOnly = false,
 }) {
-    const rootPhases = useMemo(() => roadmap.filter(node => !node.parentId), [roadmap]);
-    const childTasks = useMemo(() => roadmap.filter(node => node.parentId), [roadmap]);
+    const rootPhases = useMemo(() => (roadmap || []).filter(node => !node.parentId), [roadmap]);
+    const childTasks = useMemo(() => (roadmap || []).filter(node => !!node.parentId), [roadmap]);
+
+    const [modalState, setModalState] = useState({ isOpen: false, node: null, parentId: null });
+
+    // Event Assignees list
+    const eventAssignees = useMemo(() => {
+        const list = [];
+        (members || []).forEach(m => {
+            list.push({ id: String(m.id || m._id), name: m.name, role: m.role || 'Thành viên ngoài' });
+        });
+        (users || []).forEach(u => {
+            if (!list.some(item => item.id === String(u._id))) {
+                list.push({ id: String(u._id), name: u.name, role: Array.isArray(u.role) ? u.role.join(', ') : u.role || 'Nhân sự' });
+            }
+        });
+        return list;
+    }, [members, users]);
 
     // Helper to resolve assignee
     const getAssigneeInfo = (assigneeId) => {
@@ -76,13 +103,39 @@ export default function RoadmapGanttView({
         return null;
     };
 
+    const handleSaveNode = (nodeData, editingNode) => {
+        if (!onUpdateRoadmap) return;
+        if (editingNode) {
+            const updatedRoadmap = roadmap.map(node => {
+                if (node.id === editingNode.id) {
+                    return {
+                        ...node,
+                        ...nodeData,
+                        completedAt: nodeData.status === 'completed' ? (node.completedAt || new Date()) : null,
+                    };
+                }
+                return node;
+            });
+            onUpdateRoadmap(updatedRoadmap);
+        } else {
+            const newNodeId = `node-${Date.now()}`;
+            const newNode = {
+                id: newNodeId,
+                ...nodeData,
+                order: roadmap.length + 1,
+                comments: [],
+            };
+            onUpdateRoadmap([...roadmap, newNode]);
+        }
+    };
+
     // Calculate overall timeline bounds
     const timelineBounds = useMemo(() => {
         const dates = [];
         if (event.startDate) dates.push(new Date(event.startDate).getTime());
         if (event.endDate) dates.push(new Date(event.endDate).getTime());
 
-        roadmap.forEach(n => {
+        (roadmap || []).forEach(n => {
             if (n.startDate) dates.push(new Date(n.startDate).getTime());
             if (n.dueDate) dates.push(new Date(n.dueDate).getTime());
         });
@@ -167,7 +220,7 @@ export default function RoadmapGanttView({
                         }`}
                     >
                         <IconTree className="w-3.5 h-3.5" />
-                        <span>Sơ đồ Cây (Tree View)</span>
+                        <span>Sơ đồ Cây</span>
                     </button>
                     <button
                         type="button"
@@ -179,27 +232,51 @@ export default function RoadmapGanttView({
                         }`}
                     >
                         <IconGantt className="w-3.5 h-3.5" />
-                        <span>Tiến độ Gantt Timeline</span>
+                        <span>Tiến độ Gantt</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRoadmapMode?.('table')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+                            roadmapMode === 'table'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                    >
+                        <IconTable className="w-3.5 h-3.5" />
+                        <span>Dạng Bảng</span>
                     </button>
                 </div>
 
-                {/* Right: Event Date badge & Phase Color Legends */}
-                <div className="flex items-center gap-3 text-xs flex-wrap">
+                {/* Right: Event Date badge, Phase Color Legends & Action Buttons */}
+                <div className="flex items-center gap-2.5 flex-wrap self-end sm:self-auto">
                     {event.startDate && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800 shadow-2xs text-xs">
                             <IconCalendar className="w-3.5 h-3.5" />
                             <span>Ngày sự kiện: {formatDate(event.startDate)}</span>
                         </div>
                     )}
-                    {rootPhases.map((phase, pIdx) => {
-                        const color = phaseColorPalette[pIdx % phaseColorPalette.length];
-                        return (
-                            <div key={phase.id} className="flex items-center gap-1.5">
-                                <span className={`w-2.5 h-2.5 rounded-xs ${color.bar.split(' ')[0]}`} />
-                                <span className="text-[var(--text-secondary)] text-[11px] font-medium">{phase.name}</span>
-                            </div>
-                        );
-                    })}
+
+                    {!readOnly && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setModalState({ isOpen: true, node: null, parentId: null })}
+                                className="px-3.5 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] text-[var(--text-primary)] text-xs sm:text-sm font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <IconLayers className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Thêm Giai đoạn</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setModalState({ isOpen: true, node: null, parentId: rootPhases[0]?.id || null })}
+                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-all border-none cursor-pointer shadow-xs flex items-center gap-1.5"
+                            >
+                                <IconPlus className="w-3.5 h-3.5" />
+                                <span>Thêm Công việc</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -208,7 +285,7 @@ export default function RoadmapGanttView({
                 <div className="overflow-x-auto scrollbar-thin">
                     <div className="min-w-[1000px] flex flex-col">
                         {/* Table Header: Columns + Date Axis with Event Date Marker */}
-                        <div className="flex items-center border-b border-[var(--border-color)] bg-gray-50/90 dark:bg-gray-900/60 py-3 text-xs sm:text-sm font-bold text-[var(--text-secondary)] sticky top-0 z-20">
+                        <div className="flex items-center border-b border-[var(--border-color)] bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-transparent dark:from-blue-950/40 dark:via-indigo-950/20 dark:to-transparent py-3 text-xs sm:text-sm font-bold text-[var(--text-secondary)] sticky top-0 z-20">
                             {/* Col 1: Công việc */}
                             <div className="w-72 shrink-0 px-4 font-bold text-[var(--text-primary)] uppercase tracking-wider text-xs sm:text-sm">
                                 Công việc
@@ -240,7 +317,7 @@ export default function RoadmapGanttView({
                                         className="absolute top-0 -translate-x-1/2 flex flex-col items-center z-25 pointer-events-none"
                                         style={{ left: eventMarker.left }}
                                     >
-                                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold shadow-sm whitespace-nowrap flex items-center gap-1 uppercase tracking-wider ring-1 ring-indigo-300 dark:ring-indigo-800">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold shadow-xs whitespace-nowrap flex items-center gap-1 uppercase tracking-wider ring-1 ring-indigo-300 dark:ring-indigo-800">
                                             <IconCalendar className="w-3 h-3 text-white" />
                                             <span>Sự kiện: {formatDate(eventMarker.startDate)}</span>
                                         </span>
@@ -300,19 +377,29 @@ export default function RoadmapGanttView({
 
                                 return (
                                     <div key={phase.id} className="flex flex-col">
-                                        {/* Phase Sub-heading Row */}
-                                        <div className={`flex items-center py-2 px-4 ${color.bg} border-y ${color.border}`}>
+                                        {/* Phase Sub-heading Row matching Tree View standard */}
+                                        <div className="flex items-center justify-between py-2.5 px-4 bg-gradient-to-r from-blue-50/90 via-blue-50/40 to-transparent dark:from-blue-950/40 dark:via-blue-950/20 dark:to-transparent border-y border-[var(--border-color)]">
                                             <div className="flex items-center gap-2.5">
-                                                <span className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center shrink-0 ${color.badge}`}>
-                                                    {pIdx + 1}
+                                                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${color.badge} uppercase tracking-wider`}>
+                                                    Giai đoạn {pIdx + 1}
                                                 </span>
-                                                <span className={`font-bold text-sm sm:text-base ${color.text}`}>
+                                                <span className="font-bold text-sm sm:text-base text-[var(--text-primary)]">
                                                     {phase.name}
                                                 </span>
-                                                <span className="text-xs opacity-80">
-                                                    ({subTasks.length} việc)
+                                                <span className="text-xs text-[var(--text-secondary)] font-medium">
+                                                    ({subTasks.length} nhiệm vụ)
                                                 </span>
                                             </div>
+                                            {!readOnly && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModalState({ isOpen: true, node: null, parentId: phase.id })}
+                                                    className="px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold cursor-pointer flex items-center gap-1 transition-colors shadow-2xs"
+                                                >
+                                                    <IconPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                    <span>Thêm việc</span>
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Sub-tasks Rows */}
@@ -323,11 +410,12 @@ export default function RoadmapGanttView({
                                             return (
                                                 <div
                                                     key={task.id}
-                                                    className="flex items-center py-3 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors group text-sm"
+                                                    onClick={() => !readOnly && setModalState({ isOpen: true, node: task, parentId: task.parentId })}
+                                                    className={`flex items-center py-3 hover:bg-[var(--bg-secondary)]/40 transition-colors group text-sm ${!readOnly ? 'cursor-pointer' : ''}`}
                                                 >
                                                     {/* Col 1: Công việc */}
                                                     <div className="w-72 shrink-0 px-4 text-sm font-medium">
-                                                        <span className="truncate block text-[var(--text-primary)] pl-2" title={task.name}>
+                                                        <span className="truncate block text-[var(--text-primary)] pl-2 group-hover:text-blue-600 transition-colors" title={task.name}>
                                                             ↳ {task.name}
                                                         </span>
                                                     </div>
@@ -344,10 +432,10 @@ export default function RoadmapGanttView({
                                                         {task.dueDate ? formatDate(task.dueDate) : <span className="text-gray-400 italic">--</span>}
                                                     </div>
 
-                                                    {/* Col 4: Timeline Bar (Hình vuông/khối chữ nhật, không chữ ở trong) */}
+                                                    {/* Col 4: Timeline Bar */}
                                                     <div className="flex-1 relative h-6">
                                                         <div
-                                                            className={`absolute top-1 bottom-1 rounded-xs shadow-xs transition-all duration-200 cursor-pointer ${color.bar}`}
+                                                            className={`absolute top-1 bottom-1 rounded-lg shadow-xs transition-all duration-200 ${color.bar}`}
                                                             style={pos}
                                                             title={`${task.name} • ${phase.name} • Hạn: ${task.dueDate ? formatDate(task.dueDate) : 'Chưa có hạn'}`}
                                                         />
@@ -362,6 +450,19 @@ export default function RoadmapGanttView({
                     </div>
                 </div>
             </div>
+
+            {/* Unified Add / Edit Node Modal */}
+            <AddEditRoadmapModal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ isOpen: false, node: null, parentId: null })}
+                onSave={handleSaveNode}
+                node={modalState.node}
+                parentId={modalState.parentId}
+                rootPhases={rootPhases}
+                childTasks={childTasks}
+                eventAssignees={eventAssignees}
+                stations={stations}
+            />
         </div>
     );
 }

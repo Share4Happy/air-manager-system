@@ -167,12 +167,43 @@ export async function POST(request) {
 
     let classFolderId;
     if (ctx.kind === 'official') {
+        const rootId = process.env.DRIVE_COURSE_FOLDER_ID;
         if (!ctx.lessonFolderId) {
-            return NextResponse.json({ status: 1, mes: 'Buổi học chưa có thư mục trên Drive.' }, { status: 500 });
+            if (rootId) {
+                let foundClassId = await findFolderByName(drive, ctx.code, rootId);
+                if (!foundClassId) {
+                    foundClassId = await createFolder(drive, ctx.code, rootId);
+                }
+                if (foundClassId) {
+                    const { lessonFolderName } = await import('@/function/drive/folder');
+                    const lessonName = lessonFolderName(ctx.code, ctx.day);
+                    const newLessonId = await createFolder(drive, lessonName, foundClassId);
+                    if (newLessonId) {
+                        ctx.lessonFolderId = newLessonId;
+                        try {
+                            const Session = (await import('@/models/session')).default;
+                            await Session.updateOne({ _id: sessionId }, { $set: { image: newLessonId } });
+                            if (ctx.courseId) {
+                                await PostCourse.updateOne({ _id: ctx.courseId, 'Detail._id': sessionId }, { $set: { 'Detail.$.Image': newLessonId } });
+                            }
+                        } catch (syncErr) {
+                            console.warn('[Checkin Photo] Sync new folder to DB error:', syncErr.message);
+                        }
+                    }
+                }
+            }
         }
-        classFolderId = await getClassFolder(drive, ctx.lessonFolderId, ctx.code);
+        if (ctx.lessonFolderId) {
+            classFolderId = await getClassFolder(drive, ctx.lessonFolderId, ctx.code);
+        }
+        if (!classFolderId && rootId) {
+            classFolderId = await findFolderByName(drive, ctx.code, rootId);
+            if (!classFolderId) {
+                classFolderId = await createFolder(drive, ctx.code, rootId);
+            }
+        }
         if (!classFolderId) {
-            return NextResponse.json({ status: 1, mes: `Không tìm thấy thư mục lớp ${ctx.code} trên Drive.` }, { status: 500 });
+            return NextResponse.json({ status: 1, mes: `Không tìm thấy hoặc không thể tạo thư mục lớp ${ctx.code} trên Drive.` }, { status: 500 });
         }
     } else {
         classFolderId = ctx.rootFolderId;

@@ -85,59 +85,83 @@ export async function GET(_req, { params }) {
                 roomName(sessionDoc.room)
             ]);
 
-            const studentIds = attDocs.length > 0
-                ? attDocs.map(a => a.studentId)
-                : (courseDoc?.Student || []).map(s => s.ID);
+            if (!sessionDoc.image) {
+                try {
+                    const drive = getDriveClient();
+                    const code = courseDoc?.ID || sessionDoc.courseCode;
+                    if (code) {
+                        const classFolderId = await findOrCreateClassFolder(drive, code);
+                        if (classFolderId) {
+                            const folderId = await createDriveFolder(drive, lessonFolderName(code, sessionDoc.day), classFolderId);
+                            if (folderId) {
+                                await Session.updateOne(
+                                    { _id: id },
+                                    { $set: { image: folderId } }
+                                );
+                                if (courseDoc?._id) {
+                                    await Course.updateOne(
+                                        { _id: courseDoc._id, 'Detail._id': id },
+                                        { $set: { 'Detail.$.Image': folderId } }
+                                    );
+                                }
+                                sessionDoc.image = folderId;
+                                if (courseDoc?._id) reloadCourse(courseDoc._id);
+                                revalidateTag(`data_lesson${id}`, 'max');
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('[SESSION_GET] ensure lesson folder in sessionDoc:', err);
+                }
+            }
+
+            const courseStudentIds = (courseDoc?.Student || []).map(s => s.ID || s._id?.toString()).filter(Boolean);
+            const attStudentIds = attDocs.map(a => a.studentId).filter(Boolean);
+            const allStudentIds = Array.from(new Set([...courseStudentIds, ...attStudentIds]));
 
             const studs = await Student.find({
                 $or: [
-                    { ID: { $in: studentIds } },
-                    { _id: { $in: studentIds.filter(isId) } }
+                    { ID: { $in: allStudentIds } },
+                    { _id: { $in: allStudentIds.filter(isId) } }
                 ]
             }).select('ID Name Avt').lean();
 
             const uMap = new Map(teachers.map(u => [u._id.toString(), u]));
-            const sMap = new Map([
-                ...studs.map(s => [s.ID, s]),
-                ...studs.map(s => [s._id.toString(), s])
-            ]);
+            const sMap = new Map();
+            studs.forEach(s => {
+                if (s.ID) sMap.set(s.ID, s);
+                if (s._id) sMap.set(s._id.toString(), s);
+            });
+            const attMap = new Map(attDocs.map(a => [a.studentId, a]));
+            const courseStuMap = new Map((courseDoc?.Student || []).map(s => [s.ID || s._id?.toString(), s]));
 
-            let students = [];
-            if (attDocs.length > 0) {
-                students = attDocs.map(att => {
-                    const info = sMap.get(att.studentId) || {};
-                    return {
-                        _id: info._id ?? null,
-                        ID: info.ID ?? att.studentId ?? '–––',
-                        Name: info.Name ?? 'Không tên',
-                        Avt: info.Avt ?? null,
-                        attendance: {
-                            Checkin: att.checkin ?? 0,
-                            Cmt: att.cmt ?? [],
-                            CmtFn: att.cmtFn ?? '',
-                            Note: att.note ?? '',
-                            Lesson: id,
-                            Image: att.images ?? []
-                        }
-                    };
-                });
-            } else if (courseDoc?.Student?.length > 0) {
-                students = buildStudents(
-                    courseDoc.Student.map(s => {
-                        const attendance = (s.Learn || []).find(lr => lr.Lesson?.toString() === id) || {
-                            Checkin: 0,
-                            Cmt: [],
-                            CmtFn: '',
-                            Note: '',
-                            Lesson: id,
-                            Image: []
-                        };
-                        return { ...s, attendance };
-                    }),
-                    sMap,
-                    id
-                );
-            }
+            const students = allStudentIds.map(stId => {
+                const info = sMap.get(stId) || {};
+                const att = attMap.get(stId);
+                const courseStu = courseStuMap.get(stId);
+                const learnItem = (courseStu?.Learn || []).find(lr => lr.Lesson?.toString() === id);
+
+                const checkin = att?.checkin ?? learnItem?.Checkin ?? 0;
+                const cmt = att?.cmt ?? learnItem?.Cmt ?? [];
+                const cmtFn = att?.cmtFn ?? learnItem?.CmtFn ?? '';
+                const note = att?.note ?? learnItem?.Note ?? '';
+                const images = att?.images ?? learnItem?.Image ?? [];
+
+                return {
+                    _id: info._id ?? null,
+                    ID: info.ID ?? stId ?? '–––',
+                    Name: info.Name ?? 'Không tên',
+                    Avt: info.Avt ?? null,
+                    attendance: {
+                        Checkin: checkin,
+                        Cmt: cmt,
+                        CmtFn: cmtFn,
+                        Note: note,
+                        Lesson: id,
+                        Image: images
+                    }
+                };
+            });
 
             return NextResponse.json({
                 success: true,

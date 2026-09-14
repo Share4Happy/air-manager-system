@@ -245,7 +245,7 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             render: (val, item) => {
                 const catCfg = categoryLabels[item.category] || categoryLabels.other;
                 return (
-                    <span className={`px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold ${catCfg.color}`}>
+                    <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${catCfg.color}`}>
                         {catCfg.label}
                     </span>
                 );
@@ -296,45 +296,25 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
             key: 'isPaid',
             header: 'Đã thanh toán',
             align: 'center',
-            render: (val, item) => (
-                readOnly ? (
-                    <span
-                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold border inline-flex items-center gap-1.5 ${
-                            item.isPaid
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                : 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
-                        }`}
-                    >
-                        {item.isPaid ? (
-                            <>
-                                <IconCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Đã chi</span>
-                            </>
-                        ) : (
-                            <span>Chưa chi</span>
-                        )}
+            render: (val, item) => {
+                const badgeClasses = "px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] inline-flex items-center gap-1.5 shadow-2xs transition-colors";
+                return readOnly ? (
+                    <span className={badgeClasses}>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.isPaid ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        <span>{item.isPaid ? 'Đã chi' : 'Chưa chi'}</span>
                     </span>
                 ) : (
                     <button
                         type="button"
                         onClick={() => handleTogglePaid(item.id)}
-                        className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold border cursor-pointer transition-all inline-flex items-center gap-1.5 ${
-                            item.isPaid
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                : 'bg-gray-50 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300'
-                        }`}
+                        className={`${badgeClasses} cursor-pointer hover:bg-[var(--bg-secondary)]`}
+                        title={item.isPaid ? 'Đã thanh toán (Bấm để hủy)' : 'Bấm để đánh dấu đã thanh toán'}
                     >
-                        {item.isPaid ? (
-                            <>
-                                <IconCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Đã chi</span>
-                            </>
-                        ) : (
-                            <span>Chưa chi</span>
-                        )}
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.isPaid ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        <span>{item.isPaid ? 'Đã chi' : 'Chưa chi'}</span>
                     </button>
-                )
-            ),
+                );
+            },
         },
         {
             key: 'note',
@@ -497,143 +477,157 @@ export default function BudgetExpenseView({ budget = {}, onUpdateBudget, users =
                     setEditingItem(null);
                 }}
                 title={editingItem ? 'Chỉnh sửa Mục chi phí' : 'Thêm Mục chi phí mới'}
+                subtitle="Chi tiết dự toán, thực chi phát sinh và người chịu trách nhiệm thanh toán"
                 icon={IconDollar}
                 maxWidth="max-w-lg"
                 onSubmit={editingItem ? handleSaveEdit : handleSaveAdd}
-                footer={
-                    <>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsAddModalOpen(false);
-                                setEditingItem(null);
-                            }}
-                            className="px-4 py-2 rounded-xl text-sm sm:text-base font-semibold border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors bg-transparent cursor-pointer"
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-5 py-2 rounded-xl text-sm sm:text-base font-semibold bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer shadow-xs transition-all"
-                        >
-                            Lưu mục chi
-                        </button>
-                    </>
-                }
+                submitLabel={editingItem ? 'Lưu thay đổi' : 'Thêm mục chi'}
+                cancelLabel="Hủy"
             >
-                <div>
-                    <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                        Tên khoản chi <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        required
-                        value={formItem.name}
-                        onChange={(e) => setFormItem({ ...formItem, name: e.target.value })}
-                        placeholder="Ví dụ: Đặt cúp lưu niệm và huy chương..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
+                <div className="flex flex-col gap-3.5 text-xs sm:text-sm">
+                    {/* Card 1: Expense Details & Cost */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-3">
+                        <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                            Khoản chi & Ngân sách
+                        </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                        <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">Danh mục chi</label>
-                        <select
-                            value={formItem.category}
-                            onChange={(e) => setFormItem({ ...formItem, category: e.target.value })}
-                            className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                        >
-                            <option value="venue">Địa điểm / Sân bãi</option>
-                            <option value="equipment">Trang thiết bị & Robot</option>
-                            <option value="prizes">Giải thưởng & Quà tặng</option>
-                            <option value="marketing">Truyền thông & In ấn</option>
-                            <option value="catering">Ăn uống & Teabreak</option>
-                            <option value="logistics">Bồi dưỡng & Hậu cần</option>
-                            <option value="other">Chi phí khác</option>
-                        </select>
+                        <div>
+                            <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                Tên khoản chi / Hạng mục <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={formItem.name}
+                                onChange={(e) => setFormItem({ ...formItem, name: e.target.value })}
+                                placeholder="Ví dụ: Đặt cúp lưu niệm, huy chương và banner..."
+                                className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Danh mục chi
+                                </label>
+                                <select
+                                    value={formItem.category}
+                                    onChange={(e) => setFormItem({ ...formItem, category: e.target.value })}
+                                    className="w-full px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                                >
+                                    <option value="venue">Địa điểm / Sân bãi</option>
+                                    <option value="equipment">Trang thiết bị & Robot</option>
+                                    <option value="prizes">Giải thưởng & Quà tặng</option>
+                                    <option value="marketing">Truyền thông & In ấn</option>
+                                    <option value="catering">Ăn uống & Teabreak</option>
+                                    <option value="logistics">Bồi dưỡng & Hậu cần</option>
+                                    <option value="other">Chi phí khác</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Ghi chú & Chi tiết
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formItem.note}
+                                    onChange={(e) => setFormItem({ ...formItem, note: e.target.value })}
+                                    placeholder="Hóa đơn, đơn vị cung cấp..."
+                                    className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Dự toán (VNĐ)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={formItem.estimatedCost}
+                                    onChange={(e) => setFormItem({ ...formItem, estimatedCost: e.target.value })}
+                                    placeholder="0"
+                                    className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm font-mono font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Thực chi (VNĐ)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={formItem.actualCost}
+                                    onChange={(e) => setFormItem({ ...formItem, actualCost: e.target.value })}
+                                    placeholder="0"
+                                    className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm font-mono font-bold text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">Người chi / Phụ trách</label>
-                        <select
-                            value={formItem.paidBy}
-                            onChange={(e) => {
-                                const selectedId = e.target.value;
-                                const found = payerOptions.find((p) => p.id === selectedId);
-                                setFormItem({
-                                    ...formItem,
-                                    paidBy: selectedId,
-                                    payerName: found ? found.name : formItem.payerName,
-                                });
-                            }}
-                            className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                        >
-                            <option value="">-- Chọn người chi --</option>
-                            {payerOptions.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name} ({p.role})
-                                </option>
-                            ))}
-                        </select>
+                    {/* Card 2: Payer & Payment Status */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 flex flex-col gap-3">
+                        <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                            Người thanh toán & Tình trạng
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Người chi / Phụ trách
+                                </label>
+                                <select
+                                    value={formItem.paidBy}
+                                    onChange={(e) => {
+                                        const selectedId = e.target.value;
+                                        const found = payerOptions.find((p) => p.id === selectedId);
+                                        setFormItem({
+                                            ...formItem,
+                                            paidBy: selectedId,
+                                            payerName: found ? found.name : formItem.payerName,
+                                        });
+                                    }}
+                                    className="w-full px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                                >
+                                    <option value="">-- Chọn người chi --</option>
+                                    {payerOptions.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name} {p.role ? `(${p.role})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                                    Hoặc tên người chi ngoài
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formItem.payerName}
+                                    onChange={(e) => setFormItem({ ...formItem, payerName: e.target.value })}
+                                    placeholder="Nếu người chi ngoài danh sách..."
+                                    className="w-full px-3.5 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] flex items-center justify-between gap-3 mt-1">
+                            <span className="text-xs font-semibold text-[var(--text-primary)]">
+                                Đã thanh toán / Chi tiền thực tế
+                            </span>
+                            <input
+                                type="checkbox"
+                                checked={formItem.isPaid}
+                                onChange={(e) => setFormItem({ ...formItem, isPaid: e.target.checked })}
+                                className="w-4 h-4 rounded text-blue-600 border-[var(--border-color)] cursor-pointer accent-blue-600"
+                            />
+                        </div>
                     </div>
                 </div>
-
-                {/* Optional Custom Payer Name if not in list */}
-                <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-1">Hoặc nhập tên người chi khác:</label>
-                    <input
-                        type="text"
-                        value={formItem.payerName}
-                        onChange={(e) => setFormItem({ ...formItem, payerName: e.target.value })}
-                        placeholder="Họ và tên người thanh toán (nếu ngoài danh sách)"
-                        className="w-full px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                        <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">Dự toán (VNĐ)</label>
-                        <input
-                            type="number"
-                            value={formItem.estimatedCost}
-                            onChange={(e) => setFormItem({ ...formItem, estimatedCost: e.target.value })}
-                            placeholder="0"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">Thực chi (VNĐ)</label>
-                        <input
-                            type="number"
-                            value={formItem.actualCost}
-                            onChange={(e) => setFormItem({ ...formItem, actualCost: e.target.value })}
-                            placeholder="0"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm sm:text-base font-semibold text-[var(--text-primary)] mb-1.5">Ghi chú & Chi tiết</label>
-                    <input
-                        type="text"
-                        value={formItem.note}
-                        onChange={(e) => setFormItem({ ...formItem, note: e.target.value })}
-                        placeholder="Số lượng, hóa đơn, đơn vị cung cấp..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm sm:text-base text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                </div>
-
-                <label className="flex items-center gap-2.5 text-sm sm:text-base font-medium text-[var(--text-primary)] cursor-pointer pt-1">
-                    <input
-                        type="checkbox"
-                        checked={formItem.isPaid}
-                        onChange={(e) => setFormItem({ ...formItem, isPaid: e.target.checked })}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <span>Đã hoàn tất thanh toán / chi tiền thực tế</span>
-                </label>
             </EventModal>
         </div>
     );
