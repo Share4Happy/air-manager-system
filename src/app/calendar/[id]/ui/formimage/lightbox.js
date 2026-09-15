@@ -67,11 +67,11 @@ export default function Lightbox({ mediaItem, media, folderId, onClose, onUpdate
                 throw new Error(res.result.mes || 'Có lỗi xảy ra khi cập nhật.');
             }
 
-            if (handleSuccess) {
-                await handleSuccess();
-            }
-
-            onClose();
+            setNotification({
+                open: true,
+                status: true,
+                mes: res.result.mes || 'Cập nhật hình ảnh/video thành công!'
+            });
 
         } catch (err) {
             console.error('Lỗi cập nhật media:', err);
@@ -94,21 +94,22 @@ export default function Lightbox({ mediaItem, media, folderId, onClose, onUpdate
             });
 
             const result = await response.json();
-            if (!response.ok) {
+            if (!response.ok || result.status !== 2) {
                 throw new Error(result.mes || 'Xóa file thất bại.');
             }
 
-            if (handleSuccess) {
-                await handleSuccess();
-            }
-            onClose();
+            setNotification({
+                open: true,
+                status: true,
+                mes: result.mes || 'Xóa hình ảnh/video thành công!'
+            });
 
         } catch (err) {
             console.error('Lỗi xóa media:', err);
             setNotification({
                 open: true,
                 status: false,
-                mes: err.message
+                mes: err.message || 'Xóa file thất bại.'
             });
         } finally {
             setIsLoading(false);
@@ -119,8 +120,15 @@ export default function Lightbox({ mediaItem, media, folderId, onClose, onUpdate
         fileInputRef.current?.click();
     };
 
-    const closeNotification = () => {
+    const closeNotification = async () => {
+        const wasSuccess = notification.status;
         setNotification({ open: false, status: false, mes: '' });
+        if (wasSuccess) {
+            if (handleSuccess) {
+                await handleSuccess();
+            }
+            onClose();
+        }
     };
 
     return (

@@ -69,16 +69,19 @@ const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
         setLoadingContent('');
     }, []);
 
-    const closeNoti = useCallback(() => {
+    const closeNoti = useCallback(async () => {
         setNoti(prev => ({ ...prev, open: false }));
-    }, []);
+        if (typeof refreshData === 'function') {
+            await refreshData();
+        }
+    }, [refreshData]);
 
     const showNoti = useCallback((status, mes) => {
         setNoti({
             open: true,
             status: status,
             mes: mes,
-            button: <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ background: 'var(--main_d)', width: 'calc(100% - 24px)', justifyContent: 'center' }} onClick={closeNoti}>Tắt thông báo</div>,
+            button: <div className='px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5' style={{ background: 'var(--main_d)', width: 'calc(100% - 24px)', justifyContent: 'center' }} onClick={closeNoti}>Đã hiểu</div>,
         });
     }, [closeNoti]);
 
@@ -111,21 +114,22 @@ const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
             const response = await fetch('/api/image', { method: 'PUT', body: formData });
             const result = await response.json();
 
-            result.data.forEach(element => Re_lesson(element));
+            if (Array.isArray(result?.data)) {
+                result.data.forEach(element => Re_lesson(element));
+            }
 
             if (response.ok && result.status === 2) {
-                showNoti(true, result.mes);
+                showNoti(true, result.mes || 'Cập nhật hình ảnh thành công!');
             } else {
-                showNoti(false, result.mes);
+                showNoti(false, result.mes || 'Cập nhật ảnh thất bại.');
             }
         } catch (error) {
             console.error('Lỗi khi gọi API PUT:', error);
             showNoti(false, 'Đã xảy ra lỗi khi cập nhật ảnh. Vui lòng thử lại.');
         } finally {
-            await refreshData();
             hideLoading();
         }
-    }, [refreshData, showLoading, hideLoading, showNoti]);
+    }, [showLoading, hideLoading, showNoti]);
 
     const handleFileChangeForUpdate = useCallback(async (event) => {
         const file = event.target.files[0];
@@ -158,21 +162,20 @@ const ImageComponent = ({ width, imageInfo, refreshData, width2 }) => {
                     }
 
                     if (response.ok && result.status === 2) {
-                        showNoti(true, result.mes);
+                        showNoti(true, result.mes || 'Xóa hình ảnh thành công!');
                     } else {
-                        showNoti(false, result.mes);
+                        showNoti(false, result.mes || 'Xóa hình ảnh thất bại.');
                     }
                 } catch (error) {
                     console.error('Lỗi khi gọi API DELETE:', error);
                     showNoti(false, 'Đã xảy ra lỗi khi xóa ảnh. Vui lòng thử lại.');
                 } finally {
-                    await refreshData();
                     hideLoading();
                     handleClosePopup();
                 }
             }
         );
-    }, [imageInfo.id, refreshData, showAlertPopup, showLoading, hideLoading, showNoti, handleClosePopup]);
+    }, [imageInfo.id, showAlertPopup, showLoading, hideLoading, showNoti, handleClosePopup]);
 
     const handleDownload = useCallback(() => {
         const downloadUrl = driveDownloadUrl(imageInfo.id);

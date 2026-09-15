@@ -366,6 +366,9 @@ export default function EventDetailPage({ params }) {
             {activeTab === 'retro' && (
                 <RetrospectiveView
                     event={event}
+                    users={users}
+                    members={event.members || []}
+                    roadmap={event.roadmap || []}
                     onUpdateSummaryReport={handleUpdateSummaryReport}
                     onMarkCompleted={() => handleStatusChange('completed')}
                 />
