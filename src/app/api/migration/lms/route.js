@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 import { getMigrationStats, runLmsMigration, cleanupLegacyEmbeddedData, cleanupNotificationCollections } from '@/lib/migration/lms-migration';
 
-export async function GET() {
+export async function GET(req) {
     try {
-        const user = await checkAuthToken();
-        if (!user || (!user.role?.includes('Admin') && !user.role?.includes('Academic'))) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
-        }
+        const auth = await authorize(req, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
 
         const stats = await getMigrationStats();
         return NextResponse.json({ success: true, data: stats });
@@ -19,10 +17,8 @@ export async function GET() {
 
 export async function POST(req) {
     try {
-        const user = await checkAuthToken();
-        if (!user || (!user.role?.includes('Admin') && !user.role?.includes('Academic'))) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
-        }
+        const auth = await authorize(req, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
 
         const body = await req.json().catch(() => ({}));
 

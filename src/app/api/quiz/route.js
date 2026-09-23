@@ -3,6 +3,7 @@ import connectDB from '@/config/connectDB'
 import Quiz from '@/models/quiz'
 import NotificationSetting from '@/models/notificationSetting'
 import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
 const ROLES = ['Admin', 'Academic', 'Teacher', 'Sale']
 const DEFAULT_PASS_RATE = 0.8
@@ -15,6 +16,9 @@ async function getPassRate() {
 
 export async function GET(request) {
     try {
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         const { searchParams } = new URL(request.url)
         const role = searchParams.get('role') || ''
         const includeAnswers = searchParams.get('admin') === '1'

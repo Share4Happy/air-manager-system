@@ -2,6 +2,7 @@ import connectDB from '@/config/connectDB'
 import ToolLabel from '@/models/toolLabel'
 import jsonRes from '@/utils/response'
 import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
 const LABEL_COLORS = [
     '#fde8e8', '#fed7aa', '#fef9c3', '#d1fae5', '#cffafe',
@@ -10,8 +11,11 @@ const LABEL_COLORS = [
     '#bfdbfe', '#ddd6fe', '#fbcfe8', '#a5f3fc', '#d9f99d',
 ]
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const labels = await ToolLabel.find({}).lean()
         return jsonRes(200, { status: true, data: labels })
@@ -22,7 +26,10 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        const { user, body } = await authenticate(request)
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
+        const body = await request.json()
         await connectDB()
         const { name } = body
         if (!name?.trim()) {
@@ -35,7 +42,6 @@ export async function POST(request) {
         const label = await ToolLabel.create({ name: name.trim(), color })
         return jsonRes(201, { status: true, data: label })
     } catch (err) {
-        const code = err.message === 'Authentication failed' ? 401 : 500
-        return jsonRes(code, { status: false, mes: err.message, data: [] })
+        return jsonRes(500, { status: false, mes: err.message, data: [] })
     }
 }

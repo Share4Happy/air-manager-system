@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/config/connectDB';
 import SendHistory from '@/models/historyClient';
 import authenticate from '@/utils/authenticate';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(req) {
     try {
@@ -47,6 +48,9 @@ export async function POST(req) {
 
 export async function GET(req) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         await dbConnect();
         const histories = await SendHistory
             .find({})

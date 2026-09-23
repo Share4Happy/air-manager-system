@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import MakeupSession from '@/models/makeupSession'
 import PostCourse from '@/models/course'
-import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 import mongoose from 'mongoose'
 
 export async function PATCH(req, { params }) {
     try {
-        const auth = await authenticate(req)
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await authorize(req, ['Admin', 'Academic', 'Teacher'])
+        if (!auth.authorized) return auth.response
 
         const { id } = await params
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -59,8 +59,8 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(req, { params }) {
     try {
-        const auth = await authenticate(req)
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const auth = await authorize(req, ['Admin', 'Academic'])
+        if (!auth.authorized) return auth.response
 
         const { id } = await params
         if (!mongoose.Types.ObjectId.isValid(id)) {

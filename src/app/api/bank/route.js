@@ -2,9 +2,13 @@ import connectDB from '@/config/connectDB'
 import Bank from '@/models/bank'
 import jsonRes from '@/utils/response'
 import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const banks = await Bank.find({}).sort({ createdAt: -1 }).lean()
         return jsonRes(200, { status: true, data: banks })

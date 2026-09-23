@@ -46,7 +46,7 @@ async function zaloliteFetch(path, { method = 'GET', body } = {}, retries = 3) {
     throw err
   }
   const { baseUrl, apiKey } = await getZaloLiteConfig()
-  if (!apiKey) throw new Error('Chưa cấu hình ZALOLITE_API_KEY trong Cài đặt (tab ZaloLite).')
+  if (!apiKey) throw new Error('Chưa cấu hình ZALOLITE_API_KEY trong Chăm sóc khách hàng (Cấu hình Zalo).')
 
   const url = `${baseUrl}${path}`
   let attempt = 0

@@ -1,7 +1,11 @@
 import ExcelJS from 'exceljs';
+import { authorize } from '@/utils/authorize';
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('Danh sách thành viên');
 
@@ -27,11 +31,11 @@ export async function GET() {
         headerRow.height = 28;
 
         // Sample rows with typical event roles
-        ws.addRow(['Nguyễn Văn An', 'Trọng tài / Giám khảo', 'Đại học Bách Khoa TP.HCM', '0901234567', 'an.nguyen@example.com', 'Phụ trách chấm sân thi đấu Robot bảng B']);
-        ws.addRow(['Trần Thị Mai', 'Tình nguyện viên', 'CLB Robot Trẻ', '0912345678', 'mai.tran@example.com', 'Hỗ trợ check-in bàn đón tiếp']);
-        ws.addRow(['Lê Hoàng Nam', 'Thí sinh / Học sinh', 'THCS Lê Lợi (Đội RoboAlpha)', '0987654321', 'nam.le@example.com', 'Thí sinh bảng A']);
-        ws.addRow(['Phạm Minh Tuấn', 'Khách mời / Đại biểu', 'Sở Khoa Học & Công Nghệ', '0933445566', 'tuan.pham@example.com', 'Đại biểu danh dự']);
-        ws.addRow(['Hoàng Thu Hà', 'Ban tổ chức', 'AI Robotic Center', '0944556677', 'ha.hoang@example.com', 'Điều phối viên sân thi đấu']);
+        ws.addRow(['Nguyễn Văn An', 'Trưởng ban tổ chức', 'AI Robotic Center', '0901234567', 'an.nguyen@example.com', 'Phụ trách chung toàn bộ kế hoạch']);
+        ws.addRow(['Trần Thị Mai', 'Thư ký', 'AI Robotic Center', '0912345678', 'mai.tran@example.com', 'Tổng hợp kế hoạch và quản lý task']);
+        ws.addRow(['Lê Hoàng Nam', 'Quản lý', 'AI Robotic Center', '0987654321', 'nam.le@example.com', 'Điều phối kỹ thuật và nhân sự']);
+        ws.addRow(['Phạm Minh Tuấn', 'Thành viên', 'CLB Robot Trẻ', '0933445566', 'tuan.pham@example.com', 'Phụ trách hỗ trợ trạm thi đấu']);
+        ws.addRow(['Hoàng Thu Hà', 'Tình nguyện viên', 'Đại học Bách Khoa', '0944556677', 'ha.hoang@example.com', 'Hỗ trợ bàn đón tiếp và check-in']);
 
         // Style sample rows
         ws.eachRow((row, rowNumber) => {

@@ -2,7 +2,7 @@ import checkAuthToken from "@/utils/checktoken"
 
 export default async function Layout({ children }) {
     let user = await checkAuthToken()
-    if (!user || !user.role.includes('Admin')) {
+    if (!user || (!user.role.includes('Admin') && !user.role.includes('Academic'))) {
         return (
             <div className="flex items-center justify-center" style={{ height: '100%', width: '100%' }}>
                 <h4 style={{ fontStyle: 'italic' }}>Bạn không có quyền truy cập trang này</h4>

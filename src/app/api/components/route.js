@@ -2,9 +2,13 @@ import connectDB from '@/config/connectDB';
 import Component from '@/models/component';
 import jsonRes from '@/utils/response';
 import authenticate from '@/utils/authenticate';
+import { authorize } from '@/utils/authorize';
 
 export async function GET(request) {
     try {
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         await connectDB();
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search')?.trim() || '';

@@ -4,8 +4,12 @@ import dbConnect from '@/config/connectDB';
 import PostStudent from '@/models/student';
 import PostCourse from '@/models/course';
 import { revalidateTag } from 'next/cache';
+import { authorize } from '@/utils/authorize';
 
 export async function PATCH(request, { params }) {
+    const auth = await authorize(request, ['Admin', 'Academic', 'Sale']);
+    if (!auth.authorized) return auth.response;
+
     const { id: studentId } = await params;
 
     if (!mongoose.Types.ObjectId.isValid(studentId)) {

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/config/connectDB';
 import SendHistory from '@/models/historyClient';
+import { authorize } from '@/utils/authorize';
 
 export async function GET(req, { params }) {
     try {
-        const { phone } = params;
+        const { errorResponse } = await authorize(req);
+        if (errorResponse) return errorResponse;
+
+        const { phone } = await params;
         
         if (typeof phone !== 'string') {
             return NextResponse.json(

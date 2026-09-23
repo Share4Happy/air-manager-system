@@ -1,5 +1,6 @@
 import { google } from 'googleapis'
 import jsonRes from '@/utils/response'
+import { authorize } from '@/utils/authorize'
 
 const SPREADSHEET_ID = '1ZQsHUyVD3vmafcm6_egWup9ErXfxIg4U-TfVDgDztb8';
 const RANGE_DATA = 'Data!A:L';
@@ -21,8 +22,11 @@ async function getSheets(mode = 'read') {
   return google.sheets({ version: 'v4', auth })
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const auth = await authorize(req)
+    if (!auth.authorized) return auth.response
+
     const sheets = await getSheets('read')
     const { data } = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -58,6 +62,9 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const auth = await authorize(req)
+    if (!auth.authorized) return auth.response
+
     const { phone, care, studyTry, study, remove } = await req.json();
 
     if (!phone) return jsonRes(400, { status: false, mes: 'Thiếu số điện thoại (phone)', data: [] })

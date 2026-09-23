@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(request) {
     try {
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         const formData = await request.formData();
         const uploadUrl = formData.get('uploadUrl');
         const chunk = formData.get('chunk');

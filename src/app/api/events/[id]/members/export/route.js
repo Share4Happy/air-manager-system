@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import Event from '@/models/event';
 import ExcelJS from 'exceljs';
+import { authorize } from '@/utils/authorize';
 import mongoose from 'mongoose';
 
 export async function GET(req, { params }) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 });

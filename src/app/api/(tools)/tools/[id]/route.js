@@ -1,12 +1,16 @@
 import connectDB from '@/config/connectDB'
 import Tool from '@/models/tool'
+import '@/models/toolLabel'
 import jsonRes from '@/utils/response'
-import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
 export async function PUT(request, { params }) {
     const { id } = await params
     try {
-        const { user, body } = await authenticate(request)
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
+        const body = await request.json()
         await connectDB()
         const { name, desc, link, labels } = body
         if (!name?.trim()) {
@@ -22,15 +26,16 @@ export async function PUT(request, { params }) {
         }
         return jsonRes(200, { status: true, data: tool })
     } catch (err) {
-        const code = err.message === 'Authentication failed' ? 401 : 500
-        return jsonRes(code, { status: false, mes: err.message, data: [] })
+        return jsonRes(500, { status: false, mes: err.message, data: [] })
     }
 }
 
 export async function DELETE(request, { params }) {
     const { id } = await params
     try {
-        const { user } = await authenticate(request)
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const tool = await Tool.findByIdAndDelete(id)
         if (!tool) {
@@ -38,7 +43,6 @@ export async function DELETE(request, { params }) {
         }
         return jsonRes(200, { status: true, mes: 'Xóa công cụ thành công.', data: [] })
     } catch (err) {
-        const code = err.message === 'Authentication failed' ? 401 : 500
-        return jsonRes(code, { status: false, mes: err.message, data: [] })
+        return jsonRes(500, { status: false, mes: err.message, data: [] })
     }
 }

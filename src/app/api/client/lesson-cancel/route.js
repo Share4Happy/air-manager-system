@@ -7,17 +7,14 @@ import Area from '@/models/area'
 import LessonNotify from '@/models/lessonNotify'
 import CareTemplate from '@/models/careTemplate'
 import Logs from '@/models/log'
-import checkAuthToken from '@/utils/checktoken'
+import { authorize } from '@/utils/authorize'
 import { processPendingCareSends } from '@/app/actions/lessonCancel.actions'
 import mongoose from 'mongoose'
 
-async function requireAdminSale() {
-    const auth = await checkAuthToken()
-    if (!auth || !auth.id) return { ok: false, message: 'Bạn cần đăng nhập.' }
-    if (!auth.role?.includes('Admin') && !auth.role?.includes('Sale') && !auth.role?.includes('Academic')) {
-        return { ok: false, message: 'Bạn không có quyền thực hiện chức năng này.' }
-    }
-    return { ok: true, auth }
+async function requireAdminSale(request) {
+    const auth = await authorize(request)
+    if (!auth.authorized) return { ok: false, response: auth.response, message: 'Yêu cầu đăng nhập để thực hiện chức năng này.' }
+    return { ok: true, auth: { id: auth.user._id, role: auth.user.role, user: auth.user } }
 }
 
 export const dynamic = 'force-dynamic';
@@ -104,8 +101,8 @@ function matchesSelectedDate(dateVal, targetYMD) {
 }
 
 export async function GET(request) {
-    const authRes = await requireAdminSale()
-    if (!authRes.ok) return NextResponse.json({ success: false, error: authRes.message }, { status: 403 })
+    const authRes = await requireAdminSale(request)
+    if (!authRes.ok) return authRes.response || NextResponse.json({ success: false, error: authRes.message }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
     const history = searchParams.get('history') === '1'
@@ -454,8 +451,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-    const authRes = await requireAdminSale()
-    if (!authRes.ok) return NextResponse.json({ success: false, error: authRes.message }, { status: 403 })
+    const authRes = await requireAdminSale(request)
+    if (!authRes.ok) return authRes.response || NextResponse.json({ success: false, error: authRes.message }, { status: 403 })
 
     try {
         const { courseId, detailId, method = 'care', staffId = null, studentId = null, studentIds = null, status = null } = await request.json()

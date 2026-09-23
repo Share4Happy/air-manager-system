@@ -7,6 +7,7 @@ import Area from '@/models/area'
 import TrialCourse from '@/models/coursetry'
 import mongoose from 'mongoose'
 import { getStudentRank } from '@/data/database/student'
+import { authorize } from '@/utils/authorize'
 
 const TRIAL_ID = '6871bc14ada3650715efc786'
 
@@ -62,6 +63,9 @@ function isDateInRange(date, fromMonth, toMonth, fromQuarter, toQuarter, fromYea
 
 export async function GET(request) {
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic'])
+        if (errorResponse) return errorResponse
+
         await connectDB()
         const { searchParams } = new URL(request.url)
         const areaId = searchParams.get('areaId')

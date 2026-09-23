@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { runSchedulerTick } from '@/lib/scheduler';
+import { authorize } from '@/utils/authorize';
 
-export async function GET() {
+export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
         const result = await runSchedulerTick();
         if (!result.success) {
             return NextResponse.json(

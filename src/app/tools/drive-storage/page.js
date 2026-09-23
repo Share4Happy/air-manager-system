@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import ScheduleModal from './ui/schedule-modal';
+import Loading from '@/components/(ui)/(loading)/loading';
 
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
@@ -95,7 +96,7 @@ export default function DriveStoragePage() {
         });
     }, [coursesList, searchTerm, selectedArea]);
 
-    if (loading) return <div className="h-full overflow-auto p-4"><p className="text-gray-400 text-center pt-8">Đang tải...</p></div>;
+    if (loading) return <Loading content="Đang tải dữ liệu dung lượng Drive..." />;
     if (error) return <div className="h-full overflow-auto p-4"><p className="text-red-500 text-center pt-8">Lỗi: {error}</p></div>;
     if (!data) return null;
 

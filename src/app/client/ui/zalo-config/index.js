@@ -65,7 +65,7 @@ function AddAccountForm({ formAction, formState, onClose }) {
 function RoleManager({ zaloAccount, allUsers, formAction, onClose }) {
     const [assignedUserIds, setAssignedUserIds] = useState(() => new Set(zaloAccount.roles?.map(r => r._id || r) || []));
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const availableUsers = allUsers.filter(u => !assignedUserIds.has(u._id) && (u.role?.[0] === 'Sale' || u.role?.[0] === 'Admin' || u.role?.includes('Sale') || u.role?.includes('Admin')));
+    const availableUsers = allUsers.filter(u => !assignedUserIds.has(u._id) && (u.role?.[0] === 'Sale' || u.role?.[0] === 'Admin' || u.role?.[0] === 'Academic' || u.role?.includes('Sale') || u.role?.includes('Admin') || u.role?.includes('Academic')));
     const assignedUsers = allUsers.filter(u => assignedUserIds.has(u._id));
 
     const handleAddUser = (user) => {
@@ -375,7 +375,7 @@ export default function ZaloConfig({ zaloData = [], allUsers = [] }) {
         });
     }, [zaloData, search, proxyFilter]);
 
-    const saleUsers = allUsers.filter(u => u.role?.[0] === 'Sale' || u.role?.[0] === 'Admin' || u.role?.includes('Sale') || u.role?.includes('Admin'));
+    const saleUsers = allUsers.filter(u => u.role?.[0] === 'Sale' || u.role?.[0] === 'Admin' || u.role?.[0] === 'Academic' || u.role?.includes('Sale') || u.role?.includes('Admin') || u.role?.includes('Academic'));
 
     return (
         <div className="flex flex-col gap-3 flex-1">

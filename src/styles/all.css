@@ -79,6 +79,14 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
+input[type="date"] {
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
 .loadingOverlay {
   position: fixed;
   inset: 0;

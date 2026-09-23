@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import Logs from '@/models/log'
+import { authorize } from '@/utils/authorize'
 
-export async function GET() {
+export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic'])
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const logs = await Logs.find({
             $or: [

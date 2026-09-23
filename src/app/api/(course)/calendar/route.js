@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getMonthlyCalendar } from '@/data/database/calendar';
+import { authorize } from '@/utils/authorize';
 
 export async function GET(req) {
     try {
+        const { errorResponse } = await authorize(req);
+        if (errorResponse) return errorResponse;
+
         const { searchParams } = new URL(req.url);
         const month = +searchParams.get('month');
         const year = +searchParams.get('year');

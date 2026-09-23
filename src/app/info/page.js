@@ -2,11 +2,11 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import GuideView from './ui/guide-view';
-import QuizView from './ui/quiz-view';
+import RolesView from './ui/roles-view';
 
 const TABS = [
     { key: 'guide', label: 'Hướng dẫn' },
-    { key: 'quiz', label: 'Bài kiểm tra' },
+    { key: 'roles', label: 'Vai trò & Quyền hạn' },
     { key: 'info', label: 'Thông tin', src: 'https://docs.google.com/document/d/138s-w91Sa2DtbatlEJpQH4k9eISLVJHP7qoLl218rrw/edit?tab=t.0' },
     { key: 'feedback', label: 'Feedback', src: 'https://docs.google.com/document/d/18ApttvJfGK_GZEvKzAAApqlaSSXRh9wQJf2GSPRYwSA/edit?usp=sharing' },
 ];
@@ -23,7 +23,7 @@ export default function InfoPage() {
                 {TABS.map(tab => (
                     <button
                         key={tab.key}
-                        onClick={() => router.push(`/info${tab.key === 'info' ? '' : '?tab=' + tab.key}`)}
+                        onClick={() => router.push(`/info${tab.key === 'guide' ? '' : '?tab=' + tab.key}`)}
                         className={`px-3 py-1.5 text-sm rounded-lg whitespace-nowrap transition-colors cursor-pointer
                             ${current.key === tab.key
                                 ? 'bg-[var(--main_d)] text-white font-medium'
@@ -35,8 +35,8 @@ export default function InfoPage() {
             </div>
             {current.key === 'guide' ? (
                 <GuideView />
-            ) : current.key === 'quiz' ? (
-                <QuizView />
+            ) : current.key === 'roles' ? (
+                <RolesView />
             ) : (
                 <iframe
                     key={current.key}

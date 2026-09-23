@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import MakeupSession from '@/models/makeupSession'
+import { authorize } from '@/utils/authorize'
 import mongoose from 'mongoose'
 
 export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic', 'Teacher'])
+        if (!auth.authorized) return auth.response
+
         const { searchParams } = new URL(req.url)
         const courseId = searchParams.get('courseId')
         const studentId = searchParams.get('studentId')

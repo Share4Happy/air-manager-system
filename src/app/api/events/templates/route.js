@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import EventTemplate from '@/models/eventTemplate';
 import { DEFAULT_EVENT_TEMPLATES } from '@/lib/defaultEventTemplates';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 
 export async function GET(req) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         await connectDB();
         let templates = await EventTemplate.find({}).sort({ createdAt: -1 }).lean();
 
@@ -24,10 +27,9 @@ export async function GET(req) {
 
 export async function POST(req) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+        const user = auth.user;
 
         const body = await req.json();
         await connectDB();

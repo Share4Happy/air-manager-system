@@ -9,7 +9,7 @@ const AttachmentSchema = new Schema({
 }, { _id: false });
 
 const TaskCommentSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `cmt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     author: { type: String, default: 'Thành viên' },
     authorAvatar: { type: String, default: '' },
     authorRole: { type: String, default: 'Thành viên' },
@@ -18,7 +18,7 @@ const TaskCommentSchema = new Schema({
 }, { _id: false });
 
 const RoadmapNodeSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `node-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     parentId: { type: String, default: null }, // null if root phase
     name: { type: String, required: true },
     description: { type: String, default: '' },
@@ -49,7 +49,7 @@ const RoadmapNodeSchema = new Schema({
 }, { _id: false });
 
 const BudgetItemSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `budget-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     name: { type: String, required: true },
     category: {
         type: String,
@@ -63,6 +63,7 @@ const BudgetItemSchema = new Schema({
     paidBy: { type: Schema.Types.Mixed, default: null }, // User ID, Member ID, or name
     payerName: { type: String, default: '' },
     receiptFileId: { type: String, default: null },
+    proofLink: { type: String, default: '' },
 }, { _id: false });
 
 const PhotoSchema = new Schema({
@@ -73,7 +74,7 @@ const PhotoSchema = new Schema({
 }, { _id: false });
 
 const EventMemberSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `member-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     name: { type: String, required: true },
     role: { type: String, default: 'Thành viên' }, // e.g. Ban tổ chức, Trọng tài, Tình nguyện viên, Thí sinh, Khách mời, Cố vấn, Hậu cần, Phụ huynh...
     organization: { type: String, default: '' }, // Trường, Đơn vị, Lớp, Công ty
@@ -92,8 +93,17 @@ const StationPhotoSchema = new Schema({
     caption: { type: String, default: '' },
 }, { _id: false });
 
+const InChargeUnitSchema = new Schema({
+    id: { type: String, default: () => `unit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+    name: { type: String, default: 'Bên phụ trách' },
+    lead: { type: Schema.Types.Mixed, default: null }, // User ObjectId or Member ID
+    leadName: { type: String, default: '' },
+    equipmentList: [{ type: String }],
+    description: { type: String, default: '' },
+}, { _id: false });
+
 const StationSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `station-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     order: { type: Number, default: 0 },
     name: { type: String, required: true }, // e.g. Khu vực 1: Trải nghiệm lắp ráp
     category: {
@@ -115,6 +125,9 @@ const StationSchema = new Schema({
         models: [{ type: String }], // Mô hình: Robot cú mèo, Robot chó...
     },
 
+    // In charge units / parties (Danh sách các bên phụ trách)
+    inChargeUnits: [InChargeUnitSchema],
+
     // Coordination with School / Partner side
     partnerContent: {
         partnerName: { type: String, default: '' }, // Trường TH Hoà Bình
@@ -132,7 +145,7 @@ const StationRoundMappingSchema = new Schema({
 }, { _id: false });
 
 const StationRoundSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `round-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     roundName: { type: String, default: '' }, // Ca 1, Ca 2...
     timeSlot: { type: String, default: '' }, // 08:00 - 08:45
     mappings: [StationRoundMappingSchema],
@@ -147,7 +160,7 @@ const PassportRulesSchema = new Schema({
 }, { _id: false });
 
 const RelatedMediaLinkSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `media-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     title: { type: String, required: true }, // e.g. "Bài viết tổng kết trên Fanpage Trường"
     platform: { type: String, default: 'facebook' }, // 'facebook', 'zalo', 'website', 'tiktok', 'youtube', 'news', 'other'
     url: { type: String, required: true },
@@ -156,21 +169,21 @@ const RelatedMediaLinkSchema = new Schema({
 }, { _id: false });
 
 const MediaDriveLinkSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `drive-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     title: { type: String, required: true }, // e.g. "Ảnh máy cơ", "Flycam & Video sự kiện"
     url: { type: String, required: true },
     description: { type: String, default: '' },
 }, { _id: false });
 
 const EquipmentCategorySchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `eqcat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     key: { type: String, required: true },
     label: { type: String, required: true },
     color: { type: String, default: '' },
 }, { _id: false });
 
 const EquipmentItemSchema = new Schema({
-    id: { type: String, required: true },
+    id: { type: String, default: () => `eq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
     name: { type: String, required: true },
     category: {
         type: String,
@@ -216,6 +229,23 @@ const ZaloSendLogSchema = new Schema({
     senderName: { type: String, default: '' },
 }, { _id: false });
 
+const ChatMessageSchema = new Schema({
+    id: { type: String, default: () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+    senderId: { type: String, default: '' },
+    senderName: { type: String, required: true },
+    senderRole: { type: String, default: 'Thành viên' },
+    senderType: { type: String, enum: ['internal', 'external', 'system'], default: 'external' }, // 'internal' (BTC/AIR Team), 'external' (CTV/TNV), 'system' (Hệ thống)
+    senderAvatar: { type: String, default: '' },
+    content: { type: String, default: '' },
+    imageUrl: { type: String, default: '' },
+    imageFileId: { type: String, default: '' },
+    isUrgent: { type: Boolean, default: false }, // SOS / Cảnh báo khẩn cấp
+    isPinned: { type: Boolean, default: false },
+    replyTo: { type: Schema.Types.Mixed, default: null },
+    taggedTask: { type: Schema.Types.Mixed, default: null }, // { id, name, status, priority, assigneeName }
+    createdAt: { type: Date, default: Date.now },
+}, { _id: false });
+
 const EventZaloConfigSchema = new Schema({
     enabled: { type: Boolean, default: false },
     templateReminder: { type: String, default: 'Xin chào {name}, nhắc bạn sự kiện "{event_title}" sẽ diễn ra vào {event_date} tại {event_location}.' },
@@ -230,9 +260,11 @@ const EventSchema = new Schema({
     code: { type: String, default: '' }, // e.g. EVT-2026-ROBOTIC
     link: { type: String, default: '' }, // Reference/Meeting/Canva/Docs Link attached under title
     currentPhaseId: { type: String, default: null }, // Active / highlighted phase in roadmap
+    chatMessages: [ChatMessageSchema],
+    pinnedChatMessage: { type: Schema.Types.Mixed, default: null },
     type: {
         type: String,
-        enum: ['competition', 'workshop', 'showcase', 'internal', 'other'],
+        enum: ['competition', 'workshop', 'showcase', 'festival', 'camp', 'talkshow', 'exhibition', 'ceremony', 'internal', 'other'],
         default: 'competition',
     },
     status: {
@@ -245,6 +277,8 @@ const EventSchema = new Schema({
     location: { type: String, default: '' },
     description: { type: String, default: '' },
     coverImage: { type: String, default: null }, // Drive fileId
+
+    tags: [{ type: String }],
 
     lead: { type: Schema.Types.ObjectId, ref: 'user', default: null },
     organizers: [{ type: Schema.Types.ObjectId, ref: 'user' }],
@@ -317,6 +351,7 @@ EventSchema.index({ status: 1 });
 EventSchema.index({ startDate: 1 });
 EventSchema.index({ lead: 1 });
 EventSchema.index({ 'shareConfig.shareToken': 1 });
+EventSchema.index({ tags: 1 });
 
 if (models.Event) {
     delete models.Event;

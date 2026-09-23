@@ -231,6 +231,13 @@ const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany
                         <div className={'relative'}>
                             <input type="text" value={startDate ? toDisplayDate(startDate) : ''}
                                 placeholder="DD/MM/YYYY"
+                                onClick={() => {
+                                    try {
+                                        if (typeof dateInputRef.current?.showPicker === 'function') {
+                                            dateInputRef.current.showPicker();
+                                        }
+                                    } catch (err) {}
+                                }}
                                 onChange={(e) => {
                                     setConfigErrors(p => ({ ...p, startDate: false }));
                                     let val = e.target.value.replace(/[^0-9]/g, '');
@@ -241,7 +248,7 @@ const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany
                                     const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : '';
                                     setStartDate(iso);
                                 }}
-                                className={`w-full p-2 pr-8 text-sm bg-white border rounded-lg outline-none ${configErrors.startDate ? 'border-[var(--red)]' : 'border-[#e2e8f0]'}`} />
+                                className={`w-full p-2 pr-8 text-sm bg-white border rounded-lg outline-none cursor-pointer ${configErrors.startDate ? 'border-[var(--red)]' : 'border-[#e2e8f0]'}`} />
                             <input ref={dateInputRef} type="date" value={startDate}
                                 onChange={(e) => { setStartDate(e.target.value); setConfigErrors(p => ({ ...p, startDate: false })); }}
                                 className={'absolute right-0 top-0 w-9 h-full opacity-0 cursor-pointer'} />

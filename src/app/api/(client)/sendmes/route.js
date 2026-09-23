@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { sendByPhone, getActiveZaloAccount, extractSendUid, sendResponseOk, sendResponseError } from '@/function/zalolite';
+import { authorize } from '@/utils/authorize';
 
 const SHEET_ID = '1ZQsHUyVD3vmafcm6_egWup9ErXfxIg4U-TfVDgDztb8';
 const SHEET_NAME = 'Data';
@@ -33,6 +34,9 @@ const parseArray = raw => {
 
 /* ───────── main ───────── */
 export async function POST(req) {
+    const auth = await authorize(req);
+    if (!auth.authorized) return auth.response;
+
     /* body */
     let body;
     try { body = await req.json(); }

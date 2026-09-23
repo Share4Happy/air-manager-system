@@ -26,6 +26,8 @@ export default function EventTable({
     minWidth = 'min-w-[750px]',
     containerClassName = '',
     tableClassName = '',
+    maxHeight,
+    stickyHeader = true,
     footer,
     onRowClick,
 }) {
@@ -34,7 +36,7 @@ export default function EventTable({
     const renderHeaderBar = () => {
         if (!hasHeaderBar) return null;
         return (
-            <div className="px-5 py-3.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-transparent dark:from-blue-950/40 dark:via-indigo-950/20 dark:to-transparent border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-3">
+            <div className="px-5 py-3.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-transparent dark:from-blue-950/40 dark:via-indigo-950/20 dark:to-transparent border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2.5">
                     {TitleIcon && (
                         <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -106,16 +108,16 @@ export default function EventTable({
     };
 
     return (
-        <div className={`w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-xs ${containerClassName}`}>
+        <div className={`w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-xs flex flex-col ${containerClassName}`}>
             {renderHeaderBar()}
-            <div className="w-full overflow-x-auto scrollbar-thin">
+            <div className={`w-full overflow-x-auto scrollbar-thin ${maxHeight ? `overflow-y-auto ${maxHeight}` : ''}`}>
                 <table className={`w-full text-sm sm:text-base text-left border-collapse ${minWidth} ${tableClassName}`}>
-                    <thead className="bg-[var(--bg-secondary)] border-b border-[var(--border-color)] text-[var(--text-secondary)] select-none">
+                    <thead className={`bg-[var(--bg-secondary)] border-b border-[var(--border-color)] text-[var(--text-secondary)] select-none ${stickyHeader ? 'sticky top-0 z-10 shadow-2xs' : ''}`}>
                         <tr>
                             {columns.map((col, cIdx) => (
                                 <th
                                     key={col.key || cIdx}
-                                    className={`py-3.5 px-4 font-bold text-xs sm:text-sm whitespace-nowrap ${getAlignClass(col.align)} ${col.width || ''} ${col.headerClassName || ''}`}
+                                    className={`py-3.5 px-4 font-bold text-xs sm:text-sm whitespace-nowrap bg-[var(--bg-secondary)] ${getAlignClass(col.align)} ${col.width || ''} ${col.headerClassName || ''}`}
                                 >
                                     {col.header}
                                 </th>

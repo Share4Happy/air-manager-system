@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/config/connectDB';
 import Label from '@/models/label';
+import { authorize } from '@/utils/authorize';
 
 /* ------------------------------------------------------------------ */
 /* ---------------------------  POST  --------------------------------*/
 /* ------------------------------------------------------------------ */
 export async function POST(req) {
     try {
+        const { user, body: authBody, errorResponse } = await authorize(req);
+        if (errorResponse) return errorResponse;
+
         await dbConnect();
 
-        const { title, content, desc = '' } = await req.json();
+        const body = authBody || await req.json();
+        const { title, content, desc = '' } = body;
 
         /* ----- kiểm tra đầu vào ----- */
         if (!title || !content) {
@@ -67,8 +72,11 @@ export async function POST(req) {
 /* ------------------------------------------------------------------ */
 /* ----------------------------  GET  --------------------------------*/
 /* ------------------------------------------------------------------ */
-export async function GET() {
+export async function GET(req) {
     try {
+        const { errorResponse } = await authorize(req);
+        if (errorResponse) return errorResponse;
+
         await dbConnect();
 
         const labels = await Label.find().sort({ at: -1 }).lean();

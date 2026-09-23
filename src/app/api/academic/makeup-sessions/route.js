@@ -7,9 +7,13 @@ import Book from '@/models/book'
 import User from '@/models/users'
 import authenticate from '@/utils/authenticate'
 import mongoose from 'mongoose'
+import { authorize } from '@/utils/authorize'
 
 export async function GET(req) {
     try {
+        const { errorResponse } = await authorize(req)
+        if (errorResponse) return errorResponse
+
         const { searchParams } = new URL(req.url)
         const status = searchParams.get('status')
         const courseId = searchParams.get('courseId')
@@ -166,10 +170,10 @@ export async function GET(req) {
 
 export async function POST(req) {
     try {
-        const auth = await authenticate(req);
-        if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const { user, body: authBody, errorResponse } = await authorize(req, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
 
-        const body = await req.json();
+        const body = authBody || await req.json();
         const { courseId, lessonId, studentId, studentIds, ...rest } = body;
 
         if (!courseId) {

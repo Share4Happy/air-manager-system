@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import Logs from '@/models/log'
+import { authorize } from '@/utils/authorize'
 import mongoose from 'mongoose'
 
 export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic'])
+        if (!auth.authorized) return auth.response
+
         const { searchParams } = new URL(req.url)
         const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '30')))

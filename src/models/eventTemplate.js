@@ -33,7 +33,7 @@ const EventTemplateSchema = new Schema({
     code: { type: String, default: '' },
     type: {
         type: String,
-        enum: ['competition', 'workshop', 'showcase', 'internal', 'other'],
+        enum: ['competition', 'workshop', 'showcase', 'festival', 'camp', 'talkshow', 'exhibition', 'ceremony', 'internal', 'other'],
         default: 'competition',
     },
     description: { type: String, default: '' },

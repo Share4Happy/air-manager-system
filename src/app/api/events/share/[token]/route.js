@@ -69,7 +69,9 @@ export async function GET(request, { params }) {
 
         // Data Sanitization: Filter out non-allowed or sensitive sections
         const sanitizedEvent = {
+            _id: eventObj._id,
             id: eventObj._id,
+            code: eventObj.code || '',
             title: eventObj.title,
             type: eventObj.type,
             status: eventObj.status,

@@ -29,7 +29,7 @@ export default function ItemCard({
                 {/* Header */}
                 <div className="mb-2">
                     {topLabels && (
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5 w-full">
                             {topLabels}
                         </div>
                     )}

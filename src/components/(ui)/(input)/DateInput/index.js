@@ -90,8 +90,8 @@ const DateInput = ({
     };
 
     const handleOpenPicker = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
         if (disabled) return;
         if (hiddenDateRef.current) {
             try {
@@ -107,6 +107,17 @@ const DateInput = ({
                 hiddenDateRef.current.click();
             } catch {}
         }
+    };
+
+    const handleInputClick = (e) => {
+        if (!disabled && hiddenDateRef.current) {
+            try {
+                if (typeof hiddenDateRef.current.showPicker === 'function') {
+                    hiddenDateRef.current.showPicker();
+                }
+            } catch (err) {}
+        }
+        rest.onClick?.(e);
     };
 
     const parsed = parseDateValue(value);
@@ -126,9 +137,10 @@ const DateInput = ({
                 placeholder={placeholder}
                 value={display}
                 onChange={handleTextChange}
+                onClick={handleInputClick}
                 onFocus={() => { focused.current = true; }}
                 onBlur={() => { focused.current = false; }}
-                className={`w-full pr-8 ${className}`}
+                className={`w-full pr-8 cursor-pointer ${className}`}
                 disabled={disabled}
                 {...rest}
             />

@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import PostStudent from '@/models/student';
 import connectToDB from '@/config/connectDB';
 import { sendByPhone, getActiveZaloAccount, extractSendUid, sendResponseOk, sendResponseError } from '@/function/zalolite';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(request) {
+    const auth = await authorize(request);
+    if (!auth.authorized) return auth.response;
+
     let body;
 
     try {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Svg_Add, Svg_Delete, Svg_Save, Svg_Pen, Svg_Close } from '@/components/(icon)/svg'
+import Loading from '@/components/(ui)/(loading)/loading'
 
 function ToolsClient() {
     const [tools, setTools] = useState([])
@@ -142,7 +143,7 @@ function ToolsClient() {
     const [showFilters, setShowFilters] = useState(false)
     const hasActiveFilters = Boolean(filterLabel)
 
-    if (loading) return <div className="h-full overflow-auto p-4"><p className="text-gray-400 text-center pt-8">Đang tải...</p></div>
+    if (loading) return <Loading content="Đang tải danh sách công cụ..." />
 
     return (
         <div className="h-full overflow-auto">

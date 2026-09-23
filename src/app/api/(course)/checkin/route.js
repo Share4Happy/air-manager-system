@@ -7,9 +7,13 @@ import mongoose from 'mongoose'
 import { revalidateTag } from 'next/cache'
 import { reloadCourse, reloadCoursetry } from '@/data/actions/reload'
 import { getMonthlyCalendar } from '@/data/database/calendar'
+import { authorize } from '@/utils/authorize'
 
 export async function GET(req) {
   try {
+    const { errorResponse } = await authorize(req)
+    if (errorResponse) return errorResponse
+
     const { searchParams } = new URL(req.url)
     const month = +searchParams.get('month')
     const year = +searchParams.get('year')
@@ -27,7 +31,11 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { courseId, sessionId, attendanceData } = await req.json()
+    const { user, body: authBody, errorResponse } = await authorize(req, ['Admin', 'Academic', 'Teacher'])
+    if (errorResponse) return errorResponse
+
+    const body = authBody || await req.json()
+    const { courseId, sessionId, attendanceData } = body
     if (!sessionId || !Array.isArray(attendanceData))
       return NextResponse.json({ status: 1, mes: 'Thiếu tham số bắt buộc (sessionId, attendanceData)' }, { status: 400 })
 

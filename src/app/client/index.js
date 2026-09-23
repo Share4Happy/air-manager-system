@@ -66,7 +66,7 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                                     <h5 className="font-semibold text-[var(--text-primary)]">Quản lý chăm sóc</h5>
                                     <div className="flex gap-2 flex-wrap items-center">
                                         <ActionHistory history={historySchedules} />
-                                        <SettingZaloRoles data={zaloData} allUsers={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')} />
+                                        <SettingZaloRoles data={zaloData} allUsers={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin' || u.role[0] === 'Academic' || u.role?.includes('Academic'))} />
                                         <SettingVariant data={variant} />
                                         <SettingLabel data={labelData} />
                                         <SettingData data={formData} />
@@ -81,14 +81,14 @@ export default function CustomerView({ c, running, initialResult, user, sources,
                                             onActionComplete={handleActionComplete}
                                             labels={labelData}
                                             variants={variant}
-                                            users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')}
+                                            users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin' || u.role[0] === 'Academic' || u.role?.includes('Academic'))}
                                         />
                                     )}
                                 </div>
                             </div>
                             <FilterControls
                                 zaloAccounts={zaloData}
-                                users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin')}
+                                users={users.filter(u => u.role[0] === 'Sale' || u.role[0] === 'Admin' || u.role[0] === 'Academic' || u.role?.includes('Academic'))}
                                 labels={labelData}
                                 sources={sources}
                                 areas={['Biên Hòa', 'Long Khánh', 'Long Thành', 'TP HCM', 'Khác']}

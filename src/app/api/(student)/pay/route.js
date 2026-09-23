@@ -8,10 +8,14 @@ import '@/models/book';
 import '@/models/users';
 import { NextResponse } from 'next/server';
 import authenticate from '@/utils/authenticate';
+import { authorize } from '@/utils/authorize';
 import { revalidateTag } from 'next/cache';
 
 export async function GET(request, { params }) {
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
+
         const { searchParams } = new URL(request.url);
         const _id = searchParams.get('_id');
 

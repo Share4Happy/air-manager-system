@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { Types, isValidObjectId } from 'mongoose';
 import { reloadCourse } from '@/data/actions/reload';
 import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder';
+import { authorize } from '@/utils/authorize';
 
 const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID;
 const CREATE_LESSON_REQUIRED = ['Day', 'Topic', 'Room', 'Time', 'Teacher'];
@@ -44,6 +45,9 @@ async function findCourseDoc(courseId, detailId = null) {
 
 export async function POST(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic', 'Teacher', 'Sale']);
+        if (!auth.authorized) return auth.response;
+
         const { courseId, detailId, data, student = [], type } = await request.json();
         
         if ((!courseId && !detailId) || !data || typeof data !== 'object') {

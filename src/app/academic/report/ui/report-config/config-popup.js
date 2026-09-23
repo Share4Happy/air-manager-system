@@ -93,9 +93,9 @@ export default function ConfigPopup({
                                         onClick={() => setRecipientDropdownOpen(o => !o)}
                                         className={`${inputCls} flex items-center justify-between text-left cursor-pointer`}>
                                         <span className="truncate">
-                                            {form.recipientUserIds.length === 0
+                                            {(!form.recipientUserIds || form.recipientUserIds.length === 0)
                                                 ? 'Chọn người nhận...'
-                                                : `Đã chọn ${form.recipientUserIds.length} người: ${eligibleUsers.filter(u => form.recipientUserIds.includes(u._id)).map(u => u.name).join(', ')}`}
+                                                : `Đã chọn ${form.recipientUserIds.length} người: ${eligibleUsers.filter(u => (form.recipientUserIds || []).includes(u._id)).map(u => u.name).join(', ')}`}
                                         </span>
                                         <span className="text-xs text-gray-500 ml-2">▼</span>
                                     </button>
@@ -106,7 +106,7 @@ export default function ConfigPopup({
                                                 placeholder="Tìm theo tên hoặc SĐT..."
                                                 className="m-2 mb-1 px-2 py-1.5 border border-gray-300 rounded text-sm outline-none text-gray-700 focus:border-[var(--main_d)]" />
                                             <div className="flex items-center gap-2 px-3 pb-1 text-xs text-[var(--main_d)]">
-                                                <button type="button" onClick={() => setForm(f => ({ ...f, recipientUserIds: [...new Set([...f.recipientUserIds, ...eligibleUsers.map(u => u._id)])] }))}
+                                                <button type="button" onClick={() => setForm(f => ({ ...f, recipientUserIds: [...new Set([...(f.recipientUserIds || []), ...eligibleUsers.map(u => u._id)])] }))}
                                                     className="cursor-pointer border-none bg-transparent hover:underline">
                                                     Chọn tất cả
                                                 </button>
@@ -116,12 +116,12 @@ export default function ConfigPopup({
                                                 </button>
                                             </div>
                                             <div className="max-h-48 overflow-y-auto p-1 flex flex-col">
-                                                {filteredUsers.length === 0 ? (
+                                                {(filteredUsers || []).length === 0 ? (
                                                     <p className="text-xs text-[var(--text-secondary)] italic px-2 py-1">Không tìm thấy người nhận.</p>
                                                 ) : (
                                                     filteredUsers.map(u => (
                                                         <label key={u._id} className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer hover:bg-blue-50 px-2 py-1 rounded">
-                                                            <input type="checkbox" checked={form.recipientUserIds.includes(u._id)}
+                                                            <input type="checkbox" checked={(form.recipientUserIds || []).includes(u._id)}
                                                                 onChange={() => toggleRecipient(u._id)} />
                                                             <span className="truncate">{u.name} ({u.phone})</span>
                                                         </label>
@@ -270,11 +270,11 @@ export default function ConfigPopup({
                                 }}
                             >
                                 <option value="">
-                                    {filteredSaved.length === 0
+                                    {(!filteredSaved || filteredSaved.length === 0)
                                         ? '-- Thư viện chưa có mẫu phù hợp (hãy tạo trong Thư viện mẫu) --'
                                         : `-- Chọn mẫu từ thư viện mẫu (${filteredSaved.length} mẫu) --`}
                                 </option>
-                                {filteredSaved.map(t => (
+                                {(filteredSaved || []).map(t => (
                                     <option key={t._id} value={t._id}>
                                         {t.name} - [{t.reportType === 'all' ? 'Tất cả' : (TYPE_LABELS[t.reportType] || t.reportType)}]
                                     </option>

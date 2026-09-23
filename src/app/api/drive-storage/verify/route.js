@@ -3,6 +3,7 @@ import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 import { lessonFolderName } from '@/function/drive/folder';
+import { authorize } from '@/utils/authorize';
 
 const TARGET_DRIVE_ID = '0AK_Z4-cveE6dUk9PVA';
 const CONCURRENCY = 5;
@@ -110,7 +111,10 @@ async function repointDb(ref, newId) {
     }
 }
 
-export async function POST() {
+export async function POST(request) {
+    const { errorResponse } = await authorize(request, ['Admin', 'Academic']);
+    if (errorResponse) return errorResponse;
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
         async start(controller) {

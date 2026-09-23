@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import Event from '@/models/event';
 import User from '@/models/users';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 import mongoose from 'mongoose';
 
 export async function GET(req, { params }) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 });
@@ -27,7 +30,7 @@ export async function GET(req, { params }) {
             return NextResponse.json({ success: false, message: 'Không tìm thấy sự kiện' }, { status: 404 });
         }
 
-        const user = await checkAuthToken();
+        const user = auth.user;
         const canViewBudget = Boolean(user && user.role?.some?.(r => /^(admin|academic)$/i.test(r)));
 
         // Compute metrics
@@ -57,11 +60,26 @@ export async function GET(req, { params }) {
             budgetData = event.budget;
         }
 
+        // Ensure all stations have distinct IDs
+        const seenStationIds = new Set();
+        const sanitizedStations = (event.stations || []).map((s, idx) => {
+            let sid = s.id || s._id ? String(s.id || s._id) : null;
+            if (!sid || seenStationIds.has(sid)) {
+                sid = `station-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
+            }
+            seenStationIds.add(sid);
+            return {
+                ...s,
+                id: sid,
+            };
+        });
+
         return NextResponse.json({
             success: true,
             canViewBudget,
             event: {
                 ...event,
+                stations: sanitizedStations,
                 budget: budgetData,
                 stats: {
                     totalTasks,
@@ -83,10 +101,9 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+        const user = auth.user;
 
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
@@ -97,6 +114,40 @@ export async function PUT(req, { params }) {
         const canViewBudget = Boolean(user && user.role?.some?.(r => /^(admin|academic)$/i.test(r)));
         if (!canViewBudget && body.budget !== undefined) {
             delete body.budget;
+        }
+
+        // Defensive sanitize for subdocuments requiring unique id
+        if (Array.isArray(body.stations)) {
+            const seenIds = new Set();
+            body.stations = body.stations.map((s, idx) => {
+                let sid = s.id || s._id ? String(s.id || s._id) : null;
+                if (!sid || seenIds.has(sid)) {
+                    sid = `station-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
+                }
+                seenIds.add(sid);
+                return {
+                    ...s,
+                    id: sid,
+                };
+            });
+        }
+        if (Array.isArray(body.roadmap)) {
+            body.roadmap = body.roadmap.map((n, idx) => ({
+                ...n,
+                id: n.id || `node-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+            }));
+        }
+        if (Array.isArray(body.members)) {
+            body.members = body.members.map((m, idx) => ({
+                ...m,
+                id: m.id || `member-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+            }));
+        }
+        if (Array.isArray(body.equipmentChecklist)) {
+            body.equipmentChecklist = body.equipmentChecklist.map((eq, idx) => ({
+                ...eq,
+                id: eq.id || `eq-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+            }));
         }
 
         await connectDB();
@@ -128,10 +179,8 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
 
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {

@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { authorize } from '@/utils/authorize';
 
 const DRIVE_ID = '0AK_Z4-cveE6dUk9PVA';
 
@@ -15,8 +16,11 @@ async function getDrive() {
     return google.drive({ version: 'v3', auth });
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
+
         const drive = await getDrive();
         const [driveInfo] = await Promise.all([
             drive.drives.get({ driveId: DRIVE_ID }),

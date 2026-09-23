@@ -1,4 +1,5 @@
 import { Schema, model, models } from 'mongoose';
+import '@/models/toolLabel';
 
 const toolSchema = new Schema(
     {

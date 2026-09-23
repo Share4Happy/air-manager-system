@@ -1,10 +1,15 @@
 import connectDB from '@/config/connectDB'
 import Tool from '@/models/tool'
+import '@/models/toolLabel'
 import jsonRes from '@/utils/response'
 import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const tools = await Tool.find({}).populate('labels').sort({ createdAt: -1 }).lean()
         return jsonRes(200, { status: true, data: tools })
@@ -15,7 +20,10 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        const { user, body } = await authenticate(request)
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
+        const body = await request.json()
         await connectDB()
         const { name, desc, link, labels } = body
         if (!name?.trim()) {
@@ -25,7 +33,6 @@ export async function POST(request) {
         const populated = await Tool.findById(tool._id).populate('labels').lean()
         return jsonRes(201, { status: true, data: populated })
     } catch (err) {
-        const code = err.message === 'Authentication failed' ? 401 : 500
-        return jsonRes(code, { status: false, mes: err.message, data: [] })
+        return jsonRes(500, { status: false, mes: err.message, data: [] })
     }
 }

@@ -5,6 +5,7 @@ import PostStudent from '@/models/student';
 import PostCourse from '@/models/course';
 import Book from '@/models/book';
 import User from '@/models/users';
+import { authorize } from '@/utils/authorize';
 
 if (!mongoose.models.user) {
     const userSchema = new mongoose.Schema({ Name: String, Phone: String });
@@ -13,6 +14,9 @@ if (!mongoose.models.user) {
 
 export async function GET(request, { params }) {
     try {
+        const { errorResponse } = await authorize(request);
+        if (errorResponse) return errorResponse;
+
         const { id } = await params;
 
         if (!id || id.length !== 48) {

@@ -69,8 +69,7 @@ const initialNavItems = [
   {
     href: '/events',
     icon: <Svg_Event w={22} h={22} c={'var(--text-secondary)'} />,
-    content: 'Sự kiện',
-    roles: ['Admin', 'Academic', 'Teacher', 'Sale']
+    content: 'Sự kiện'
   },
   {
     href: '/student/list',
@@ -106,8 +105,7 @@ const initialNavItems = [
         </svg>
       </div>
     ),
-    content: 'Chăm sóc',
-    roles: ['Admin', 'Sale', 'Academic']
+    content: 'Chăm sóc'
   },
   {
     href: '/teacher',
@@ -119,7 +117,7 @@ const initialNavItems = [
       </div>
     ),
     content: 'Người dùng',
-    roles: ['Admin']
+    roles: ['Admin', 'Academic']
   },
 ];
 
@@ -150,7 +148,7 @@ export default function Nav({ data }) {
   }, [data, hasBackup, backupUser]);
 
   const orderedItems = useMemo(() => {
-    const isAdmin = currentRoles.some(r => /^admin$/i.test(r));
+    const isAdmin = currentRoles.some(r => /^admin$/i.test(r) || /^academic$/i.test(r));
 
     const filterChildren = (item) => {
       if (!item.children) return item;
@@ -253,14 +251,20 @@ export default function Nav({ data }) {
     return activeItem ? orderedItems.findIndex(i => i.href === activeItem.href) : -1;
   }, [pathname, orderedItems]);
 
+  const isAdmin = useMemo(() => {
+    return currentRoles.some(r => /^admin$/i.test(r) || /^academic$/i.test(r));
+  }, [currentRoles]);
+
   const menuItems = (
     <div className="list-none m-0 w-[180px] rounded-xl bg-[var(--bg-secondary)] shadow-[var(--boxshaw2)] mb-2">
-      <div className="p-2 gap-0.5 flex flex-col">
-        <Link href={'/setting'} className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]">
-          <Svg_Setting w={16} h={16} c={'var(--text-secondary)'} />Cấu hình
-        </Link>
-      </div>
-      <div className="p-2 border-t border-[var(--border-color)]" onClick={logout}>
+      {isAdmin && (
+        <div className="p-2 gap-0.5 flex flex-col">
+          <Link href={'/setting'} className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal hover:bg-[var(--hover)] text-[var(--text-primary)]">
+            <Svg_Setting w={16} h={16} c={'var(--text-secondary)'} />Cấu hình
+          </Link>
+        </div>
+      )}
+      <div className={`p-2 ${isAdmin ? 'border-t border-[var(--border-color)]' : ''}`} onClick={logout}>
         <p className="rounded-lg transition-all duration-300 cursor-pointer px-3 py-3 flex gap-2 items-center text-xs font-normal bg-[rgb(230,130,130)] text-white hover:bg-[rgb(233,146,146)]">
           <Svg_Logout w={16} h={16} c={'white'} />Đăng xuất
         </p>

@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import EventTemplate from '@/models/eventTemplate';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 import mongoose from 'mongoose';
 
 export async function GET(req, { params }) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 });
@@ -26,10 +29,8 @@ export async function GET(req, { params }) {
 
 export async function PUT(req, { params }) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
 
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
@@ -58,10 +59,8 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, { params }) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
 
         const { id } = await params;
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {

@@ -4,11 +4,15 @@ import TrialCourse from '@/models/coursetry'
 import connectDB from '@/config/connectDB'
 import mongoose from 'mongoose'
 import jsonRes, { corsHeaders } from '@/utils/response'
+import { authorize } from '@/utils/authorize'
 
 const CORS_HEADERS = corsHeaders
 
 export async function POST(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic', 'Teacher']);
+        if (!auth.authorized) return auth.response;
+
         const { courseId, studentId, lessonId, commentText } = await req.json()
         if (!courseId || !studentId || !lessonId || commentText === undefined) {
             return jsonRes(400, { status: false, mes: "Request body must include 'courseId', 'studentId', 'lessonId', and 'commentText'.", data: null })

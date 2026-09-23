@@ -6,6 +6,7 @@ import TrialCourse from '@/models/coursetry';
 import { getDriveClient } from '@/function/drive/folder';
 import { revalidateTag } from 'next/cache';
 import { reloadCourse, reloadCoursetry } from '@/data/actions/reload';
+import { authorize } from '@/utils/authorize';
 
 const TZ = 'Asia/Ho_Chi_Minh';
 
@@ -89,6 +90,9 @@ async function getClassFolder(drive, lessonFolderId, code) {
 }
 
 export async function POST(request) {
+    const auth = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+    if (!auth.authorized) return auth.response;
+
     try {
         await connectDB();
     } catch (dbError) {

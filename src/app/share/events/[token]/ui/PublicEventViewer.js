@@ -1,14 +1,15 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import EventHeader from '@/app/events/[id]/ui/EventHeader';
-import RoadmapTreeView from '@/app/events/[id]/ui/RoadmapTreeView';
-import RoadmapGanttView from '@/app/events/[id]/ui/RoadmapGanttView';
-import EventStationMatrixView from '@/app/events/[id]/ui/EventStationMatrixView';
-import EventEquipmentChecklistView from '@/app/events/[id]/ui/EventEquipmentChecklistView';
-import EventMembersView from '@/app/events/[id]/ui/EventMembersView';
-import BudgetExpenseView from '@/app/events/[id]/ui/BudgetExpenseView';
-import MediaDriveGalleryView from '@/app/events/[id]/ui/MediaDriveGalleryView';
-import RetrospectiveView from '@/app/events/[id]/ui/RetrospectiveView';
+import EventHeader from '@/app/events/[id]/ui/header/EventHeader';
+import RoadmapTreeView from '@/app/events/[id]/ui/tabs/roadmap/RoadmapTreeView';
+import RoadmapGanttView from '@/app/events/[id]/ui/tabs/roadmap/RoadmapGanttView';
+import EventStationMatrixView from '@/app/events/[id]/ui/tabs/stations/EventStationMatrixView';
+import EventEquipmentChecklistView from '@/app/events/[id]/ui/tabs/equipment/EventEquipmentChecklistView';
+import EventMembersView from '@/app/events/[id]/ui/tabs/staff/EventMembersView';
+import BudgetExpenseView from '@/app/events/[id]/ui/tabs/budget/BudgetExpenseView';
+import MediaDriveGalleryView from '@/app/events/[id]/ui/tabs/media/MediaDriveGalleryView';
+import RetrospectiveView from '@/app/events/[id]/ui/tabs/retro/RetrospectiveView';
+import EventChatBubble from '@/app/events/[id]/ui/EventChatBubble';
 import { IconLock, IconAlertCircle } from '@/app/events/ui/icons';
 
 export default function PublicEventViewer({ token }) {
@@ -63,11 +64,27 @@ export default function PublicEventViewer({ token }) {
         }
     };
 
+    const [highlightTaskId, setHighlightTaskId] = useState(null);
+
     useEffect(() => {
         if (token) {
             fetchEventData();
         }
     }, [token]);
+
+    // Ensure Roadmap Tree tab is active when highlighting a task from chat
+    useEffect(() => {
+        const handleHighlight = (e) => {
+            const taskId = e.detail?.taskId;
+            if (!taskId) return;
+            setActiveTab('roadmap');
+            setRoadmapMode('tree');
+            setHighlightTaskId(String(taskId));
+        };
+
+        window.addEventListener('air_highlight_roadmap_task', handleHighlight);
+        return () => window.removeEventListener('air_highlight_roadmap_task', handleHighlight);
+    }, []);
 
     const handlePinSubmit = (e) => {
         e.preventDefault();
@@ -152,7 +169,7 @@ export default function PublicEventViewer({ token }) {
     }
 
     return (
-        <div className="w-full max-w-full p-2 sm:p-4 md:p-6 flex flex-col gap-4 sm:gap-5 min-w-0 overflow-x-hidden print:p-0">
+        <div className="w-full max-w-full p-2 sm:p-4 md:p-6 flex flex-col gap-4 sm:gap-5 min-w-0 overflow-x-clip print:p-0">
             {/* 1. Header component in readOnly mode */}
             <EventHeader
                 event={event}
@@ -175,6 +192,8 @@ export default function PublicEventViewer({ token }) {
                         roadmapMode={roadmapMode}
                         setRoadmapMode={setRoadmapMode}
                         readOnly={true}
+                        highlightTaskId={highlightTaskId}
+                        onClearHighlight={() => setHighlightTaskId(null)}
                     />
                 ) : (
                     <RoadmapGanttView
@@ -247,6 +266,15 @@ export default function PublicEventViewer({ token }) {
                 <span>Mã sự kiện: <code className="text-blue-600 font-mono font-bold">{event.code || event._id}</code></span>
                 <span className="font-semibold text-gray-500 dark:text-gray-400">AI Robotic — Cổng Kế hoạch & Kịch bản Sự kiện</span>
             </div>
+
+            {/* Event-scoped Floating Chat Bubble for Public/CTV */}
+            <EventChatBubble
+                eventId={event?._id || event?.id || token}
+                event={event || {}}
+                isPublic={true}
+                shareToken={token}
+                members={event?.members || []}
+            />
         </div>
     );
 }

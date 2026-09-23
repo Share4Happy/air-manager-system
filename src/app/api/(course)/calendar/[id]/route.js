@@ -1,4 +1,3 @@
-// app/api/session/[id]/route.js
 import { NextResponse } from 'next/server'
 import { Types } from 'mongoose'
 import connect from '@/config/connectDB'
@@ -11,6 +10,7 @@ import Area from '@/models/area'
 import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder'
 import { reloadCourse } from '@/data/actions/reload'
 import { revalidateTag } from 'next/cache'
+import { authorize } from '@/utils/authorize'
 
 const isId = v => Types.ObjectId.isValid(v)
 const PARENT_FOLDER_ID = process.env.DRIVE_COURSE_FOLDER_ID
@@ -62,6 +62,9 @@ const buildStudents = (raw, mapById, lessonId) =>
     })
 
 export async function GET(_req, { params }) {
+    const { errorResponse } = await authorize(_req)
+    if (errorResponse) return errorResponse
+
     const { id } = await params
     if (!isId(id))
         return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 })

@@ -7,6 +7,7 @@ import PostBook from '@/models/book';
 import TrialCourse from '@/models/coursetry';
 import DriveFileSize from '@/models/driveFileSize';
 import Area from '@/models/area';
+import { authorize } from '@/utils/authorize';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -32,8 +33,11 @@ function addFile(stats, size, type) {
     else { stats.imageSize += safeSize(size); stats.imageFiles++; }
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
+
         await connectDB();
 
         const [courses, students, books, trials, sizeDocs, allAreas] = await Promise.all([

@@ -3,9 +3,13 @@ import connectDB from '@/config/connectDB';
 import { reloadUser } from '@/data/actions/reload';
 import PostUser from '@/models/users';
 import jsonRes from '@/utils/response';
+import { authorize } from '@/utils/authorize';
 
 export async function PATCH(request, { params }) {
     try {
+        const { user: currentAdmin, body: authBody, errorResponse } = await authorize(request, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
+
         const { id } = await params;
         if (!id) {
             return jsonRes(400, { error: 'Thiếu ID người dùng.' });
@@ -13,7 +17,7 @@ export async function PATCH(request, { params }) {
 
         await connectDB();
 
-        const body = await request.json();
+        const body = authBody || await request.json();
         const { name, address, phone, role, email, password } = body;
 
         const updateData = {};
@@ -24,11 +28,12 @@ export async function PATCH(request, { params }) {
             updateData.role = [role];
         }
         if (email) {
-            const dup = await PostUser.findOne({ email, _id: { $ne: id } });
+            const normalizedEmail = email.trim().toLowerCase();
+            const dup = await PostUser.findOne({ email: normalizedEmail, _id: { $ne: id } });
             if (dup) {
                 return jsonRes(409, { error: 'Email đã tồn tại.' });
             }
-            updateData.email = email;
+            updateData.email = normalizedEmail;
         }
         if (password) {
             updateData.uid = await bcrypt.hash(password, 10);
@@ -39,11 +44,11 @@ export async function PATCH(request, { params }) {
         if (!updatedUser) {
             return jsonRes(404, { error: 'Không tìm thấy người dùng để cập nhật.' });
         }
-        reloadUser()
+        reloadUser();
         return jsonRes(200, { message: 'Cập nhật thông tin thành công.', user: updatedUser });
 
     } catch (err) {
-        console.error(err);
+        console.error('Lỗi cập nhật role/user:', err);
         return jsonRes(500, { error: 'Lỗi máy chủ' });
     }
 }

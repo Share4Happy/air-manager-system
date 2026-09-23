@@ -7,8 +7,7 @@ import TrialCourse from '@/models/coursetry';
 import { compressVideoToHD } from '@/function/compress';
 import { reloadCourse, reloadCoursetry } from '@/data/actions/reload';
 import { revalidateTag } from 'next/cache';
-
-
+import { authorize } from '@/utils/authorize';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -24,10 +23,14 @@ async function getDriveClient() {
 
 export async function POST(request) {
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
         await connectDB();
     } catch (dbError) {
         return NextResponse.json({ status: 1, mes: 'Kết nối database thất bại: ' + (dbError.message || '') }, { status: 500 });
     }
+
     try {
         const drive = await getDriveClient();
         const formData = await request.formData();
@@ -135,6 +138,9 @@ export async function POST(request) {
  */
 export async function PUT(request) {
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
         await connectDB();
         const drive = await getDriveClient();
         const formData = await request.formData();
@@ -261,8 +267,11 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-    await connectDB();
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
+        await connectDB();
         const drive = await getDriveClient();
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

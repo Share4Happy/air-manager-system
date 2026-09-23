@@ -22,10 +22,10 @@ export default async function Page({ searchParams }) {
         variant_data(),
         getRunningSchedulesAction()
     ]);
-    if (!userAuth[0].role.includes('Admin') && !userAuth[0].role.includes('Sale') && !userAuth[0].role.includes('Academic')) {
+    if (!userAuth || !userAuth[0]) {
         return (
             <div className="flex items-center justify-center" style={{ height: '100%', width: '100%' }}>
-                <h4 style={{ fontStyle: 'italic' }}>Bạn không có quyền truy cập trang này</h4>
+                <h4 style={{ fontStyle: 'italic' }}>Yêu cầu đăng nhập để truy cập trang này</h4>
             </div>
         )
     }

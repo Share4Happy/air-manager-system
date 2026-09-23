@@ -1,145 +1,7 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Noti from '@/components/(features)/(noti)/noti'
-import QuizTab from './ui/quiz-tab'
-import MigrationTab from './ui/migration-tab'
 import { ROLES, RoleTabs } from '@/app/info/ui/shared'
-
-function ZaloTab({ zaloAccounts, users }) {
-  const router = useRouter()
-  const [search, setSearch] = useState('')
-  const [editing, setEditing] = useState(null)
-  const [proxyVal, setProxyVal] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [noti, setNoti] = useState({ open: false, status: false, message: '' })
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return zaloAccounts
-    const q = search.toLowerCase()
-    return zaloAccounts.filter(a =>
-      a.name?.toLowerCase().includes(q) || a.phone?.includes(q) || a.uid?.toLowerCase().includes(q)
-    )
-  }, [zaloAccounts, search])
-
-  const getUserName = (userId) => {
-    const u = users.find(u => u._id === userId)
-    return u?.name || userId
-  }
-
-  const startEdit = (account) => {
-    setEditing(account._id)
-    setProxyVal(account.proxy || '')
-  }
-
-  const cancelEdit = () => {
-    setEditing(null)
-    setProxyVal('')
-  }
-
-  const saveProxy = async (id) => {
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/zalo/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proxy: proxyVal }),
-      })
-      const json = await res.json()
-      if (json.success) {
-        setNoti({ open: true, status: true, message: 'Đã lưu proxy' })
-        setEditing(null)
-        router.refresh()
-      } else {
-        setNoti({ open: true, status: false, message: json.error || 'Lỗi' })
-      }
-    } catch (e) {
-      setNoti({ open: true, status: false, message: 'Lỗi kết nối' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <>
-      <div className="flex items-center gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Tìm kiếm tài khoản Zalo..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 w-72"
-        />
-        <span className="text-xs text-[var(--text-secondary)]">{filtered.length}/{zaloAccounts.length} tài khoản</span>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
-          <p className="text-center text-[var(--text-secondary)] mt-12">Không có tài khoản Zalo</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map(account => (
-              <div key={account._id} className="bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={account.avt || defaultAvatarUrl()}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover shrink-0"
-                      onError={e => { e.target.onerror = null; e.target.src = defaultAvatarUrl() }}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--text-primary)]">{account.name}</p>
-                      <p className="text-xs text-[var(--text-secondary)]">{account.phone} · {account.uid}</p>
-                      {account.roles?.length > 0 && (
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                          Người dùng: {account.roles.map(r => getUserName(r)).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="min-w-0 flex-1 max-w-md">
-                    {editing === account._id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={proxyVal}
-                          onChange={e => setProxyVal(e.target.value)}
-                          placeholder="http://user:pass@host:port"
-                          className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded bg-white outline-none text-gray-700 font-mono"
-                        />
-                        <button onClick={() => saveProxy(account._id)} disabled={saving}
-                          className="px-2 py-1.5 text-xs font-medium text-white bg-[var(--main_d)] rounded hover:opacity-90 disabled:opacity-40">
-                          {saving ? '...' : 'Lưu'}
-                        </button>
-                        <button onClick={cancelEdit}
-                          className="px-2 py-1.5 text-xs font-medium text-[var(--text-secondary)] bg-gray-100 rounded hover:bg-gray-200">
-                          Hủy
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 px-2 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded text-gray-600 truncate font-mono">
-                          {account.proxy || <span className="text-gray-400 italic">Chưa cấu hình proxy</span>}
-                        </code>
-                        <button onClick={() => startEdit(account)}
-                          className="px-2 py-1.5 text-xs font-medium text-[var(--main_d)] hover:bg-[var(--main_l)] rounded shrink-0">
-                          {account.proxy ? 'Sửa' : 'Thêm'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.message}
-        button={<button onClick={() => setNoti(p => ({ ...p, open: false }))}
-          className="px-3 py-2 bg-[var(--main_b)] rounded text-white text-sm font-medium cursor-pointer border-none mt-2">Đóng</button>} />
-    </>
-  )
-}
 
 function DriveVerifyTab() {
   const [running, setRunning] = useState(false)
@@ -287,86 +149,6 @@ function DriveVerifyTab() {
   )
 }
 
-
-function ZaloLiteTab() {
-  const [form, setForm] = useState({ baseUrl: '', apiKey: '' })
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [noti, setNoti] = useState({ open: false, status: false, message: '' })
-
-  useEffect(() => {
-    fetch('/api/notifications/settings')
-      .then(r => r.json())
-      .then(json => {
-        if (json.success) {
-          const map = {}
-          json.data.forEach(s => { map[s.key] = s.value })
-          setForm({
-            baseUrl: map.ZALOLITE_BASE_URL || 'https://sms-service.talab.io.vn/api/gateway/v1.0',
-            apiKey: map.ZALOLITE_API_KEY || '',
-          })
-        }
-      })
-      .catch(err => console.error('Fetch ZaloLite settings error:', err))
-      .finally(() => setLoading(false))
-  }, [])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/notifications/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          settings: [
-            { key: 'ZALOLITE_BASE_URL', value: form.baseUrl.trim() },
-            { key: 'ZALOLITE_API_KEY', value: form.apiKey.trim() },
-          ],
-        }),
-      })
-      const json = await res.json()
-      setNoti({ open: true, status: json.success, message: json.success ? 'Đã lưu cấu hình ZaloLite' : json.error })
-    } catch (e) {
-      setNoti({ open: true, status: false, message: 'Lỗi kết nối' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (loading) return <div className="flex items-center justify-center h-32 text-sm text-[var(--text-secondary)]">Đang tải...</div>
-
-  return (
-    <div className="max-w-xl">
-      <p className="text-sm text-[var(--text-secondary)] mb-4">
-        Cấu hình API Gateway ZaloLite để gửi tin nhắn Zalo (lưu vào cơ sở dữ liệu, không cần biến môi trường).
-      </p>
-      <div className="flex flex-col gap-4">
-        <div>
-          <label className="block text-sm font-semibold text-[var(--text-primary)] mb-1">Base URL</label>
-          <input type="text" value={form.baseUrl}
-            onChange={e => setForm(p => ({ ...p, baseUrl: e.target.value }))}
-            placeholder="https://sms-service.talab.io.vn/api/gateway/v1.0"
-            className="w-full px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 font-mono" />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-[var(--text-primary)] mb-1">API Key</label>
-          <input type="password" value={form.apiKey}
-            onChange={e => setForm(p => ({ ...p, apiKey: e.target.value }))}
-            placeholder="zlite_..."
-            className="w-full px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 font-mono" />
-          <p className="text-xs text-[var(--text-secondary)] mt-1">Bắt buộc để gửi tin nhắn Zalo.</p>
-        </div>
-      </div>
-      <button onClick={handleSave} disabled={saving}
-        className="mt-6 px-4 py-2 bg-[var(--main_d)] text-white text-sm font-medium rounded hover:opacity-90 disabled:opacity-40 cursor-pointer border-none">
-        {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
-      </button>
-      <Noti open={noti.open} onClose={() => setNoti(p => ({ ...p, open: false }))} status={noti.status} mes={noti.message}
-        button={<button onClick={() => setNoti(p => ({ ...p, open: false }))}
-          className="px-3 py-2 bg-[var(--main_b)] rounded text-white text-sm font-medium cursor-pointer border-none mt-2">Đóng</button>} />
-    </div>
-  )
-}
 
 const GUIDE_ROLES = ROLES
 
@@ -672,16 +454,12 @@ function GuideTab() {
 }
 
 const TABS = [
-  { key: 'guide', label: 'Hướng dẫn' },
-  { key: 'quiz', label: 'Bài kiểm tra' },
-  { key: 'zalo', label: 'Zalo Proxy' },
-  { key: 'zalolite', label: 'ZaloLite' },
   { key: 'drive', label: 'Đồng bộ Drive' },
-  { key: 'migration', label: 'Di chuyển CSDL' },
+  { key: 'guide', label: 'Hướng dẫn' },
 ]
 
-export default function SettingClient({ zaloAccounts, users }) {
-  const [tab, setTab] = useState('zalo')
+export default function SettingClient() {
+  const [tab, setTab] = useState('drive')
 
   return (
     <div className="h-full flex flex-col">
@@ -695,12 +473,8 @@ export default function SettingClient({ zaloAccounts, users }) {
         ))}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {tab === 'guide' && <GuideTab />}
-        {tab === 'quiz' && <QuizTab />}
-        {tab === 'zalo' && <ZaloTab zaloAccounts={zaloAccounts} users={users} />}
-        {tab === 'zalolite' && <ZaloLiteTab />}
         {tab === 'drive' && <DriveVerifyTab />}
-        {tab === 'migration' && <MigrationTab />}
+        {tab === 'guide' && <GuideTab />}
       </div>
     </div>
   )

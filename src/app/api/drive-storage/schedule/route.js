@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import DriveStorageConfig from '@/models/driveStorageConfig';
 import Area from '@/models/area';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 import { computeNextRunAt } from '@/function/report';
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
+
         await connectDB();
         const [config, areas] = await Promise.all([
             DriveStorageConfig.findOne({}).populate('areas', 'name color').lean(),
@@ -43,10 +46,8 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        const auth = await checkAuthToken();
-        if (!auth || !auth.id) {
-            return NextResponse.json({ error: 'Bạn cần đăng nhập.' }, { status: 401 });
-        }
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
 
         const body = await request.json();
         const {
@@ -85,7 +86,7 @@ export async function POST(request) {
                     monthDay: Number(monthDay),
                     areas: Array.isArray(areas) ? areas : [],
                     nextRunAt,
-                    updatedBy: auth.id,
+                    updatedBy: auth.user._id || auth.user.id,
                 },
             },
             { new: true, upsert: true }

@@ -9,8 +9,8 @@ import { getJwtSecret, getCookieName } from '@/utils/env'
 export async function POST(request, { params }) {
   try {
     const { user } = await authenticate(request)
-    if (!user.role.some(r => /^admin$/i.test(r))) {
-      return NextResponse.json({ success: false, error: 'Chỉ Admin mới có quyền chuyển đổi' }, { status: 403 })
+    if (!user.role.some(r => /^admin$/i.test(r) || /^academic$/i.test(r))) {
+      return NextResponse.json({ success: false, error: 'Chỉ Admin hoặc Học vụ mới có quyền chuyển đổi' }, { status: 403 })
     }
 
     const { id } = await params

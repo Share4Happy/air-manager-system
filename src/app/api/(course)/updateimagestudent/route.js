@@ -5,8 +5,12 @@ import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 import PostStudent from '@/models/student'; // Import model student để tra cứu
 import { Re_coursetry } from '@/data/course';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(req) {
+    const auth = await authorize(req, ['Admin', 'Academic', 'Teacher']);
+    if (!auth.authorized) return auth.response;
+
     await connectDB();
 
     try {

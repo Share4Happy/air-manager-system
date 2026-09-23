@@ -10,6 +10,7 @@ import jsonRes from '@/utils/response'
 import '@/models/users'
 import '@/models/book'
 import { lessonFolderName } from '@/function/drive/folder'
+import { authorize } from '@/utils/authorize'
 
 const TRIAL_ID = new Types.ObjectId('6871bc14ada3650715efc786')
 const PARENT_ID = process.env.DRIVE_COURSE_FOLDER_ID
@@ -41,8 +42,11 @@ async function createDriveFolder(drive, name, parentId) {
     return res.data.id
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const { errorResponse } = await authorize(request)
+        if (errorResponse) return errorResponse
+
         await dbConnect()
 
         const course = await TrialCourse.findById(TRIAL_ID)
@@ -113,8 +117,12 @@ export async function GET() {
 
 export async function POST(request) {
     try {
+        const { user, body: authBody, errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher'])
+        if (errorResponse) return errorResponse
+
         await dbConnect()
-        const { day, time, room, book, topicId, teacher, teachingAs, studentIds = [], note = '' } = await request.json()
+        const body = authBody || await request.json()
+        const { day, time, room, book, topicId, teacher, teachingAs, studentIds = [], note = '' } = body
 
         if (!day || !time || !room || !book || !topicId)
             return jsonRes(400, { status: false, mes: 'Thiếu trường bắt buộc.', data: null })
@@ -169,15 +177,18 @@ export async function POST(request) {
         return jsonRes(201, { status: true, mes: 'Thêm buổi học thử thành công!', data: session })
     } catch (e) {
         console.error('[POST /coursetry]', e)
-        const code = e.message === 'Authentication failed' ? 401 : 500
-        return jsonRes(code, { status: false, mes: 'Lỗi máy chủ', data: null })
+        return jsonRes(500, { status: false, mes: 'Lỗi máy chủ', data: null })
     }
 }
 
 export async function PUT(request) {
     try {
+        const { user, body: authBody, errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher'])
+        if (errorResponse) return errorResponse
+
         await dbConnect()
-        const { sessionId, students, ...fields } = await request.json()
+        const body = authBody || await request.json()
+        const { sessionId, students, ...fields } = body
         if (!Types.ObjectId.isValid(sessionId))
             return jsonRes(400, { status: false, mes: 'sessionId không hợp lệ.', data: null })
 

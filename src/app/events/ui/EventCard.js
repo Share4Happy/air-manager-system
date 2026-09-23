@@ -3,56 +3,10 @@ import React, { useMemo } from 'react';
 import ItemCard from '@/components/(ui)/(card)/ItemCard';
 import { formatDate } from '@/function';
 
-const typeConfigMap = {
-    competition: { label: 'Cuộc thi', color: '#f59e0b' },
-    workshop: { label: 'Workshop', color: '#3b82f6' },
-    showcase: { label: 'Showcase', color: '#8b5cf6' },
-    internal: { label: 'Nội bộ', color: '#10b981' },
-    other: { label: 'Khác', color: '#6b7280' },
-};
+import { statusConfigMap, EventStatusBadge, EventTagBadge, eventTypeConfigMap } from './common';
 
-const statusConfigMap = {
-    planning: {
-        label: 'Đang chuẩn bị',
-        color: '#3b82f6',
-        bg: '#eff6ff',
-        textColor: '#1d4ed8',
-        borderColor: '#bfdbfe',
-        barColor: '#3b82f6',
-    },
-    upcoming: {
-        label: 'Sắp diễn ra',
-        color: '#6366f1',
-        bg: '#eef2ff',
-        textColor: '#4338ca',
-        borderColor: '#c7d2fe',
-        barColor: '#6366f1',
-    },
-    happening: {
-        label: 'Đang diễn ra',
-        color: '#f59e0b',
-        bg: '#fffbeb',
-        textColor: '#b45309',
-        borderColor: '#fde68a',
-        barColor: '#f59e0b',
-    },
-    completed: {
-        label: 'Đã hoàn thành',
-        color: '#10b981',
-        bg: '#ecfdf5',
-        textColor: '#047857',
-        borderColor: '#a7f3d0',
-        barColor: '#10b981',
-    },
-    cancelled: {
-        label: 'Đã hủy',
-        color: '#ef4444',
-        bg: '#fef2f2',
-        textColor: '#b91c1c',
-        borderColor: '#fecaca',
-        barColor: '#ef4444',
-    },
-};
+const typeConfigMap = eventTypeConfigMap;
+
 
 export default function EventCard({ event = {}, canViewBudget = false }) {
     const {
@@ -61,6 +15,7 @@ export default function EventCard({ event = {}, canViewBudget = false }) {
         code = '',
         type = 'competition',
         status = 'planning',
+        tags = [],
         startDate,
         endDate,
         location = '',
@@ -153,25 +108,26 @@ export default function EventCard({ event = {}, canViewBudget = false }) {
     }, [status, completedTasks, totalTasks, progressPercent, statusConfig.barColor]);
 
     const topLabelsNode = (
-        <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-                className="text-xs font-medium text-white px-2.5 py-0.5 rounded-full shrink-0"
-                style={{ background: typeConfig.color }}
-            >
-                {typeConfig.label}
-            </span>
-            <span
-                className="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 border"
-                style={{
-                    background: statusConfig.bg,
-                    color: statusConfig.textColor,
-                    borderColor: statusConfig.borderColor,
-                }}
-            >
-                {statusConfig.label}
-            </span>
+        <div className="flex items-center justify-between w-full gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+                <span
+                    className="text-xs font-medium text-white px-2.5 py-0.5 rounded-full shrink-0"
+                    style={{ background: typeConfig.color }}
+                >
+                    {typeConfig.label}
+                </span>
+                <EventStatusBadge status={status} />
+            </div>
+            {Array.isArray(tags) && tags.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap ml-auto">
+                    {tags.map(t => (
+                        <EventTagBadge key={t} tag={t} size="sm" />
+                    ))}
+                </div>
+            )}
         </div>
     );
+
 
     return (
         <ItemCard

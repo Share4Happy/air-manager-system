@@ -3,9 +3,13 @@ import connectDB from '@/config/connectDB'
 import PostCourse from '@/models/course'
 import PostStudent from '@/models/student'
 import Book from '@/models/book'
+import { authorize } from '@/utils/authorize'
 
 export async function GET(req) {
     try {
+        const { errorResponse } = await authorize(req)
+        if (errorResponse) return errorResponse
+
         await connectDB()
 
         const { searchParams } = new URL(req.url)

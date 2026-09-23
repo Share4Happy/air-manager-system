@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import Logs from '@/models/log'
+import { authorize } from '@/utils/authorize'
 
 function startOfDay(d) {
     const x = new Date(d)
@@ -25,6 +26,9 @@ function startOfMonth(d) {
 
 export async function GET(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic'])
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const range = new URL(request.url).searchParams.get('range') || 'week'
         const now = new Date()

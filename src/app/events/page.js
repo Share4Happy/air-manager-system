@@ -10,10 +10,13 @@ import {
     IconFileText,
     IconFilter,
 } from './ui/icons';
+import { EVENT_TYPE_OPTIONS } from './ui/common';
+import EventChatBubble from './[id]/ui/EventChatBubble';
 
 export default function EventsDashboardPage() {
     const [rawEvents, setRawEvents] = useState([]);
     const [templates, setTemplates] = useState([]);
+    const [tags, setTags] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isReloading, setIsReloading] = useState(false);
@@ -21,6 +24,7 @@ export default function EventsDashboardPage() {
 
     const [search, setSearch] = useState('');
     const [type, setType] = useState('all');
+    const [selectedTag, setSelectedTag] = useState('all');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [statusTab, setStatusTab] = useState('all');
@@ -28,6 +32,16 @@ export default function EventsDashboardPage() {
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isManageTemplatesOpen, setIsManageTemplatesOpen] = useState(false);
+
+    const fetchTags = useCallback(async () => {
+        try {
+            const res = await fetch('/api/events/tags', { cache: 'no-store' });
+            const data = await res.json();
+            if (data.success) setTags(data.tags || []);
+        } catch (err) {
+            console.error('Error fetching event tags:', err);
+        }
+    }, []);
 
     const fetchInitialMeta = useCallback(async () => {
         try {
@@ -63,11 +77,13 @@ export default function EventsDashboardPage() {
 
     useEffect(() => {
         fetchInitialMeta();
+        fetchTags();
         fetchEvents();
-    }, [fetchInitialMeta, fetchEvents]);
+    }, [fetchInitialMeta, fetchTags, fetchEvents]);
 
     const handleEventCreated = () => {
         fetchEvents();
+        fetchTags();
     };
 
     const statusCounts = useMemo(() => {
@@ -81,6 +97,9 @@ export default function EventsDashboardPage() {
 
         rawEvents.forEach(event => {
             if (type !== 'all' && event.type !== type) return;
+            if (selectedTag !== 'all') {
+                if (!Array.isArray(event.tags) || !event.tags.includes(selectedTag)) return;
+            }
 
             const q = search.trim().toLowerCase();
             if (q) {
@@ -88,7 +107,8 @@ export default function EventsDashboardPage() {
                     (event.title && event.title.toLowerCase().includes(q)) ||
                     (event.code && event.code.toLowerCase().includes(q)) ||
                     (event.location && event.location.toLowerCase().includes(q)) ||
-                    (event.lead?.name && event.lead.name.toLowerCase().includes(q));
+                    (event.lead?.name && event.lead.name.toLowerCase().includes(q)) ||
+                    (Array.isArray(event.tags) && event.tags.some(t => t.toLowerCase().includes(q)));
                 if (!hasMatch) return;
             }
 
@@ -115,26 +135,23 @@ export default function EventsDashboardPage() {
             }
 
             counts.all += 1;
-            if (event.status === 'planning' || event.status === 'upcoming') {
+            if (event.status === 'planning' || event.status === 'upcoming' || event.status === 'cancelled') {
                 counts.upcoming += 1;
             } else if (event.status === 'happening') {
                 counts.happening += 1;
             } else if (event.status === 'completed') {
                 counts.completed += 1;
-            } else if (event.status === 'cancelled') {
-                counts.cancelled += 1;
             }
         });
 
         return counts;
-    }, [rawEvents, type, search, startDate, endDate]);
+    }, [rawEvents, type, selectedTag, search, startDate, endDate]);
 
     const statusFilterTabs = [
         { id: 'all', label: 'Tất cả', count: statusCounts.all },
         { id: 'upcoming', label: 'Đang chuẩn bị', count: statusCounts.upcoming, dotColor: 'bg-blue-500' },
         { id: 'happening', label: 'Đang diễn ra', count: statusCounts.happening, dotColor: 'bg-amber-500 animate-pulse' },
         { id: 'completed', label: 'Đã hoàn thành', count: statusCounts.completed, dotColor: 'bg-emerald-500' },
-        { id: 'cancelled', label: 'Đã hủy', count: statusCounts.cancelled, dotColor: 'bg-rose-500' },
     ];
 
     const filteredEvents = useMemo(() => {
@@ -142,7 +159,7 @@ export default function EventsDashboardPage() {
             // Status filter
             if (statusTab !== 'all') {
                 if (statusTab === 'upcoming') {
-                    if (event.status !== 'planning' && event.status !== 'upcoming') return false;
+                    if (event.status !== 'planning' && event.status !== 'upcoming' && event.status !== 'cancelled') return false;
                 } else {
                     if (event.status !== statusTab) return false;
                 }
@@ -153,6 +170,11 @@ export default function EventsDashboardPage() {
                 return false;
             }
 
+            // Tag filter
+            if (selectedTag !== 'all') {
+                if (!Array.isArray(event.tags) || !event.tags.includes(selectedTag)) return false;
+            }
+
             // Search filter
             const q = search.trim().toLowerCase();
             if (q) {
@@ -160,7 +182,8 @@ export default function EventsDashboardPage() {
                     (event.title && event.title.toLowerCase().includes(q)) ||
                     (event.code && event.code.toLowerCase().includes(q)) ||
                     (event.location && event.location.toLowerCase().includes(q)) ||
-                    (event.lead?.name && event.lead.name.toLowerCase().includes(q));
+                    (event.lead?.name && event.lead.name.toLowerCase().includes(q)) ||
+                    (Array.isArray(event.tags) && event.tags.some(t => t.toLowerCase().includes(q)));
                 if (!hasMatch) return false;
             }
 
@@ -190,9 +213,9 @@ export default function EventsDashboardPage() {
 
             return true;
         });
-    }, [rawEvents, statusTab, type, search, startDate, endDate]);
+    }, [rawEvents, statusTab, type, selectedTag, search, startDate, endDate]);
 
-    const hasActiveFilters = Boolean(type !== 'all' || startDate || endDate);
+    const hasActiveFilters = Boolean(type !== 'all' || selectedTag !== 'all' || startDate || endDate);
 
     return (
         <>
@@ -221,11 +244,10 @@ export default function EventsDashboardPage() {
                         {/* Mobile Filter Toggle Button */}
                         <button
                             type="button"
-                            className={`md:hidden relative flex items-center justify-center w-8 h-8 rounded-lg border cursor-pointer transition-colors shrink-0 ${
-                                showFilters || hasActiveFilters
+                            className={`md:hidden relative flex items-center justify-center w-8 h-8 rounded-lg border cursor-pointer transition-colors shrink-0 ${showFilters || hasActiveFilters
                                     ? 'bg-blue-50 border-blue-300 text-blue-600 dark:bg-blue-950/50 dark:border-blue-700 dark:text-blue-400'
                                     : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
-                            }`}
+                                }`}
                             onClick={() => setShowFilters(s => !s)}
                             title="Bộ lọc nâng cao"
                         >
@@ -243,11 +265,22 @@ export default function EventsDashboardPage() {
                                 onChange={(e) => setType(e.target.value)}
                             >
                                 <option value="all">Tất cả phân loại</option>
-                                <option value="competition">Cuộc thi</option>
-                                <option value="workshop">Workshop / Ngày hội</option>
-                                <option value="showcase">Showcase tốt nghiệp</option>
-                                <option value="internal">Nội bộ / Tập huấn</option>
-                                <option value="other">Khác</option>
+                                {EVENT_TYPE_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 resize-none text-[var(--text-primary)] w-auto"
+                                value={selectedTag}
+                                onChange={(e) => setSelectedTag(e.target.value)}
+                            >
+                                <option value="all">Tất cả thẻ (Tag)</option>
+                                {tags.map(t => (
+                                    <option key={t._id || t.name} value={t.name}>
+                                        {t.name} {t.usageCount > 0 ? `(${t.usageCount})` : ''}
+                                    </option>
+                                ))}
                             </select>
 
                             <div className="flex gap-2">
@@ -270,7 +303,8 @@ export default function EventsDashboardPage() {
                                 onClick={fetchEvents}
                                 disabled={isReloading}
                             >
-                                {isReloading ? 'Đang tải...' : 'Làm mới'}
+                                <span className={isReloading ? 'animate-spin' : ''}>↻</span>
+                                <span>{isReloading ? 'Đang tải...' : 'Làm mới'}</span>
                             </button>
 
                             <button
@@ -300,11 +334,22 @@ export default function EventsDashboardPage() {
                                 onChange={(e) => setType(e.target.value)}
                             >
                                 <option value="all">Tất cả phân loại</option>
-                                <option value="competition">Cuộc thi</option>
-                                <option value="workshop">Workshop / Ngày hội</option>
-                                <option value="showcase">Showcase tốt nghiệp</option>
-                                <option value="internal">Nội bộ / Tập huấn</option>
-                                <option value="other">Khác</option>
+                                {EVENT_TYPE_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm outline-none text-gray-700 text-[var(--text-primary)] w-full"
+                                value={selectedTag}
+                                onChange={(e) => setSelectedTag(e.target.value)}
+                            >
+                                <option value="all">Tất cả thẻ (Tag)</option>
+                                {tags.map(t => (
+                                    <option key={t._id || t.name} value={t.name}>
+                                        {t.name} {t.usageCount > 0 ? `(${t.usageCount})` : ''}
+                                    </option>
+                                ))}
                             </select>
 
                             <div className="flex gap-2 w-full">
@@ -322,21 +367,13 @@ export default function EventsDashboardPage() {
                                 />
                             </div>
 
-                            <div className="flex items-center gap-2 w-full pt-0.5">
+                            <div className="flex gap-2 w-full pt-1">
                                 <button
                                     onClick={() => setIsManageTemplatesOpen(true)}
-                                    className="flex-1 px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center justify-center gap-1.5 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-xs"
+                                    className="w-full py-2 px-3 rounded-lg font-medium cursor-pointer flex items-center justify-center gap-1.5 bg-[#f8fafc] hover:bg-gray-100 text-[#0f172a] border border-[#e2e8f0] text-xs transition-colors"
                                 >
                                     <IconFileText className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                     <span>Mẫu quy trình</span>
-                                </button>
-
-                                <button
-                                    className="flex-1 px-3 py-2 rounded-lg font-medium cursor-pointer flex items-center justify-center gap-1.5 bg-[#f8fafc] text-[#0f172a] border border-[#e2e8f0] text-xs"
-                                    onClick={fetchEvents}
-                                    disabled={isReloading}
-                                >
-                                    {isReloading ? 'Đang tải...' : 'Làm mới'}
                                 </button>
                             </div>
                         </div>
@@ -352,20 +389,18 @@ export default function EventsDashboardPage() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setStatusTab(tab.id)}
-                                className={`px-3 md:px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 cursor-pointer border shrink-0 ${
-                                    isActive
+                                className={`px-3 md:px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 cursor-pointer border shrink-0 ${isActive
                                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                         : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                                }`}
+                                    }`}
                             >
                                 {tab.dotColor && <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : tab.dotColor}`} />}
                                 <span>{tab.label}</span>
                                 <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${
-                                        isActive
+                                    className={`px-2 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${isActive
                                             ? 'bg-white/20 text-white'
                                             : 'bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]'
-                                    }`}
+                                        }`}
                                 >
                                     {tab.count}
                                 </span>
@@ -409,6 +444,7 @@ export default function EventsDashboardPage() {
                 onClose={() => setIsCreateOpen(false)}
                 onSuccess={handleEventCreated}
                 templates={templates}
+                tags={tags}
                 users={users}
             />
 
@@ -420,6 +456,11 @@ export default function EventsDashboardPage() {
                 onRefreshTemplates={fetchInitialMeta}
                 canViewBudget={canViewBudget}
             />
+
+            {/* Global Floating Chat Bubble for Events Hub */}
+            {rawEvents && rawEvents.length > 0 && (
+                <EventChatBubble allEvents={rawEvents} />
+            )}
         </>
     );
 }

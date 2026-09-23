@@ -4,12 +4,16 @@ import connectDB from '@/config/connectDB';
 import Debt from '@/models/debt';
 import { clearCacheByTag, clearAllCache } from '@/lib/cache';
 import { revalidatePath } from 'next/cache';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(request) {
     try {
+        const { user, body: authBody, errorResponse } = await authorize(request, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
+
         await connectDB();
-        const body = await request.json();
-        const { studentId, courseId, courseName, amount, sessions, startDate, endDate, note, type } = body;
+        const body = authBody || await request.json();
+        const { studentId, courseId, courseName, amount, sessions, startDate, endDate, note } = body;
 
         if (!studentId || amount == null) {
             return NextResponse.json({ mes: 'Thiếu thông tin bắt buộc' }, { status: 400 });
@@ -29,7 +33,7 @@ export async function POST(request) {
             endDate: endDate || '',
             note: note || '',
             status: 0,
-            createBy: 'admin',
+            createBy: user._id.toString(),
         });
 
         clearCacheByTag('students');
@@ -43,8 +47,11 @@ export async function POST(request) {
     }
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
+
         await connectDB();
         const debts = await Debt.find({}).sort({ createdAt: -1 }).lean();
         return NextResponse.json({ data: debts }, { status: 200 });
@@ -53,3 +60,4 @@ export async function GET() {
         return NextResponse.json({ mes: 'Lỗi server' }, { status: 500 });
     }
 }
+

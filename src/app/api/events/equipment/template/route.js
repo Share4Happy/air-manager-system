@@ -1,7 +1,11 @@
 import ExcelJS from 'exceljs';
+import { authorize } from '@/utils/authorize';
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         const workbook = new ExcelJS.Workbook();
         const ws = workbook.addWorksheet('Danh sách thiết bị mang theo');
 

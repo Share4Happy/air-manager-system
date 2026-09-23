@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import connectDB from '@/config/connectDB';
 import Event from '@/models/event';
+import { authorize } from '@/utils/authorize';
+import mongoose from 'mongoose';
 
 // Generate a friendly, secure share token
 function generateShareToken(title = '') {
@@ -18,13 +20,19 @@ function generateShareToken(title = '') {
 
 /**
  * GET /api/events/[id]/share
- * Get current share configuration for an event
+ * Get current share configuration for an event (Internal Staff only)
  */
 export async function GET(request, { params }) {
     try {
-        await connectDB();
-        const { id } = await params;
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
 
+        const { id } = await params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 });
+        }
+
+        await connectDB();
         const event = await Event.findById(id).select('title shareConfig');
         if (!event) {
             return NextResponse.json({ success: false, message: 'Không tìm thấy sự kiện' }, { status: 404 });
@@ -63,8 +71,15 @@ export async function GET(request, { params }) {
  */
 export async function PUT(request, { params }) {
     try {
-        await connectDB();
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         const { id } = await params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return NextResponse.json({ success: false, message: 'ID không hợp lệ' }, { status: 400 });
+        }
+
+        await connectDB();
         const body = await request.json();
 
         const event = await Event.findById(id);

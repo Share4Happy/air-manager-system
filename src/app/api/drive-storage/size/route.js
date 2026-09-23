@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { authorize } from '@/utils/authorize';
 
 async function getDrive() {
     const auth = new google.auth.GoogleAuth({
@@ -48,6 +49,9 @@ async function calcFolderSize(drive, folderId) {
 
 export async function GET(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
         if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });

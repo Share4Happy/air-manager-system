@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import connectDB from '@/config/connectDB';
 import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
+import { authorize } from '@/utils/authorize';
 
 async function getAccessToken() {
     const auth = new google.auth.GoogleAuth({
@@ -20,6 +21,9 @@ async function getAccessToken() {
 
 export async function POST(request) {
     try {
+        const auth = await authorize(request);
+        if (!auth.authorized) return auth.response;
+
         const body = await request.json();
         const { folderId, fileName, mimeType, fileSize, oldImageId, sessionId } = body;
 

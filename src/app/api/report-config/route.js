@@ -4,9 +4,13 @@ import ReportConfig from '@/models/reportConfig'
 import ReportTemplate from '@/models/reportTemplate'
 import ReportSetting from '@/models/reportSetting'
 import { normalizeMessageText } from '@/function/report'
+import { authorize } from '@/utils/authorize'
 
-export async function GET() {
+export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic'])
+        if (!auth.authorized) return auth.response
+
         await connectDB()
         const [configs, templates, setting] = await Promise.all([
             ReportConfig.find({})

@@ -5,6 +5,7 @@ import PostStudent from '@/models/student';
 import PostBook from '@/models/book';
 import TrialCourse from '@/models/coursetry';
 import DriveFileSize from '@/models/driveFileSize';
+import { authorize } from '@/utils/authorize';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -35,7 +36,10 @@ function addFile(stats, size, type) {
     else { stats.imageSize += safeSize(size); stats.imageFiles++; }
 }
 
-export async function POST() {
+export async function POST(request) {
+    const auth = await authorize(request, ['Admin', 'Academic']);
+    if (!auth.authorized) return auth.response;
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
         async start(controller) {

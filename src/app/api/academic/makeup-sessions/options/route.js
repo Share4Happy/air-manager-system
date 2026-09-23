@@ -4,9 +4,13 @@ import PostCourse from '@/models/course'
 import User from '@/models/users'
 import Area from '@/models/area'
 import Book from '@/models/book'
+import { authorize } from '@/utils/authorize'
 
-export async function GET() {
+export async function GET(req) {
     try {
+        const auth = await authorize(req, ['Admin', 'Academic', 'Teacher'])
+        if (!auth.authorized) return auth.response
+
         await connectDB()
 
         const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);

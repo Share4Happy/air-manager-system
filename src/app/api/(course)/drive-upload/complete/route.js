@@ -5,8 +5,12 @@ import TrialCourse from '@/models/coursetry';
 import { getDriveClient } from '@/function/drive/index';
 import mongoose from 'mongoose';
 import { revalidateTag } from 'next/cache';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(request) {
+    const auth = await authorize(request);
+    if (!auth.authorized) return auth.response;
+
     try {
         await connectDB();
     } catch (dbError) {

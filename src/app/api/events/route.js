@@ -3,15 +3,19 @@ import connectDB from '@/config/connectDB';
 import Event from '@/models/event';
 import EventTemplate from '@/models/eventTemplate';
 import User from '@/models/users';
-import checkAuthToken from '@/utils/checktoken';
+import { authorize } from '@/utils/authorize';
 import mongoose from 'mongoose';
 
 export async function GET(req) {
     try {
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
         const scope = searchParams.get('scope'); // 'upcoming', 'happening', 'past', 'all'
         const type = searchParams.get('type');
+        const tag = searchParams.get('tag');
         const search = searchParams.get('search');
 
         await connectDB();
@@ -34,11 +38,16 @@ export async function GET(req) {
             filter.type = type;
         }
 
+        if (tag && tag !== 'all') {
+            filter.tags = tag;
+        }
+
         if (search) {
             filter.$or = [
                 { title: { $regex: search, $options: 'i' } },
                 { code: { $regex: search, $options: 'i' } },
                 { location: { $regex: search, $options: 'i' } },
+                { tags: { $in: [new RegExp(search, 'i')] } },
             ];
         }
 
@@ -48,7 +57,7 @@ export async function GET(req) {
             .sort({ startDate: 1, createdAt: -1 })
             .lean();
 
-        const user = await checkAuthToken();
+        const user = auth.user;
         const canViewBudget = Boolean(user && user.role?.some?.(r => /^(admin|academic)$/i.test(r)));
 
         // Compute summary metrics for each event
@@ -80,9 +89,34 @@ export async function GET(req) {
                 budgetData = evt.budget;
             }
 
+            const chatMsgs = evt.chatMessages || [];
+            const lastChatMessage = chatMsgs.length > 0 ? chatMsgs[chatMsgs.length - 1] : null;
+            const latestMessageTime = lastChatMessage?.createdAt 
+                ? new Date(lastChatMessage.createdAt).toISOString() 
+                : (evt.updatedAt ? new Date(evt.updatedAt).toISOString() : (evt.createdAt ? new Date(evt.createdAt).toISOString() : new Date().toISOString()));
+
             return {
                 ...evt,
                 budget: budgetData,
+                lastChatMessage: lastChatMessage ? {
+                    id: lastChatMessage.id || lastChatMessage._id,
+                    _id: lastChatMessage._id || lastChatMessage.id,
+                    content: lastChatMessage.content,
+                    senderName: lastChatMessage.senderName,
+                    senderRole: lastChatMessage.senderRole,
+                    senderType: lastChatMessage.senderType,
+                    senderId: lastChatMessage.senderId,
+                    senderAvatar: lastChatMessage.senderAvatar,
+                    imageUrl: lastChatMessage.imageUrl,
+                    replyTo: lastChatMessage.replyTo,
+                    reactions: lastChatMessage.reactions,
+                    isPinned: lastChatMessage.isPinned,
+                    isUrgent: lastChatMessage.isUrgent,
+                    taggedTask: lastChatMessage.taggedTask || null,
+                    createdAt: lastChatMessage.createdAt,
+                } : null,
+                chatMessagesCount: chatMsgs.length,
+                latestMessageTime,
                 stats: {
                     totalTasks,
                     completedTasks,
@@ -138,10 +172,9 @@ export async function GET(req) {
 
 export async function POST(req) {
     try {
-        const user = await checkAuthToken();
-        if (!user) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await authorize(req);
+        if (!auth.authorized) return auth.response;
+        const user = auth.user;
 
         const body = await req.json();
         const {
@@ -153,6 +186,7 @@ export async function POST(req) {
             endDate,
             location,
             description,
+            tags = [],
             lead,
             organizers = [],
             templateId,
@@ -211,11 +245,14 @@ export async function POST(req) {
             }
         }
 
+        const formattedTags = Array.isArray(tags) ? tags.filter(Boolean) : (tags ? [tags] : []);
+
         const newEvent = new Event({
             title,
             code: code || `EVT-${Date.now().toString().slice(-6)}`,
             type,
             status,
+            tags: formattedTags,
             startDate: startDate ? new Date(startDate) : null,
             endDate: endDate ? new Date(endDate) : null,
             location: location || '',

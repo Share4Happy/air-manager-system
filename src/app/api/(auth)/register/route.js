@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import PostUser from '@/models/users';
 import { reloadUser } from '@/data/actions/reload';
+import jsonRes from '@/utils/response';
 
 export async function POST(req) {
     try {
@@ -11,7 +11,6 @@ export async function POST(req) {
             name,
             address = '',
             avt = '',
-            role = ["Teacher"],
             phone = '',
             email,
             password
@@ -21,44 +20,30 @@ export async function POST(req) {
             return jsonRes(400, { error: 'Email và mật khẩu là bắt buộc' });
         }
 
-        const exists = await PostUser.exists({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+        const exists = await PostUser.exists({ email: normalizedEmail });
         if (exists) {
             return jsonRes(409, { error: 'Email đã tồn tại' });
         }
 
-        const hash = await bcrypt.hash(password, 10);      
+        const hash = await bcrypt.hash(password, 10);
 
         await PostUser.create({
             name,
             address,
             avt,
-            role,
+            role: ['Teacher'], // Cố định role mặc định, không cho phép client tự gán Admin
             phone,
-            email,
-            uid: hash                                    
+            email: normalizedEmail,
+            uid: hash,
+            status: true
         });
-        reloadUser()
+
+        reloadUser();
         return jsonRes(201, { message: 'Tạo tài khoản thành công' });
     } catch (err) {
-        console.error(err);
+        console.error('Lỗi đăng ký tài khoản:', err);
         return jsonRes(500, { error: 'Lỗi máy chủ' });
     }
 }
 
-function corsHeaders() {
-    return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    };
-}
-function jsonRes(status, body) {
-    return new NextResponse(JSON.stringify(body), {
-        status,
-        headers: { ...corsHeaders(), 'Content-Type': 'application/json' }
-    });
-}
-
-export async function OPTIONS() {
-    return new NextResponse(null, { status: 204, headers: corsHeaders() });
-}

@@ -4,9 +4,13 @@ import Student from '@/models/student';
 import Invoice from '@/models/invoices';
 import { clearCacheByTag, clearAllCache } from '@/lib/cache';
 import { revalidatePath } from 'next/cache';
+import { authorize } from '@/utils/authorize';
 
-export async function POST() {
+export async function POST(request) {
     try {
+        const { user, errorResponse } = await authorize(request, ['Admin', 'Academic']);
+        if (errorResponse) return errorResponse;
+
         await connectDB();
 
         const students = await Student.find({}).lean();
@@ -32,7 +36,7 @@ export async function POST() {
                         amountPaid: 0,
                         paymentMethod: 0,
                         discount: 0,
-                        createBy: student._id,
+                        createBy: user._id,
                     });
 
                     await Student.updateOne(
@@ -62,3 +66,4 @@ export async function POST() {
         return NextResponse.json({ mes: 'Lỗi server: ' + error.message }, { status: 500 });
     }
 }
+

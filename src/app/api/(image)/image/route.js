@@ -6,6 +6,7 @@ import PostCourse from '@/models/course';
 import TrialCourse from '@/models/coursetry';
 import { reloadCourse, reloadCoursetry } from '@/data/actions/reload';
 import { revalidateTag } from 'next/cache';
+import { authorize } from '@/utils/authorize';
 
 async function getDriveClient() {
     const auth = new google.auth.GoogleAuth({
@@ -30,8 +31,11 @@ function getSimplifiedType(mimeType) {
 }
 
 export async function POST(request) {
-    await connectDB();
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
+        await connectDB();
         const drive = await getDriveClient();
         const formData = await request.formData();
         const folderId = formData.get('folderId'); // This folderId is expected to be Detail.Image
@@ -119,8 +123,11 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-    await connectDB();
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
+        await connectDB();
         const drive = await getDriveClient();
         const formData = await request.formData();
 
@@ -322,8 +329,11 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-    await connectDB();
     try {
+        const { errorResponse } = await authorize(request, ['Admin', 'Academic', 'Teacher']);
+        if (errorResponse) return errorResponse;
+
+        await connectDB();
         const drive = await getDriveClient();
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

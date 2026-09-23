@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/config/connectDB';
 import User from '@/models/users';
 import { resetAttempts } from '@/lib/login-attempts';
+import { authorize } from '@/utils/authorize';
 
 export async function POST(request) {
     try {
+        const auth = await authorize(request, ['Admin', 'Academic']);
+        if (!auth.authorized) return auth.response;
+
         await connectDB();
         const { userId } = await request.json();
 

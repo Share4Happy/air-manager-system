@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/config/connectDB'
 import Guide from '@/models/guide'
 import authenticate from '@/utils/authenticate'
+import { authorize } from '@/utils/authorize'
 
 const ROLES = ['Admin', 'Academic', 'Teacher', 'Sale']
 
 export async function GET(request) {
     try {
+        const auth = await authorize(request)
+        if (!auth.authorized) return auth.response
+
         const { searchParams } = new URL(request.url)
         const role = searchParams.get('role') || ''
         if (role && !ROLES.includes(role)) {
