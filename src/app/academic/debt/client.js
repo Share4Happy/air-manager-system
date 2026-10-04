@@ -414,7 +414,7 @@ export default function DebtClient({ students, courseMap, attendanceMap, debts }
     }
 
     return (
-        <div className="flex flex-col gap-3 h-full">
+        <div className="h-full flex flex-col min-h-0 p-0 gap-2">
 
             <Tabs
                 tabs={DEBT_MAIN_TABS}

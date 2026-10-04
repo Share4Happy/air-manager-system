@@ -5,6 +5,7 @@ import CreateEventModal from './ui/CreateEventModal';
 import ManageTemplatesModal from './ui/ManageTemplatesModal';
 import DateInput from '@/components/(ui)/(input)/DateInput';
 import Loading from '@/components/(ui)/(loading)/loading';
+import Tabs from '@/components/(ui)/(tabs)';
 import {
     IconPlus,
     IconFileText,
@@ -147,12 +148,12 @@ export default function EventsDashboardPage() {
         return counts;
     }, [rawEvents, type, selectedTag, search, startDate, endDate]);
 
-    const statusFilterTabs = [
+    const statusFilterTabs = useMemo(() => [
         { id: 'all', label: 'Tất cả', count: statusCounts.all },
-        { id: 'upcoming', label: 'Đang chuẩn bị', count: statusCounts.upcoming, dotColor: 'bg-blue-500' },
-        { id: 'happening', label: 'Đang diễn ra', count: statusCounts.happening, dotColor: 'bg-amber-500 animate-pulse' },
-        { id: 'completed', label: 'Đã hoàn thành', count: statusCounts.completed, dotColor: 'bg-emerald-500' },
-    ];
+        { id: 'upcoming', label: 'Đang chuẩn bị', count: statusCounts.upcoming, icon: <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> },
+        { id: 'happening', label: 'Đang diễn ra', count: statusCounts.happening, icon: <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block" /> },
+        { id: 'completed', label: 'Đã hoàn thành', count: statusCounts.completed, icon: <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> },
+    ], [statusCounts]);
 
     const filteredEvents = useMemo(() => {
         return rawEvents.filter(event => {
@@ -381,33 +382,13 @@ export default function EventsDashboardPage() {
                 </div>
 
                 {/* Dedicated Status / Progress Filter Bar */}
-                <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-1 scrollbar-none px-0.5">
-                    {statusFilterTabs.map(tab => {
-                        const isActive = statusTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setStatusTab(tab.id)}
-                                className={`px-3 md:px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1.5 md:gap-2 cursor-pointer border shrink-0 ${isActive
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                        : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                                    }`}
-                            >
-                                {tab.dotColor && <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : tab.dotColor}`} />}
-                                <span>{tab.label}</span>
-                                <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] md:text-[11px] font-bold ${isActive
-                                            ? 'bg-white/20 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]'
-                                        }`}
-                                >
-                                    {tab.count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                <Tabs
+                    tabs={statusFilterTabs}
+                    activeTab={statusTab}
+                    onTabChange={setStatusTab}
+                    variant="pill"
+                    size="sm"
+                />
 
                 {/* Grid List */}
                 <div className={'flex-1 overflow-y-auto p-2 md:p-[16px_3px] m-[0_-3px] box-border'}>

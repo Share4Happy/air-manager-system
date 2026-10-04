@@ -37,9 +37,31 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
         ];
     }
 
-    // 1. Tải song song Session và các bảng tham chiếu
-    const [sessions, books, areas, users] = await Promise.all([
+    // 1. Tải song song Session, TrialCourse, Course và các bảng tham chiếu
+    const trialQuery = {
+        'sessions.day': { $gte: start, $lt: end }
+    };
+    if (hasTeacherFilter) {
+        trialQuery.$or = [
+            { 'sessions.teacher': teacherObjId },
+            { 'sessions.teachingAs': teacherObjId }
+        ];
+    }
+
+    const courseQuery = {
+        'Detail.Day': { $gte: start, $lt: end }
+    };
+    if (hasTeacherFilter) {
+        courseQuery.$or = [
+            { 'Detail.Teacher': teacherObjId },
+            { 'Detail.TeachingAs': teacherObjId }
+        ];
+    }
+
+    const [sessions, trialCourses, courses, books, areas, users] = await Promise.all([
         Session.find(sessionQuery).sort({ day: 1 }).lean(),
+        TrialCourse.find(trialQuery).lean(),
+        Course.find(courseQuery).lean(),
         Book.find({}, 'Name Topics').lean(),
         Area.find({}, 'name color rooms').lean(),
         User.find({}, 'name phone email').lean()
@@ -66,7 +88,10 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
         });
     });
 
-    // 3. Nếu đã có dữ liệu trong Session collection (LMS mới), trả về ngay
+    const results = [];
+    const seenSessionIds = new Set();
+
+    // 3. Xử lý các buổi học trong Session collection (LMS chuẩn)
     if (sessions.length > 0) {
         const sessionIds = sessions.map(s => s._id);
         const attendances = await Attendance.find({ session: { $in: sessionIds } }).lean();
@@ -86,16 +111,17 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
             });
         });
 
-        const results = sessions.map(s => {
+        sessions.forEach(s => {
+            seenSessionIds.add(String(s._id));
             const sessionDate = new Date(s.day);
             const roomInfo = s.room ? roomMap.get(String(s.room)) : null;
 
-            return {
+            results.push({
                 _id: s._id,
                 buoi: s.buoi,
                 courseId: s.courseCode,
                 courseName: s.courseCode,
-                status: true,
+                status: s.status !== false,
                 type: s.type || 'official',
                 date: s.day,
                 day: sessionDate.getUTCDate(),
@@ -108,44 +134,19 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
                 teacher: s.teacher ? userMap.get(String(s.teacher)) || null : null,
                 teachingAs: s.teachingAs ? userMap.get(String(s.teachingAs)) || null : null,
                 students: attMap.get(String(s._id)) || []
-            };
+            });
         });
-
-        return results.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
-    // 4. Fallback sang CSDL nhúng cũ nếu chưa chuyển đổi
-    const courseQuery = {
-        'Detail.Day': { $gte: start, $lt: end }
-    };
-    if (hasTeacherFilter) {
-        courseQuery.$or = [
-            { 'Detail.Teacher': teacherObjId },
-            { 'Detail.TeachingAs': teacherObjId }
-        ];
-    }
-
-    const trialQuery = {
-        'sessions.day': { $gte: start, $lt: end }
-    };
-    if (hasTeacherFilter) {
-        trialQuery.$or = [
-            { 'sessions.teacher': teacherObjId },
-            { 'sessions.teachingAs': teacherObjId }
-        ];
-    }
-
-    const [courses, trialCourses] = await Promise.all([
-        Course.find(courseQuery).lean(),
-        TrialCourse.find(trialQuery).lean()
-    ]);
-
-    // 4. Định dạng các buổi học chính quy
+    // 4. Bổ sung các buổi học từ Course.Detail nếu chưa có trong Session (Fallback an toàn)
     for (const course of courses) {
         const details = course.Detail || [];
         const students = course.Student || [];
 
         details.forEach((session, index) => {
+            const sessionIdStr = String(session._id);
+            if (seenSessionIds.has(sessionIdStr)) return;
+
             const sessionDate = new Date(session.Day);
             if (sessionDate < start || sessionDate >= end) return;
 
@@ -155,8 +156,8 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
                 if (!matchTeacher && !matchTA) return;
             }
 
+            seenSessionIds.add(sessionIdStr);
             const buoi = index + 1;
-            const sessionIdStr = String(session._id);
 
             const matchedStudents = (students || [])
                 .map(st => {
@@ -173,7 +174,7 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
                 _id: session._id,
                 buoi,
                 courseId: course.ID,
-                courseName: course.Name,
+                courseName: course.Name || course.ID,
                 status: course.Status || false,
                 type: session.Type || 'AI Robotic',
                 date: session.Day,
@@ -191,11 +192,14 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
         });
     }
 
-    // 5. Định dạng các buổi học thử
+    // 5. Bổ sung các buổi học thử từ TrialCourse nếu chưa có trong Session
     for (const trial of trialCourses) {
-        const sessions = trial.sessions || [];
+        const trialSessions = trial.sessions || [];
 
-        sessions.forEach((session, index) => {
+        trialSessions.forEach((session, index) => {
+            const sessionIdStr = String(session._id);
+            if (seenSessionIds.has(sessionIdStr)) return;
+
             const sessionDate = new Date(session.day);
             if (sessionDate < start || sessionDate >= end) return;
 
@@ -205,14 +209,15 @@ export async function getMonthlyCalendar({ month, year, teacherId }) {
                 if (!matchTeacher && !matchTA) return;
             }
 
+            seenSessionIds.add(sessionIdStr);
             const buoi = index + 1;
             const roomInfo = session.room ? roomMap.get(String(session.room)) : null;
 
             results.push({
                 _id: session._id,
                 buoi,
-                courseId: trial.name,
-                courseName: trial.name,
+                courseId: trial.name || 'Học thử',
+                courseName: trial.name || 'Học thử',
                 status: false,
                 type: 'trial',
                 date: session.day,

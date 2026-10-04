@@ -28,10 +28,13 @@ const SummaryBox = ({ title, data }) => (
     </div>
 );
 
-export default function DetailStudent({ data: student, course, c, users, studentsx }) {
-    Object.assign(student, studentsx.find(i => i.ID === student.ID) || {})
-    const allDates = c.Detail.map(item => new Date(item.Day));
-    const dateRange = [formatDate(new Date(Math.min(...allDates))), formatDate(new Date(Math.max(...allDates)))];
+export default function DetailStudent({ data: student = {}, course, c = {}, users = [], studentsx = [] }) {
+    Object.assign(student, (studentsx || []).find(i => i.ID === student.ID) || {});
+    const detailList = Array.isArray(c?.Detail) ? c.Detail : [];
+    const allDates = detailList.map(item => item?.Day ? new Date(item.Day) : null).filter(Boolean);
+    const dateRange = allDates.length > 0
+        ? [formatDate(new Date(Math.min(...allDates))), formatDate(new Date(Math.max(...allDates)))]
+        : ['Chưa có dữ liệu', 'Chưa có dữ liệu'];
     const [openMain, setOpenMain] = useState(false);
     const [commentPop, setCommentPop] = useState({ open: false, lessonId: '', comments: [] });
     const [imagePop, setImagePop] = useState({ open: false, lessonId: '', imageId: '' });

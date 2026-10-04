@@ -61,6 +61,8 @@ export async function dataCourse(_id) {
             .populate([{ path: 'Book' }, { path: 'TeacherHR', select: 'name phone' }, { path: 'Area', select: 'name rooms color' }])
             .lean();
         if (!course) return null;
+        course.Detail = course.Detail || [];
+        course.Student = course.Student || [];
 
         const [sessions, attendances] = await Promise.all([
             Session.find({ $or: [{ course: course._id }, { courseCode: course.ID }] }).sort({ buoi: 1 }).lean(),

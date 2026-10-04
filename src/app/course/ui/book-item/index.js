@@ -15,42 +15,55 @@ const ProgramCard = ({ program }) => {
     return (
         <Link
             href={`/course/book/${program._id}`}
-            className="flex flex-row bg-white rounded-xl border border-gray-100 shadow-[var(--boxshaw2)] overflow-hidden transition-all duration-300 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.33%-11px)] xl:w-[calc(25%-12px)] cursor-pointer min-h-[160px] sm:min-h-[175px] md:min-h-[185px] hover:-translate-y-1 hover:shadow-[var(--boxshaw)]"
+            className="group flex flex-col bg-white rounded-2xl border border-gray-100 shadow-[var(--boxshaw2)] overflow-hidden transition-all duration-300 w-full sm:w-[calc(50%-8px)] lg:w-[calc(33.33%-11px)] xl:w-[calc(25%-12px)] cursor-pointer hover:-translate-y-1.5 hover:shadow-[var(--boxshaw)]"
         >
-            <div className="w-28 sm:w-36 md:w-40 shrink-0 relative bg-gradient-to-br from-[var(--main_l)] to-[var(--main_d)] overflow-hidden">
+            {/* Image Header with 16:10 aspect ratio */}
+            <div className="relative w-full aspect-[16/10] bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden shrink-0">
                 <Image
                     src={url}
                     fill
-                    sizes="(max-width: 640px) 120px, (max-width: 1024px) 160px, 200px"
-                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                     alt={program.Name}
                 />
-            </div>
-            <div className="flex-1 p-3 sm:p-4 flex flex-col justify-between min-w-0">
-                <div className="flex justify-between items-start gap-1.5 mb-1.5">
-                    <p className="text-sm sm:text-base font-semibold text-[var(--text-primary)] line-clamp-2 leading-snug" title={program.Name}>
-                        {program.Name}
-                    </p>
-                    <span className="shrink-0 px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold text-white bg-blue-600">
+                <div className="absolute top-2.5 right-2.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold text-white bg-blue-600/90 backdrop-blur-xs shadow-xs">
                         {program.Type || 'AI Robotic'}
                     </span>
                 </div>
-                <div className="flex flex-col gap-1 text-xs text-[var(--text-primary)] mt-auto pt-2">
-                    <p className="truncate">
-                        <span className="text-[var(--text-secondary)]">Mã: </span>
-                        <span className="font-semibold text-gray-800">{program.ID}</span>
-                    </p>
-                    <p className="truncate">
-                        <span className="text-[var(--text-secondary)]">Chủ đề: </span>
-                        <span className="font-medium">{topicCount}</span>
-                        <span className="text-[var(--text-secondary)] mx-1">•</span>
-                        <span className="text-[var(--text-secondary)]">Số tiết: </span>
-                        <span className="font-medium">{totalPeriods}</span>
-                    </p>
-                    <p className="truncate">
-                        <span className="text-[var(--text-secondary)]">Học phí: </span>
+                {program.ID && (
+                    <div className="absolute top-2.5 left-2.5">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-gray-700 bg-white/90 backdrop-blur-xs shadow-xs font-mono">
+                            {program.ID}
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {/* Card Content Body */}
+            <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between min-w-0 gap-2.5">
+                <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors" title={program.Name}>
+                        {program.Name}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-2">
+                        <span><strong className="text-[var(--text-primary)] font-medium">{topicCount}</strong> chủ đề</span>
+                        <span>•</span>
+                        <span><strong className="text-[var(--text-primary)] font-medium">{totalPeriods}</strong> tiết</span>
+                    </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between mt-auto">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-[var(--text-secondary)]">Học phí</span>
                         <span className="font-bold text-blue-600 text-xs sm:text-sm">{formatPrice(program.Price)}</span>
-                    </p>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        Chi tiết
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+                        </svg>
+                    </span>
                 </div>
             </div>
         </Link>

@@ -95,8 +95,8 @@ export default function Navbar({ data = [], book = [], user, areas = [], trys, t
 
     return (
         <>
-            <div className={'flex flex-col h-full'}>
-                <div className={'flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)] mt-2'}>
+            <div className="h-full flex flex-col min-h-0 p-0 gap-2">
+                <div className={'flex flex-col gap-2 p-2 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]'}>
                     {/* Main Toolbar Row */}
                     <div className="flex items-center gap-2 md:gap-3 w-full">
                         {/* Search Input */}

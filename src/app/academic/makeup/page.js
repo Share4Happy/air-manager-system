@@ -327,7 +327,7 @@ export default function MakeupPage() {
     const currentFilters = filterOptions[tab] || []
 
     return (
-        <div className="flex flex-col gap-3 h-full">
+        <div className="h-full flex flex-col min-h-0 p-0 gap-2">
             <Tabs
                 tabs={MAKEUP_TABS}
                 activeTab={isOverview ? 'overview' : tab}

@@ -5,6 +5,7 @@ import '@/models/book';
 import '@/models/users';
 import PostArea from '@/models/area';
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import authenticate from '@/utils/authenticate';
 import { reloadCourse } from '@/data/actions/reload';
 import { getDriveClient, createDriveFolder, lessonFolderName } from '@/function/drive/folder';
@@ -105,7 +106,7 @@ export async function POST(request) {
                 image: d.Image || '',
                 detailImage: [],
                 type: 'official',
-                status: 'ACTIVE'
+                status: true
             }));
             if (sessionDocs.length > 0) {
                 await Session.insertMany(sessionDocs);
@@ -114,7 +115,19 @@ export async function POST(request) {
             console.error('[COURSE_CREATE_SESSION_ERROR]', sessionErr.message);
         }
 
-        reloadCourse();
+        const calendarMonths = new Set();
+        normalizedDetail.forEach(d => {
+            if (d.Day) {
+                const dt = new Date(d.Day);
+                calendarMonths.add(`${dt.getMonth() + 1}-${dt.getFullYear()}`);
+                calendarMonths.add(`${dt.getUTCMonth() + 1}-${dt.getUTCFullYear()}`);
+            }
+        });
+        calendarMonths.forEach(mKey => {
+            try { revalidateTag(`data_calendar${mKey}`, 'max'); } catch {}
+        });
+
+        reloadCourse(createdCourse._id, newCourseID);
         return NextResponse.json({ status: 2, mes: `Tạo khóa học ${newCourseID} thành công!`, data: createdCourse }, { status: 201 });
     } catch (error) {
         console.error('[COURSE_CREATE_ERROR]', error);

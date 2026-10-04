@@ -50,21 +50,24 @@ export default function SendCmt({ data, lesson }) {
     }, [filteredStudents, excludedStudentIds]);
 
     const baseContentTemplate = useMemo(() => {
-        const foundItem = data.Detail.find(item => item._id === lesson);
+        const detailList = Array.isArray(data?.Detail) ? data.Detail : [];
+        const foundItem = detailList.find(item => item._id === lesson);
         if (!foundItem) { return 'Không tìm thấy thông tin buổi học.'; }
 
-        const currentIndex = data.Detail.findIndex(item => item._id === lesson);
-        const maxDay = data.Detail.reduce((max, currentItem) => currentItem.Day > max ? currentItem.Day : max, data.Detail[0].Day);
+        const currentIndex = detailList.findIndex(item => item._id === lesson);
+        const maxDay = detailList.reduce((max, currentItem) => currentItem.Day > max ? currentItem.Day : max, detailList[0]?.Day || '');
 
         let nextTopic;
         if (foundItem.Day === maxDay) {
             nextTopic = 'Content Cuối khóa';
         } else {
-            const nextLessonInList = data.Detail[currentIndex + 1];
-            nextTopic = `📘 Giới thiệu nội dung buổi học tiếp theo: \n${nextLessonInList.LessonDetails.Name}\n${nextLessonInList.LessonDetails.Content}`;
+            const nextLessonInList = detailList[currentIndex + 1];
+            nextTopic = nextLessonInList?.LessonDetails?.Name
+                ? `📘 Giới thiệu nội dung buổi học tiếp theo: \n${nextLessonInList.LessonDetails.Name}\n${nextLessonInList.LessonDetails.Content || ''}`
+                : '';
         }
 
-        return `Báo cáo học tập sau buổi học - Khóa AI Robotic\nTiết học: ${foundItem.LessonDetails.Name}\nHọc sinh: {namestudent}\n📌 Nội dung buổi học hôm nay:\n${foundItem.LessonDetails.Content} \n🎯 Nhận xét về quá trình học của bé {namestudent} qua tiết học:\n{detailcomment} \nLink hình ảnh buổi học: ${driveFolderUrl(foundItem.Image)}\n${nextTopic}`;
+        return `Báo cáo học tập sau buổi học - Khóa AI Robotic\nTiết học: ${foundItem.LessonDetails?.Name || ''}\nHọc sinh: {namestudent}\n📌 Nội dung buổi học hôm nay:\n${foundItem.LessonDetails?.Content || ''} \n🎯 Nhận xét về quá trình học của bé {namestudent} qua tiết học:\n{detailcomment} \nLink hình ảnh buổi học: ${driveFolderUrl(foundItem.Image)}\n${nextTopic}`;
     }, [data, lesson]);
 
     useEffect(() => {

@@ -13,7 +13,7 @@ export default async function RoomsPage() {
   }
   const areas = await area_data()
   return (
-    <div className="p-4 h-full overflow-auto">
+    <div className="h-full flex flex-col min-h-0 p-0 gap-2 overflow-auto">
       <RoomManager areas={areas || []} />
     </div>
   )

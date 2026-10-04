@@ -241,36 +241,37 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
     let slide = ''
     const lessonId = activeLessonTab || (params.length > 1 ? params[1] : null);
     if (lessonId) {
-        lesson = data.Detail.find(lesson => lesson._id === lessonId);
+        lesson = (data?.Detail || []).find(lesson => lesson._id === lessonId);
         slide = lesson?.LessonDetails?.Slide || '';
-        if (!lesson) lesson = data.Detail[0];
-        lesson.Student = data.Student.flatMap((s) => {
-            let g = (s.Learn || []).filter(t => t.Lesson == lesson._id)
-            return g
-        })
+        if (!lesson) lesson = (data?.Detail || [])[0];
+        if (lesson) {
+            lesson.Student = (data?.Student || []).flatMap((s) => {
+                let g = (s.Learn || []).filter(t => t.Lesson == lesson._id)
+                return g
+            })
 
-        let num = 0
-        lesson.Student.forEach(element => {
-            if (element.Checkin == 0) { statusLesson[0] = 0 }
-            if (element.Checkin == 1) {
-                num++;
-                if ((element.Cmt || []).length == 0) {
-                    statusLesson[1] = 0;
+            let num = 0
+            lesson.Student.forEach(element => {
+                if (element.Checkin == 0) { statusLesson[0] = 0 }
+                if (element.Checkin == 1) {
+                    num++;
+                    if ((element.Cmt || []).length == 0) {
+                        statusLesson[1] = 0;
+                    }
+                    if ((element.Image || []).length == 0) {
+                        statusLesson[2] = 0;
+                    }
                 }
-                if ((element.Image || []).length == 0) {
-                    statusLesson[2] = 0;
-                }
+            });
+            if (num == 0) {
+                statusLesson[1] = 0
+                statusLesson[2] = 0
             }
-        });
-        if (num == 0) {
-            statusLesson[1] = 0
-            statusLesson[2] = 0
-        }
 
-        if (lesson?.Checkin?.id) {
-            checkinStatus = lesson.Checkin.status === 'tre' ? 'tre' : 'dung-gio';
+            if (lesson?.Checkin?.id) {
+                checkinStatus = lesson.Checkin.status === 'tre' ? 'tre' : 'dung-gio';
+            }
         }
-
     }
 
     return (
@@ -475,7 +476,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                         >
                             Tổng quan
                         </button>
-                        {data.Detail.map((lesson, idx) => (
+                        {(data?.Detail || []).map((lesson, idx) => (
                             <button
                                 key={lesson._id}
                                 className="px-3 py-2 text-sm font-medium whitespace-nowrap"
@@ -492,7 +493,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 onClick={() => {
                                     setActiveLessonTab(lesson._id);
                                     if (typeof window !== 'undefined') {
-                                        window.history.pushState(null, '', `/course/${data.ID || params[0]}?lesson=${idx + 1}`);
+                                        window.history.pushState(null, '', `/course/${data?.ID || params[0]}?lesson=${idx + 1}`);
                                     }
                                 }}
                             >
@@ -521,7 +522,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 })}
                             </div>
                             {activeLessonTab ? (
-                                <> {data.Student.filter((stu, idx, arr) => { const k = stu._id?.toString() || stu.ID || idx; return arr.findIndex(s => (s._id?.toString() || s.ID) === k) === idx; }).map(stu => {
+                                <> {(data?.Student || []).filter((stu, idx, arr) => { const k = stu._id?.toString() || stu.ID || idx; return arr.findIndex(s => (s._id?.toString() || s.ID) === k) === idx; }).map(stu => {
                                     return (
                                         <div key={stu._id || stu.ID} style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', alignItems: 'center' }} >
                                             {title.map(col => {
@@ -532,8 +533,8 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                                 let k = learnDetailsArray?.Checkin == '2' ? 1 : 0;
                                                 let cmt = learnDetailsArray?.Cmt || [];
                                                 let cmtfn = learnDetailsArray?.CmtFn || '';
-                                                stu.course = data.ID;
-                                                stu.lesson = data.Detail.find(lesson => lesson._id === activeLessonTab);
+                                                stu.course = data?.ID;
+                                                stu.lesson = (data?.Detail || []).find(lesson => lesson._id === activeLessonTab);
                                                 stu.m = m;
                                                 stu.c = c;
                                                 stu.k = k;
@@ -544,8 +545,8 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                                     col.data === 'More' ?
                                                         <Cell key="more" flex={col.flex} align={col.align}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} >
-                                                                <CommentPopup data={stu} lesson={activeLessonTab} course={data._id} />
-                                                                <DetailStudent data={stu} course={data.Detail} c={data} users={users} studentsx={studentsx} />
+                                                                <CommentPopup data={stu} lesson={activeLessonTab} course={data?._id} />
+                                                                <DetailStudent data={stu} course={data?.Detail || []} c={data} users={users} studentsx={studentsx} />
                                                             </div>
                                                         </Cell>
                                                         : <Cell key={col.data} flex={col.flex} align={col.align}>{stu[col.data]}</Cell>
@@ -557,7 +558,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                             ) : detailcourse}
                         </div>
                     </div>
-                    {activeLessonTab && data.Detail.find(l => l._id === activeLessonTab) && (
+                    {activeLessonTab && (data?.Detail || []).find(l => l._id === activeLessonTab) && (
                         <div style={{ padding: '8px 16px', display: 'flex' }}>
                             <button
                                 className="px-3 py-1.5 text-sm font-medium transition-colors rounded flex items-center gap-1.5 border-none cursor-pointer"
@@ -736,7 +737,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
             <CenterPopup open={showNotePopup} onClose={() => setShowNotePopup(false)} title="Ghi chú buổi học" size="sm">
                 <div className="p-4 flex flex-col gap-3">
                     <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">
-                        {data.Detail.find(l => l._id === activeLessonTab)?.Note || 'Không có ghi chú'}
+                        {(data?.Detail || []).find(l => l._id === activeLessonTab)?.Note || 'Không có ghi chú'}
                     </p>
                     <button
                         className="px-4 py-2 rounded text-white text-sm font-medium border-none cursor-pointer self-center mt-2"

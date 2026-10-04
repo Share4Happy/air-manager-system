@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Noti from '@/components/(features)/(noti)/noti'
 import { ROLES, RoleTabs } from '@/app/info/ui/shared'
+import Tabs from '@/components/(ui)/(tabs)'
 
 function DriveVerifyTab() {
   const [running, setRunning] = useState(false)
@@ -454,24 +455,20 @@ function GuideTab() {
 }
 
 const TABS = [
-  { key: 'drive', label: 'Đồng bộ Drive' },
-  { key: 'guide', label: 'Hướng dẫn' },
+  { id: 'drive', label: 'Đồng bộ Drive' },
+  { id: 'guide', label: 'Hướng dẫn' },
 ]
 
 export default function SettingClient() {
   const [tab, setTab] = useState('drive')
 
   return (
-    <div className="h-full flex flex-col">
-      <h1 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Cài đặt</h1>
-      <div className="flex gap-0 border-b border-[var(--border-color)] mb-4">
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-none ${tab === t.key ? 'text-[var(--main_d)] border-b-2 border-[var(--main_d)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+    <div className="h-full flex flex-col gap-3">
+      <Tabs
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={setTab}
+      />
       <div className="flex-1 overflow-y-auto">
         {tab === 'drive' && <DriveVerifyTab />}
         {tab === 'guide' && <GuideTab />}

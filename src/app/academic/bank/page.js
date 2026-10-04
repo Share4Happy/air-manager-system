@@ -4,7 +4,7 @@ import BankManager from '@/components/bank-manager'
 
 export default function BankPage() {
     return (
-        <div className="p-4 h-full">
+        <div className="h-full flex flex-col min-h-0 p-0 gap-2">
             <BankManager />
         </div>
     )
