@@ -92,8 +92,8 @@ export async function POST(request, { params }) {
             PostCourse.findByIdAndUpdate(id, { $push: { Student: { $each: newStudentDocs } } }),
             attDocs.length > 0 ? Attendance.insertMany(attDocs, { ordered: false }).catch(err => console.error('Attendance.insertMany error in add student to course:', err.message)) : Promise.resolve()
         ]);
-        reloadStudent();
-        reloadCourse(id);
+        await reloadStudent();
+        await reloadCourse(id, course.ID);
         (course.Detail || []).forEach(d => {
             if (d._id) {
                 const { revalidateTag } = require('next/cache');
@@ -170,8 +170,8 @@ export async function PUT(req, { params }) {
             return NextResponse.json({ status: false, mes: 'Không có gì thay đổi.' }, { status: 404 });
         }
         const course = await PostCourse.findById(courseId, 'ID').lean();
-        if (course) { reloadCourse(courseId) }
-        reloadStudent()
+        if (course) { await reloadCourse(courseId, course.ID); }
+        await reloadStudent();
         return NextResponse.json({ status: true, mes: successMessage }, { status: 200 });
     } catch (err) {
         console.error('[API_COURSE_UPDATE_STUDENT_ERROR]', err);

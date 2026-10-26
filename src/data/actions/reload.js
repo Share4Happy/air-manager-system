@@ -26,6 +26,26 @@ export async function reloadCourse(_id, code) {
         revalidateTag(`course:${code}`, 'max');
         clearCacheByTag(`course:${code}`);
     }
+    // Auto-resolve if only one identifier was passed
+    if (_id && !code) {
+        try {
+            const connectDB = (await import('@/config/connectDB')).default;
+            const Course = (await import('@/models/course')).default;
+            const mongoose = (await import('mongoose')).default;
+            await connectDB();
+            const query = mongoose.Types.ObjectId.isValid(_id) ? { _id } : { ID: _id };
+            const found = await Course.findOne(query, 'ID _id').lean();
+            if (found) {
+                const altKey = String(found._id) === String(_id) ? found.ID : String(found._id);
+                if (altKey && altKey !== String(_id)) {
+                    revalidateTag(`course:${altKey}`, 'max');
+                    clearCacheByTag(`course:${altKey}`);
+                }
+            }
+        } catch (err) {
+            console.error('[RELOAD_COURSE_AUTORESOLVE_ERROR]', err);
+        }
+    }
     revalidateTag('courses', 'max');
     clearCacheByTag('courses');
 }
