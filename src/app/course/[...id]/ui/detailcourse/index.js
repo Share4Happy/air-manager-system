@@ -21,7 +21,7 @@ import Export from '../exportStudents';
 import CancelLessonPopup from '@/components/(features)/(popup)/cancel_lesson_popup';
 import { getEportfolioUrl } from '@/utils/env'
 
-function Detail({ data = [], params, initialLessonId, book, users, studentsx, children }) {
+function Detail({ data = [], params, initialLessonId, activeLessonId: propActiveLessonId, onSelectLesson, book, users, studentsx, children }) {
     const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState({
         open: false,
@@ -35,20 +35,32 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
     const [showCompletePopup, setShowCompletePopup] = useState(false);
     const [showForceConfirm, setShowForceConfirm] = useState(false);
     const [completeIssues, setCompleteIssues] = useState([]);
-    const [activeLessonTab, setActiveLessonTab] = useState(initialLessonId || (params.length > 1 ? params[1] : null));
+    const [internalActiveLessonTab, setInternalActiveLessonTab] = useState(initialLessonId || (params.length > 1 ? params[1] : null));
+    const activeLessonTab = propActiveLessonId !== undefined ? propActiveLessonId : internalActiveLessonTab;
+
+    const handleTabChange = (val, lessonIdx) => {
+        if (onSelectLesson) {
+            onSelectLesson(val, lessonIdx);
+        } else {
+            setInternalActiveLessonTab(val);
+        }
+    };
+
     const [showNotePopup, setShowNotePopup] = useState(false);
     const [showTimelinePopup, setShowTimelinePopup] = useState(false);
     const [showCancelLessonPopup, setShowCancelLessonPopup] = useState(false);
 
     useEffect(() => {
-        if (initialLessonId) {
-            setActiveLessonTab(initialLessonId);
+        if (propActiveLessonId !== undefined) {
+            setInternalActiveLessonTab(propActiveLessonId);
+        } else if (initialLessonId) {
+            setInternalActiveLessonTab(initialLessonId);
         } else if (params.length > 1) {
-            setActiveLessonTab(params[1]);
+            setInternalActiveLessonTab(params[1]);
         } else {
-            setActiveLessonTab(null);
+            setInternalActiveLessonTab(null);
         }
-    }, [initialLessonId, params[0], params[1]]);
+    }, [propActiveLessonId, initialLessonId, params[0], params[1]]);
 
     const lessonFilterId = activeLessonTab || (params.length > 1 ? params[1] : null);
 
@@ -468,10 +480,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                 transition: 'all 0.2s',
                             }}
                             onClick={() => {
-                                setActiveLessonTab(null);
-                                if (typeof window !== 'undefined') {
-                                    window.history.pushState(null, '', `/course/${data.ID || params[0]}`);
-                                }
+                                handleTabChange(null);
                             }}
                         >
                             Tổng quan
@@ -491,10 +500,7 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
                                     transition: 'all 0.2s',
                                 }}
                                 onClick={() => {
-                                    setActiveLessonTab(lesson._id);
-                                    if (typeof window !== 'undefined') {
-                                        window.history.pushState(null, '', `/course/${data?.ID || params[0]}?lesson=${idx + 1}`);
-                                    }
+                                    handleTabChange(lesson._id, idx + 1);
                                 }}
                             >
                                 Buổi {idx + 1}
@@ -750,7 +756,14 @@ function Detail({ data = [], params, initialLessonId, book, users, studentsx, ch
             </CenterPopup>
 
             <CenterPopup open={showTimelinePopup} onClose={() => setShowTimelinePopup(false)} title="Lộ trình khóa học" size="lg">
-                <div className="max-h-[80vh] overflow-y-auto">
+                <div 
+                    className="max-h-[80vh] overflow-y-auto"
+                    onClick={(e) => {
+                        if (e.target.closest('[data-timeline-dot]')) {
+                            setShowTimelinePopup(false);
+                        }
+                    }}
+                >
                     {children}
                 </div>
             </CenterPopup>

@@ -2,7 +2,7 @@ import Link from "next/link"
 import Dot from "./dot"
 import { formatDate } from "@/function";
 
-export default function Timeline({ data = {}, props, selectedLessonId }) {
+export default function Timeline({ data = {}, props, selectedLessonId, onSelectLesson }) {
     const details = Array.isArray(data?.Detail) ? [...data.Detail] : [];
     details.sort((a, b) => {
         const dateA = new Date(a?.Day || 0);
@@ -23,8 +23,17 @@ export default function Timeline({ data = {}, props, selectedLessonId }) {
 
             <div style={{
                 borderRadius: '8px', padding: 16, background: 'linear-gradient(90deg, rgba(32,97,165,1) 0%, rgba(18,57,98,1) 100%)',
-                boxShadow: 'var(--boxshaw)', overflow: 'hidden',
-            }}><Link href={`/course/${courseCode}`}>
+                boxShadow: 'var(--boxshaw)', overflow: 'hidden', cursor: 'pointer'
+            }}>
+                <Link 
+                    href={`/course/${courseCode}`}
+                    onClick={(e) => {
+                        if (onSelectLesson) {
+                            e.preventDefault();
+                            onSelectLesson(null);
+                        }
+                    }}
+                >
                     <div className="text-base font-medium text-[var(--text-primary)]" style={{ color: 'white', fontWeight: '500' }}>{data?.Type || ''}</div>
                     <div className="text-xl font-semibold text-[var(--text-primary)]" style={{ margin: '4px 0', color: 'white' }}>Lớp: {data?.ID || courseCode}</div>
                     <div className="text-base font-medium text-[var(--text-primary)]" style={{ color: 'white' }}>Từ {dateRange[0]} đến {dateRange[1]}</div>
@@ -49,9 +58,9 @@ export default function Timeline({ data = {}, props, selectedLessonId }) {
                     })
                     return (
                         i == details.length - 1 ?
-                            <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} course={courseCode} type="end" index={i} data={datalesson} /> :
-                            i == 0 ? <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} course={courseCode} type="center" index={i} data={datalesson} /> :
-                                <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} course={courseCode} type="main" index={i} data={datalesson} />
+                            <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} onSelectLesson={onSelectLesson} course={courseCode} type="end" index={i} data={datalesson} /> :
+                            i == 0 ? <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} onSelectLesson={onSelectLesson} course={courseCode} type="center" index={i} data={datalesson} /> :
+                                <Dot key={e._id || i} props={props} selectedLessonId={selectedLessonId} onSelectLesson={onSelectLesson} course={courseCode} type="main" index={i} data={datalesson} />
                     )
                 })}
             </div>

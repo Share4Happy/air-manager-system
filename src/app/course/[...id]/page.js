@@ -1,5 +1,4 @@
-import Timeline from "./ui/timeline";
-import Detail from "./ui/detailcourse";
+import CourseView from "./ui/course-view";
 import { course_data, student_data, user_data } from "@/data/actions/get";
 import { Data_lesson } from "@/data/course";
 import { redirect } from "next/navigation";
@@ -43,6 +42,14 @@ export default async function OverviewTab({ params, searchParams }) {
     if (!data) return <div className="flex items-center justify-center h-full text-sm text-[var(--text-secondary)]">Không tìm thấy khóa học</div>
     let students = await student_data();
     const users = await user_data({ activeOnly: true })
+    if (Array.isArray(data?.Detail)) {
+        data.Detail.sort((a, b) => {
+            const dateA = new Date(a?.Day || 0);
+            const dateB = new Date(b?.Day || 0);
+            return dateA - dateB;
+        });
+    }
+
     const tienDo = tinhTienDoHocTap(data);
     data.Progress = tienDo; 
 
@@ -60,16 +67,13 @@ export default async function OverviewTab({ params, searchParams }) {
     }
     
     return (
-        <div className="flex flex-col lg:flex-row" style={{ height: '100%', width: '100%', gap: 16 }}>
-            <div className="hidden lg:block" style={{ flex: '1.6 1.6 0%', minWidth: 0, minHeight: 0 }}>
-                <Timeline data={data} props={id} selectedLessonId={selectedLessonId} />
-            </div>
-            <div className="lg:flex-[4] min-w-0">
-                <Detail data={data} params={id} initialLessonId={selectedLessonId} studentsx={students} users={users}>
-                    <Timeline data={data} props={id} selectedLessonId={selectedLessonId} />
-                </Detail>
-            </div>
-        </div>
+        <CourseView
+            data={data}
+            params={id}
+            initialLessonId={selectedLessonId}
+            students={students}
+            users={users}
+        />
     );
 }
 
