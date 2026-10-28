@@ -16,6 +16,8 @@ export default function Banner({ data, area }) {
         position[1] = lastKey;
     }
     const avt = data.Avt ? srcImage(data?.Avt) : defaultAvatarUrl();
+    const latestStatus = data?.Status?.length ? data.Status[data.Status.length - 1]?.status : null;
+    const statusText = latestStatus == 2 ? "Đang học" : latestStatus == 1 ? "Chờ lên khóa" : latestStatus == 0 ? "Đã nghỉ" : "Chưa cập nhật";
 
     return (
         <div className="bg-[var(--bg-primary)] rounded-lg flex flex-col border border-[var(--border-color)] text-[var(--text-primary)]">
@@ -34,7 +36,7 @@ export default function Banner({ data, area }) {
                         <p className="text-[22px] font-medium">{data?.Name}</p>
                         <Update data={data} data_area={area} />
                     </div>
-                    <p className="text-sm">Trạng thái học: {data.Status[data.Status.length - 1].status == 2 ? "Đang học" : data.Status[data.Status.length - 1].status == 1 ? "Chờ lên khóa" : "Đã nghỉ"}</p>
+                    <p className="text-sm">Trạng thái học: {statusText}</p>
                 </div>
                 <div style={{ display: "flex", alignItems: "end", gap: 8 }}>
                 </div>

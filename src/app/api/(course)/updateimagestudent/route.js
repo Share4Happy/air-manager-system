@@ -41,6 +41,15 @@ export async function POST(req) {
 
         // --- Cập nhật trực tiếp vào Collection Attendance (LMS) ---
         const Attendance = (await import('@/models/attendance')).default;
+        const existingAtt = await Attendance.findOne({ session: lessonIdObj, studentId }).lean();
+        const course = await PostCourse.findOne({ "Detail._id": lessonIdObj }, { Student: 1 }).lean();
+        const isEnrolled = course && (course.Student || []).some(s => s.ID === studentId || s._id?.toString() === studentId);
+        const isMakeupOrHistorical = existingAtt && ((existingAtt.makeupStatus && existingAtt.makeupStatus !== 'NOT_REQUIRED') || (typeof existingAtt.checkin === 'number' && existingAtt.checkin > 0));
+
+        if (!isEnrolled && !isMakeupOrHistorical) {
+            return NextResponse.json({ success: false, message: 'Học sinh không thuộc khóa học này hoặc không có lịch học bù hợp lệ.' }, { status: 400 });
+        }
+
         await Attendance.updateOne(
             { session: lessonIdObj, studentId: studentId },
             { $set: { images: newImages } },

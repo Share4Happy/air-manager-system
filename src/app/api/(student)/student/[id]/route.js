@@ -80,7 +80,7 @@ export async function PUT(request, { params }) {
 
 // Báo nghỉ học sinh - bảo lưu tất cả kết quả học tập hiện tại
 export async function DELETE(request, { params }) {
-    const { id } = params;
+    const { id } = await params;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return jsonRes(400, { status: false, mes: 'ID học sinh không hợp lệ' });
     }
@@ -101,12 +101,35 @@ export async function DELETE(request, { params }) {
         if (student.Leave) {
             return jsonRes(400, { status: false, mes: 'Học sinh này đã được báo nghỉ trước đó' });
         }
-        if (student.Type) {
-            const courseIds = student.Course.map(c => c.course);
-            await PostCourse.updateMany(
+        const courseIds = (student.Course || []).map(c => c.course).filter(Boolean);
+        if (courseIds.length > 0) {
+            const Attendance = (await import('@/models/attendance')).default;
+            const activeCourses = await PostCourse.find(
                 { _id: { $in: courseIds }, Status: false, 'Student.ID': student.ID },
-                { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
-            );
+                { Detail: 1, ID: 1 }
+            ).lean();
+            const activeCourseIds = activeCourses.map(c => c._id);
+
+            await Promise.all([
+                PostCourse.updateMany(
+                    { _id: { $in: activeCourseIds }, 'Student.ID': student.ID },
+                    { $pull: { 'Student.$.Learn': { Checkin: 0 } } }
+                ),
+                Attendance.deleteMany({
+                    course: { $in: activeCourseIds },
+                    studentId: student.ID,
+                    checkin: 0
+                }).catch(err => console.error('Attendance.deleteMany error in student DELETE:', err.message))
+            ]);
+
+            const { revalidateTag } = require('next/cache');
+            activeCourses.forEach(c => {
+                (c.Detail || []).forEach(d => {
+                    if (d._id) {
+                        try { revalidateTag(`data_lesson${d._id}`, 'max'); } catch {}
+                    }
+                });
+            });
         }
         await PostStudent.findByIdAndUpdate(id, {
             $set: { Leave: true },

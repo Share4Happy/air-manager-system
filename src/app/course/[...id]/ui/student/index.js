@@ -326,18 +326,35 @@ export default function Student({ course, autoOpen = false, footer = null, initi
 
             <AlertPopup
                 open={alertConfig.open}
-                onClose={() => setAlertConfig({ ...alertConfig, open: false })}
+                onClose={() => {
+                    setAlertConfig({ ...alertConfig, open: false });
+                    setReasonNote('');
+                }}
                 title={alertConfig.title}
                 content={alertConfig.content}
                 type={alertConfig.type}
                 actions={
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <button className="px-3 py-2.5 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 resize-none" onClick={() => setAlertConfig({ ...alertConfig, open: false })}>
+                        <button
+                            className="px-3 py-2 border border-gray-200 rounded bg-white text-sm outline-none text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                                setAlertConfig({ ...alertConfig, open: false });
+                                setReasonNote('');
+                            }}
+                        >
                             Hủy bỏ
                         </button>
                         <button
-                            className={`px-3 py-2 bg-[var(--main_b)] flex items-center gap-2 w-max rounded text-white text-sm font-medium cursor-pointer border-none transition-all duration-100 mt-2 justify-center whitespace-nowrap hover:bg-[var(--main_d)] hover:-translate-y-0.5 ${alertConfig.type === 'warning' ? 'btn_warning' : ''}`}
-                            onClick={() => alertConfig.onConfirm(reasonNote)}
+                            className={`px-3 py-2 flex items-center gap-2 w-max rounded text-sm font-medium border-none transition-all duration-150 justify-center whitespace-nowrap ${
+                                !reasonNote.trim()
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-75 shadow-none'
+                                    : 'bg-[var(--main_b)] text-white cursor-pointer hover:bg-[var(--main_d)] hover:-translate-y-0.5 shadow-sm'
+                            }`}
+                            onClick={() => {
+                                if (reasonNote.trim()) {
+                                    alertConfig.onConfirm(reasonNote);
+                                }
+                            }}
                             disabled={!reasonNote.trim()}
                             style={{ margin: 0, transform: 'none' }}
                         >

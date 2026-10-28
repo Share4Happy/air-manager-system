@@ -36,7 +36,15 @@ export async function POST(request) {
             foundRooms.forEach(room => roomNameToIdMap.set(room.name, room.roomId));
         }
         
-        const yearPrefix = new Date().getFullYear().toString().slice(-2);
+        let earliestYear = new Date().getFullYear();
+        if (Array.isArray(Detail) && Detail.length > 0) {
+            const validDates = Detail.map(d => new Date(d.Day)).filter(d => !isNaN(d.getTime()));
+            if (validDates.length > 0) {
+                validDates.sort((a, b) => a - b);
+                earliestYear = validDates[0].getFullYear();
+            }
+        }
+        const yearPrefix = earliestYear.toString().slice(-2);
         const coursePrefix = `${yearPrefix}${code.trim().toUpperCase()}`;
         const lastCourse = await PostCourse.findOne({ ID: { $regex: `^${coursePrefix}` } }).sort({ ID: -1 }).select('ID').lean();
         let newSequence = 1;

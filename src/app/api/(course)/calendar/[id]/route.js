@@ -119,8 +119,12 @@ export async function GET(_req, { params }) {
             }
 
             const courseStudentIds = (courseDoc?.Student || []).map(s => s.ID || s._id?.toString()).filter(Boolean);
-            const attStudentIds = attDocs.map(a => a.studentId).filter(Boolean);
-            const allStudentIds = Array.from(new Set([...courseStudentIds, ...attStudentIds]));
+            const courseStudentSet = new Set(courseStudentIds);
+            const validAttStudentIds = attDocs
+                .filter(a => courseStudentSet.has(a.studentId) || (typeof a.checkin === 'number' && a.checkin > 0) || (a.makeupStatus && a.makeupStatus !== 'NOT_REQUIRED'))
+                .map(a => a.studentId)
+                .filter(Boolean);
+            const allStudentIds = Array.from(new Set([...courseStudentIds, ...validAttStudentIds]));
 
             const studs = await Student.find({
                 $or: [

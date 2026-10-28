@@ -37,6 +37,8 @@ export async function PATCH(request, { params }) {
             throw new Error('Không tìm thấy học sinh.');
         }
 
+        const affectedCourseIds = new Set();
+
         switch (action) {
             case 'leave_permanently': {
                 const studentCourseIds = student.Course.map(c => c.course);
@@ -47,6 +49,7 @@ export async function PATCH(request, { params }) {
                 }, '_id').lean();
 
                 const activeCourseIds = activeCourses.map(c => c._id);
+                activeCourseIds.forEach(cId => affectedCourseIds.add(String(cId)));
 
                 if (activeCourseIds.length > 0) {
                     const Attendance = (await import('@/models/attendance')).default;
@@ -78,6 +81,7 @@ export async function PATCH(request, { params }) {
                 const preservedCourseIds = student.Course
                     .filter(c => c.status === 1)
                     .map(c => c.course);
+                preservedCourseIds.forEach(cId => affectedCourseIds.add(String(cId)));
 
                 if (preservedCourseIds.length > 0) {
                     const Session = (await import('@/models/session')).default;
@@ -132,6 +136,7 @@ export async function PATCH(request, { params }) {
                 if (!courseId || !mongoose.Types.ObjectId.isValid(courseId)) {
                     throw new Error('ID khóa học không hợp lệ hoặc bị thiếu.');
                 }
+                affectedCourseIds.add(String(courseId));
 
                 const Attendance = (await import('@/models/attendance')).default;
                 await Promise.all([
@@ -178,6 +183,17 @@ export async function PATCH(request, { params }) {
 
         revalidateTag('student', 'max');
         revalidateTag('course', 'max');
+
+        if (affectedCourseIds.size > 0) {
+            const affectedCourses = await PostCourse.find({ _id: { $in: Array.from(affectedCourseIds).map(id => new mongoose.Types.ObjectId(id)) } }, { Detail: 1 }).lean();
+            affectedCourses.forEach(c => {
+                (c.Detail || []).forEach(d => {
+                    if (d._id) {
+                        try { revalidateTag(`data_lesson${d._id}`, 'max'); } catch {}
+                    }
+                });
+            });
+        }
 
         const finalStudentData = await PostStudent.findById(studentId);
 

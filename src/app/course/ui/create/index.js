@@ -162,11 +162,8 @@ const BulkForm = memo(({ programObj, areaObj, teachersList, mainTeacher, addMany
         }
         if (allTopics.length === 0) { setErrorBulk('Chương trình chưa có chủ đề nào'); return; }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
         const generated = [];
-        const start = new Date(startDate + 'T00:00:00');
-        let current = new Date(start < today ? today : start);
+        const current = new Date(startDate + 'T00:00:00');
 
         while (generated.length < sessionCount) {
             const dayOfWeek = current.getDay();
@@ -374,6 +371,7 @@ export default function Create({ books = [], areas = [], teachers = [], autoOpen
     const router = useRouter();
     const [openPopup, setOpenPopup] = useState(autoOpen);
     const [program, setProgram] = useState(initialProgramState);
+    const [searchProgram, setSearchProgram] = useState('');
     const [courseType, setCourseType] = useState(initialType && !initialType.startsWith('Chọn') ? initialType : initialCourseTypeState);
     const [area, setArea] = useState(initialArea && initialArea.name ? initialArea : initialAreaState);
     const [teacher, setTeacher] = useState(initialTeacherState);
@@ -386,8 +384,37 @@ export default function Create({ books = [], areas = [], teachers = [], autoOpen
     const [secondaryType, setSecondaryType] = useState(null);
     const [editingIndex, setEditingIndex] = useState(null);
 
+    const filteredBooks = useMemo(() => {
+        if (!searchProgram || searchProgram.trim() === '' || searchProgram === program.Name) {
+            return books;
+        }
+        const q = searchProgram.toLowerCase().trim();
+        return books.filter(b =>
+            (b.Name && b.Name.toLowerCase().includes(q)) ||
+            (b.ID && b.ID.toLowerCase().includes(q))
+        );
+    }, [books, searchProgram, program.Name]);
+
+    const handleSelectProgram = useCallback((book) => {
+        setProgram(book);
+        setSearchProgram(book.Name || '');
+        setOpenMenus(p => ({ ...p, program: false }));
+    }, []);
+
+    const handleBlurProgram = useCallback(() => {
+        setTimeout(() => {
+            if (program.ID) {
+                setSearchProgram(program.Name || '');
+            } else {
+                setSearchProgram('');
+            }
+            setOpenMenus(p => ({ ...p, program: false }));
+        }, 200);
+    }, [program]);
+
     const resetForm = useCallback(() => {
         setProgram(initialProgramState);
+        setSearchProgram('');
         setCourseType(initialCourseTypeState);
         setArea(initialAreaState);
         setTeacher(initialTeacherState);
@@ -478,7 +505,75 @@ export default function Create({ books = [], areas = [], teachers = [], autoOpen
     const renderCourseForm = () => (
         <form className={'flex flex-col gap-4 p-4'} onSubmit={handleSaveCourse}>
             <TextNoti title="Thông tin khóa học" color="blue" mes="Thông tin khóa học là bắt buộc" />
-            <Menu menuItems={programMenu} menuPosition="bottom" isOpen={openMenus.program} onOpenChange={isOpen => setOpenMenus(p => ({ ...p, program: isOpen }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, program: !p.program }))} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${program.Name.startsWith('Chọn') ? 'border-[#ffd264]' : ''}`}>{program.Name}</div>} />
+            <div className="relative w-full">
+                <div className={`flex items-center w-full bg-[#f8fafc] border ${program.Name.startsWith('Chọn') ? 'border-[#ffd264]' : 'border-[#e2e8f0]'} rounded-lg transition-all duration-200 focus-within:border-[var(--main_d)] focus-within:bg-white`}>
+                    <input
+                        type="text"
+                        value={searchProgram}
+                        placeholder={program.Name.startsWith('Chọn') ? 'Tìm hoặc chọn chương trình...' : program.Name}
+                        onFocus={() => {
+                            if (!searchProgram && program.ID) setSearchProgram(program.Name);
+                            setOpenMenus(p => ({ ...p, program: true }));
+                        }}
+                        onBlur={handleBlurProgram}
+                        onChange={(e) => {
+                            setSearchProgram(e.target.value);
+                            setOpenMenus(p => ({ ...p, program: true }));
+                        }}
+                        className="flex-1 p-2.5 text-sm bg-transparent border-none outline-none text-[var(--text-primary)]"
+                    />
+                    {program.ID && (
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                setProgram(initialProgramState);
+                                setSearchProgram('');
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer bg-transparent border-none"
+                            title="Xóa lựa chọn"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            setOpenMenus(p => ({ ...p, program: !p.program }));
+                        }}
+                        className="p-2 text-gray-500 hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-none"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </div>
+
+                {openMenus.program && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg shadow-lg max-h-[260px] overflow-y-auto z-50">
+                        {filteredBooks.length > 0 ? (
+                            <div className="p-1 flex flex-col gap-0.5">
+                                {filteredBooks.map((b, i) => (
+                                    <div
+                                        key={b._id || i}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            handleSelectProgram(b);
+                                        }}
+                                        className={`p-2.5 rounded text-sm cursor-pointer transition-colors flex items-center justify-between ${program._id === b._id ? 'bg-[var(--main_b)] text-white font-medium' : 'hover:bg-[var(--hover)] text-[var(--text-primary)]'}`}
+                                    >
+                                        <span>{b.Name}</span>
+                                        {b.ID && <span className={`text-xs ${program._id === b._id ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>({b.ID})</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-3 text-xs text-center text-[var(--text-secondary)]">
+                                Không tìm thấy chương trình phù hợp
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
             <Menu menuItems={typeMenu} menuPosition="bottom" isOpen={openMenus.type} onOpenChange={isOpen => setOpenMenus(p => ({ ...p, type: isOpen }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, type: !p.type }))} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${courseType.startsWith('Chọn') ? 'border-[#ffd264]' : ''}`}>{courseType}</div>} />
             <Menu menuItems={areaMenu} menuPosition="bottom" isOpen={openMenus.area} onOpenChange={isOpen => setOpenMenus(p => ({ ...p, area: isOpen }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, area: !p.area }))} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${area.name.startsWith('Chọn') ? 'border-[#ffd264]' : ''}`}>{area.name}</div>} />
             <Menu menuItems={teacherMenu} menuPosition="bottom" isOpen={openMenus.teacher} onOpenChange={isOpen => setOpenMenus(p => ({ ...p, teacher: isOpen }))} customButton={<div onClick={() => setOpenMenus(p => ({ ...p, teacher: !p.teacher }))} className={`flex-1 w-[calc(100%-24px)] p-2.5 text-sm bg-[#f8fafc] border border-[#e2e8f0] rounded-lg transition-all duration-200 outline-none cursor-pointer ${teacher.startsWith('Chọn') ? 'border-[#ffd264]' : ''}`}>{teacher}</div>} />

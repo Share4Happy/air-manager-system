@@ -97,7 +97,7 @@ export async function POST(request, { params }) {
         (course.Detail || []).forEach(d => {
             if (d._id) {
                 const { revalidateTag } = require('next/cache');
-                try { revalidateTag(`data_lesson${d._id}`); } catch {}
+                try { revalidateTag(`data_lesson${d._id}`, 'max'); } catch {}
             }
         });
         return jsonRes(200, { status: true, mes: `Thêm thành công ${newStudentDocs.length} học sinh.` });
@@ -118,11 +118,19 @@ export async function PUT(req, { params }) {
             return NextResponse.json({ status: false, mes: 'ID khóa học không hợp lệ.' }, { status: 400 });
         }
         await connectDB();
-        const student = await PostStudent.findOne({ ID: studentId });
+        const [student, course] = await Promise.all([
+            PostStudent.findOne({ ID: studentId }),
+            PostCourse.findById(courseId, { ID: 1, Detail: 1 }).lean()
+        ]);
         if (!student) {
             return NextResponse.json({ status: false, mes: 'Không tìm thấy học sinh.' }, { status: 404 });
         }
-        const otherCourses = student.Course.filter(c => c.course.toString() !== courseId);
+        if (!course) {
+            return NextResponse.json({ status: false, mes: 'Không tìm thấy khóa học.' }, { status: 404 });
+        }
+
+        const Attendance = (await import('@/models/attendance')).default;
+        const otherCourses = (student.Course || []).filter(c => c.course?.toString() !== courseId);
         const isStillLearning = otherCourses.some(c => c.status === 0);
         const newStatus = {
             status: isStillLearning ? 2 : 1,
@@ -130,7 +138,11 @@ export async function PUT(req, { params }) {
             date: new Date(),
             note: note,
         };
-        let updateCoursePromise, updateStudentPromise, successMessage;
+        let updateCoursePromise, updateStudentPromise, updateAttendancePromise, successMessage;
+
+        const courseFilter = course.ID 
+            ? { $or: [{ course: courseId }, { courseCode: course.ID }], studentId }
+            : { course: courseId, studentId };
 
         switch (action) {
             case 'remove':
@@ -145,6 +157,8 @@ export async function PUT(req, { params }) {
                         $push: { Status: newStatus }
                     }
                 );
+                // Xóa toàn bộ bản ghi điểm danh của học sinh trong khóa này
+                updateAttendancePromise = Attendance.deleteMany(courseFilter);
                 successMessage = `Đã xóa học sinh ${studentId} khỏi khóa học.`;
                 break;
 
@@ -160,17 +174,34 @@ export async function PUT(req, { params }) {
                         $push: { Status: newStatus }
                     }
                 );
+                // Xóa các bản ghi điểm danh chưa học (checkin = 0), bảo toàn các buổi đã học
+                updateAttendancePromise = Attendance.deleteMany({
+                    ...courseFilter,
+                    checkin: 0
+                });
                 successMessage = `Đã bảo lưu kết quả cho học sinh ${studentId}.`;
                 break;
             default:
                 return NextResponse.json({ status: false, mes: 'Hành động không hợp lệ.' }, { status: 400 });
         }
-        const [courseResult, studentResult] = await Promise.all([updateCoursePromise, updateStudentPromise]);
+        const [courseResult, studentResult] = await Promise.all([
+            updateCoursePromise,
+            updateStudentPromise,
+            updateAttendancePromise.catch(err => console.error('Attendance.deleteMany error in course student PUT:', err.message))
+        ]);
         if (courseResult.modifiedCount === 0 && studentResult.modifiedCount === 0) {
             return NextResponse.json({ status: false, mes: 'Không có gì thay đổi.' }, { status: 404 });
         }
-        const course = await PostCourse.findById(courseId, 'ID').lean();
-        if (course) { await reloadCourse(courseId, course.ID); }
+
+        // Revalidate cache toàn bộ buổi học của khóa
+        const { revalidateTag } = require('next/cache');
+        (course.Detail || []).forEach(d => {
+            if (d._id) {
+                try { revalidateTag(`data_lesson${d._id}`, 'max'); } catch {}
+            }
+        });
+
+        await reloadCourse(courseId, course.ID);
         await reloadStudent();
         return NextResponse.json({ status: true, mes: successMessage }, { status: 200 });
     } catch (err) {

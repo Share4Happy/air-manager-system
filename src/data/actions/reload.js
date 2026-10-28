@@ -60,8 +60,8 @@ export async function reloadCoursetry() {
 }
 
 export async function reloadUser(_id) {
-    if (_id) { revalidateTag(`user:${_id}`); clearCacheByTag(`user:${_id}`) }
-    revalidateTag('users'); clearCacheByTag('users')
+    if (_id) { revalidateTag(`user:${_id}`, 'max'); clearCacheByTag(`user:${_id}`) }
+    revalidateTag('users', 'max'); clearCacheByTag('users')
 }
 
 export async function reloadForm() {

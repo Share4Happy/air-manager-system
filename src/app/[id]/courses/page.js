@@ -2,7 +2,7 @@ import CourseListDisplay from "./main";
 import { student_data } from "@/data/actions/get";
 
 export default async function CoursesTab({ params }) {
-    const { id } = params;
+    const { id } = await params;
     const studentData = await student_data(id);
     
 

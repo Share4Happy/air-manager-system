@@ -21,9 +21,37 @@ export async function POST(req) {
         await connectDB()
 
         const Attendance = (await import('@/models/attendance')).default;
+        const lessonObjectId = new mongoose.Types.ObjectId(lessonId);
+
+        // Kiểm tra tính hợp lệ của học sinh trong khóa
+        let isAllowed = false;
+        if (mongoose.Types.ObjectId.isValid(courseId)) {
+            const course = await PostCourse.findById(courseId, { Student: 1 }).lean();
+            if (course && (course.Student || []).some(s => s.ID === studentId || s._id?.toString() === studentId)) {
+                isAllowed = true;
+            }
+            if (!isAllowed) {
+                const trialCourse = await TrialCourse.findById(courseId).lean();
+                const trialSes = (trialCourse?.sessions || []).find(s => s._id?.toString() === lessonId);
+                if (trialSes && (trialSes.students || []).some(s => s.studentId === studentId)) {
+                    isAllowed = true;
+                }
+            }
+        }
+        if (!isAllowed) {
+            const existingAtt = await Attendance.findOne({ session: lessonObjectId, studentId }).lean();
+            if (existingAtt && ((existingAtt.makeupStatus && existingAtt.makeupStatus !== 'NOT_REQUIRED') || (typeof existingAtt.checkin === 'number' && existingAtt.checkin > 0))) {
+                isAllowed = true;
+            }
+        }
+
+        if (!isAllowed) {
+            return jsonRes(400, { status: false, mes: 'Học sinh không thuộc khóa học này hoặc không có lịch học bù hợp lệ.', data: null });
+        }
+
         await Attendance.updateOne(
             {
-                session: new mongoose.Types.ObjectId(lessonId),
+                session: lessonObjectId,
                 studentId: studentId
             },
             { $set: { cmtFn: commentText } },

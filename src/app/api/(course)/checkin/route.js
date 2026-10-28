@@ -79,9 +79,27 @@ export async function POST(req) {
       }
     }
 
+    const courseStudentSet = new Set((course?.Student || []).map(s => String(s.ID || s._id)));
+    const trialSession = (trialCourse?.sessions || []).find(s => String(s._id) === String(sessionIdObj));
+    const trialStudentSet = new Set((trialSession?.students || []).map(s => String(s.studentId)));
+
     // Cập nhật điểm danh và nhận xét
     for (const a of attendanceData) {
       if (!a || !a.studentId) continue
+
+      const sId = String(a.studentId);
+      const isEnrolled = courseStudentSet.has(sId) || trialStudentSet.has(sId);
+      if (!isEnrolled) {
+        const existingAtt = await Attendance.findOne({ session: sessionIdObj, studentId: a.studentId }).lean();
+        const isMakeupOrHistorical = existingAtt && (
+          (existingAtt.makeupStatus && existingAtt.makeupStatus !== 'NOT_REQUIRED') ||
+          (typeof existingAtt.checkin === 'number' && existingAtt.checkin > 0)
+        );
+        if (!isMakeupOrHistorical) {
+          // Bỏ qua học sinh không thuộc lớp và không có lịch học bù hợp lệ
+          continue;
+        }
+      }
 
       const checkinNum = (a.checkin !== undefined && a.checkin !== null && a.checkin !== '') ? Number(a.checkin) : undefined
       const updateAtt = {

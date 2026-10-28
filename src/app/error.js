@@ -33,6 +33,9 @@ export default function DashboardError({ error, reset }) {
         <div style={containerStyle}>
             <h2 className='text-xl font-semibold text-[var(--text-primary)]'>Rất tiếc, đã có lỗi xảy ra!</h2>
             <p className='text-base font-semibold text-[var(--text-primary)]'>Lỗi: {error.message}</p>
+            {error.digest && (
+                <p className='text-xs opacity-60 font-mono mt-1 select-all'>Mã lỗi (Digest): {error.digest}</p>
+            )}
             <button
                 style={buttonStyle}
                 onClick={() => reset()}>
